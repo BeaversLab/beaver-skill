@@ -44,6 +44,7 @@ Color grading and mood presets popular on XHS.
 | muted-tones | 莫兰迪 | Morandi-style desaturated palette | Sophisticated, calm |
 | warm-tone | 暖色调 | Golden hour warmth | Cozy, inviting |
 | cool-tone | 冷色调 | Blue-shifted coolness | Modern, clean |
+| natural-photo | 自然实拍 | No color grading, realistic photo perspective | Authentic, documentary |
 
 ## Texture Overlays
 
@@ -90,3 +91,8 @@ Common effect stacks for different styles:
 - Filter: high-saturation
 - Stroke: colored-solid (thick)
 - Texture: none
+
+### Study Notes Style
+- Filter: natural-photo
+- Stroke: none
+- Texture: paper (lined)

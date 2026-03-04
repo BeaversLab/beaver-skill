@@ -1,6 +1,6 @@
 ---
 name: beaver-xhs-images
-description: Generates Xiaohongshu (Little Red Book) infographic series with 10 visual styles and 8 layouts. Breaks content into 1-10 cartoon-style images optimized for XHS engagement. Use when user mentions "小红书图片", "XHS images", "RedNote infographics", "小红书种草", or wants social media infographics for Chinese platforms.
+description: Generates Xiaohongshu (Little Red Book) infographic series with 10 visual styles and 8 layouts. Breaks content into 1-10 cartoon-style images optimized for XHS engagement. Use when user mentions "小红书图片", "小红书笔记", "小红书配图", "小红书种草", "XHS images", "XHS cards", "RedNote infographics", or wants social media infographics for Chinese platforms.
 ---
 
 # Xiaohongshu Infographic Series Generator
@@ -83,16 +83,16 @@ Detailed layout definitions: `references/elements/canvas.md`
 
 | Content Signals | Style | Layout |
 |-----------------|-------|--------|
-| Beauty, fashion, cute, girl, pink | `cute` | sparse/balanced |
-| Health, nature, clean, fresh, organic | `fresh` | balanced/flow |
-| Life, story, emotion, feeling, warm | `warm` | balanced |
-| Warning, important, must, critical | `bold` | list/comparison |
-| Professional, business, elegant, simple | `minimal` | sparse/balanced |
-| Classic, vintage, old, traditional | `retro` | balanced |
-| Fun, exciting, wow, amazing | `pop` | sparse/list |
-| Knowledge, concept, productivity, SaaS | `notion` | dense/list |
-| Education, tutorial, learning, teaching, classroom | `chalkboard` | balanced/dense |
-| Notes, handwritten, study guide, knowledge, realistic, photo | `study-notes` | dense/list/mindmap |
+| Beauty, fashion, cute, girl, pink / 美妆、护肤、可爱、少女、粉色 | `cute` | sparse/balanced |
+| Health, nature, clean, fresh, organic / 健康、自然、清爽、有机、养生 | `fresh` | balanced/flow |
+| Life, story, emotion, feeling, warm / 生活、故事、情感、温暖、治愈 | `warm` | balanced |
+| Warning, important, must, critical / 避坑、必看、注意、重要、踩雷 | `bold` | list/comparison |
+| Professional, business, elegant, simple / 职场、商务、极简、高级感 | `minimal` | sparse/balanced |
+| Classic, vintage, old, traditional / 复古、怀旧、经典、老派 | `retro` | balanced |
+| Fun, exciting, wow, amazing / 好玩、惊喜、绝了、太强了 | `pop` | sparse/list |
+| Knowledge, concept, productivity, SaaS / 知识、概念、效率、工具、干货 | `notion` | dense/list |
+| Education, tutorial, learning, teaching, classroom / 教程、教学、学习、课堂 | `chalkboard` | balanced/dense |
+| Notes, handwritten, study guide, realistic, photo / 笔记、手写、学霸、学习笔记、考研 | `study-notes` | dense/list/mindmap |
 
 ## Outline Strategies
 
@@ -384,7 +384,21 @@ This is critical for styles that use recurring characters, mascots, or illustrat
    - **Image 1**: Generate without `--ref` (this establishes the visual anchor)
    - **Images 2+**: Generate with `--ref <image-01-path>` for consistency
    - **Backup rule**: If image file exists, rename to `NN-{type}-[slug]-backup-YYYYMMDD-HHMMSS.png`
-3. Report progress after each generation
+3. **Quick quality check** after each generation:
+   - Verify the output file exists and is non-empty
+   - Confirm the image matches the requested style direction (hand-drawn, not photorealistic)
+   - Check that key text content from the prompt is represented
+4. Report progress after each generation
+
+**Error Recovery**:
+
+| Scenario | Action |
+|----------|--------|
+| Generation fails (API error) | Auto-retry once with the same prompt |
+| Retry also fails | Log the failure, skip this image, continue to the next |
+| Output file missing or empty | Treat as generation failure, trigger retry |
+| Style mismatch (e.g., photorealistic instead of hand-drawn) | Append style reinforcement to the prompt and retry once |
+| All retries exhausted | Report which images failed in the completion report, suggest re-running those individually |
 
 **Watermark Application** (if enabled in preferences):
 Add to each image generation prompt:
@@ -395,8 +409,10 @@ The watermark should be legible but not distracting from the main content.
 Reference: `references/config/watermark-guide.md`
 
 **Image Generation Skill Selection**:
-- Check available image generation skills
+- Check available image generation skills (see `references/config/image-gen-interface.md` for required capabilities)
+- If only one skill is available, use it automatically
 - If multiple skills available, ask user preference
+- If no skill is available, inform the user and stop
 
 **Session Management**:
 If image generation skill supports `--sessionId`:
@@ -482,6 +498,7 @@ Detailed templates in `references/` directory:
 - `config/preferences-schema.md` - EXTEND.md schema
 - `config/first-time-setup.md` - First-time setup flow
 - `config/watermark-guide.md` - Watermark configuration
+- `config/image-gen-interface.md` - Image generation skill interface contract
 
 ## Notes
 

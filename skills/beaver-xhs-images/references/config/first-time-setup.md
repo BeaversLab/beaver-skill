@@ -69,7 +69,35 @@ options:
     description: "Minimalist hand-drawn, intellectual"
 ```
 
-### Question 3: Save Location
+### Question 3: Preferred Layout
+
+```
+header: "Layout"
+question: "Default information layout preference? Or type another layout name"
+options:
+  - label: "None (Recommended)"
+    description: "Auto-select based on content analysis"
+  - label: "dense"
+    description: "High information density, knowledge card style"
+  - label: "balanced"
+    description: "Standard content layout (3-4 points)"
+```
+
+### Question 4: Language
+
+```
+header: "Language"
+question: "Preferred output language for generated content?"
+options:
+  - label: "Auto-detect (Recommended)"
+    description: "Match the language of your input content"
+  - label: "zh"
+    description: "Chinese (简体中文)"
+  - label: "en"
+    description: "English"
+```
+
+### Question 5: Save Location
 
 ```
 header: "Save"
