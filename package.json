@@ -1,0 +1,31 @@
+{
+  "name": "@beaverslab/beaver-skills",
+  "version": "0.1.0",
+  "description": "AI-powered agent skills collection for image generation and Xiaohongshu infographics",
+  "keywords": [
+    "agent-skills",
+    "skills",
+    "ai-agents",
+    "claude-code",
+    "cursor",
+    "gemini-cli",
+    "codex",
+    "image-generation",
+    "xiaohongshu",
+    "xhs"
+  ],
+  "homepage": "https://github.com/BeaversLab/beaver-skills",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BeaversLab/beaver-skills.git"
+  },
+  "license": "MIT",
+  "files": [
+    "skills/",
+    "README.md",
+    "README.en.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
