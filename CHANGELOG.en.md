@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.2 - 2026-03-05
+
+### Fixes
+- **CI**: Fix GitHub Action failure where `npm version` errors when the version in `package.json` is already updated
+
 ## 0.2.1 - 2026-03-05
 
 ### Features
