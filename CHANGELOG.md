@@ -1,0 +1,9 @@
+# 更新日志
+
+## 0.2.0 - 2026-03-05
+
+### 新功能
+- **beaver-release-skills**: 引入 beaver-release-skills 并同步远程 URL
+- **beaver-image-gen**: 引入 AI 图像生成技能 beaver-image-gen
+- **beaver-xhs-images**: 增强布局偏好、错误恢复及完善文档
+- **project**: 初始化项目，配置 package.json、GitHub Actions 及多语言 README
