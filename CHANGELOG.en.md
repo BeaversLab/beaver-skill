@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.3 - 2026-03-05
+
+### Notes
+- Please verify that `NPM_TOKEN` in GitHub Secrets is correctly configured and not expired
+
 ## 0.2.2 - 2026-03-05
 
 ### Fixes
