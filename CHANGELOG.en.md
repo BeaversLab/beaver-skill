@@ -5,11 +5,6 @@
 ### Optimizations
 - **CI**: Successfully configured NPM token and restored automated publishing flow
 
-## 0.2.3 - 2026-03-05
-
-### Documentation
-- Updated README documentation structure
-
 ## 0.2.2 - 2026-03-05
 
 ### Fixes

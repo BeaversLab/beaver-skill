@@ -1,5 +1,7 @@
 # Beaver Skills 🦫
 
+[简体中文](README.md) | English
+
 A collection of AI-powered automation workflow skills designed for efficient task execution, content creation, and system analysis via OpenClaw, Claude Code, Codex, Gemini CLI or other AI Agents.
 
 ## 🚀 Core Skills
@@ -14,12 +16,22 @@ This project currently includes the following core skills:
 | [beaver-skill-analysis](./skills/beaver-skill-analysis) | **Skill Analysis & Optimization**: Meta-tool for analyzing, reverse-engineering, and optimizing AI skills. | Provides structured analysis reports, risk checklists, and implementation roadmaps. |
 
 
-## 🛠️ Installation and Configuration
+## 🛠️ Installation
 
-This project runs on **Bun** and **Node.js**.
+### Quick Install (Recommended)
+
+If you are using an AI terminal that supports skill extensions (like Gemini CLI), you can add all skills from this project with a single command:
+
+```bash
+npx skills add BeaversLab/beaver-skill
+```
+
+### Manual Installation and Configuration
+
+This project can also be run from source using **Bun** and **Node.js**.
 
 1. **Prerequisites**: Ensure Bun (>= 1.0) is installed on your system.
-2. **Credential Setup**: Set the following keys in your `.env` or environment variables based on the platform you intend to use for image generation:
+2. **Credential Setup**: Set the following keys in your `~/.beaver-skill/.env` or environment variables based on the platform you intend to use for image generation(optional):
    - `GOOGLE_API_KEY`
    - `OPENAI_API_KEY`
    - `DASHSCOPE_API_KEY`

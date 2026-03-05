@@ -17,7 +17,6 @@ beaver-skill/
 │   │   │   └── main.ts          # Entry point
 │   │   ├── references/          # Supporting documentation
 │   │   └── SKILL.md             # Main skill definition
-│   ├── beaver-skill-analysis/   # Meta-skill for analyzing skills (Structure & Templates)
 │   └── beaver-xhs-images/       # Xiaohongshu infographic generator
 │       ├── references/          # Modular reference documentation (presets, layouts, etc.)
 │       └── SKILL.md             # Main skill definition
