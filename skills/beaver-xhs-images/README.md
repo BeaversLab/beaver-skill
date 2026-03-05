@@ -126,7 +126,7 @@
 **A：** 先修改对应的提示词文件（`prompts/NN-{type}-[slug].md`），然后重新生成该图片。技能会自动备份原始文件。
 
 **Q：如何保存我的偏好避免每次重新设置？**
-**A：** 首次使用时的初始设置会引导你配置水印、默认风格、默认布局、输出语言和存储位置，自动保存到 EXTEND.md。支持项目级（`.beaver-skills/beaver-xhs-images/EXTEND.md`）和用户级（`$HOME/.beaver-skills/beaver-xhs-images/EXTEND.md`）两种存储位置。
+**A：** 首次使用时的初始设置会引导你配置水印、默认风格、默认布局、输出语言和存储位置，自动保存到 EXTEND.md。支持项目级（`.beaver-skill/beaver-xhs-images/EXTEND.md`）和用户级（`$HOME/.beaver-skill/beaver-xhs-images/EXTEND.md`）两种存储位置。
 
 **Q：支持哪些语言的内容输入？**
 **A：** 支持任何语言的源内容输入，AI 会自动检测。输出语言取决于你在首次设置中选择的语言偏好（支持中文、英文或自动检测）。

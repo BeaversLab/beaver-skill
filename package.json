@@ -1,5 +1,5 @@
 {
-  "name": "@beaverslab/beaver-skills",
+  "name": "@beaverslab/beaver-skill",
   "version": "0.1.0",
   "description": "AI-powered agent skills collection for image generation and Xiaohongshu infographics",
   "keywords": [
@@ -14,10 +14,10 @@
     "xiaohongshu",
     "xhs"
   ],
-  "homepage": "https://github.com/BeaversLab/beaver-skills",
+  "homepage": "https://github.com/BeaversLab/beaver-skill",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/BeaversLab/beaver-skills.git"
+    "url": "git+https://github.com/BeaversLab/beaver-skill.git"
   },
   "license": "MIT",
   "files": [

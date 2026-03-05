@@ -4,12 +4,12 @@ This file provides guidance to Gemini CLI when working with code in this reposit
 
 ## Repository Overview
 
-This is **beaver-skills**, a collection of agent skills for AI-powered workflows. The repository contains standalone skill packages that can be invoked to perform specific tasks.
+This is **beaver-skill**, a collection of agent skills for AI-powered workflows. The repository contains standalone skill packages that can be invoked to perform specific tasks.
 
 ### Project Structure
 
 ```
-beaver-skills/
+beaver-skill/
 ├── skills/                      # All skill packages
 │   ├── beaver-image-gen/        # Unified AI image generation (Google, OpenAI, DashScope, Replicate)
 │   │   ├── scripts/             # Implementation scripts (Bun/TS)
@@ -48,7 +48,7 @@ Each skill follows this structure:
 
 **Multi-Platform Providers**: Skills like `beaver-image-gen` abstract multiple AI backends (Google, OpenAI, DashScope, Replicate) behind a single interface.
 
-**Preference Persistence**: Uses `EXTEND.md` (via `.beaver-skills/` directory) to save user preferences like default providers, models, and quality settings.
+**Preference Persistence**: Uses `EXTEND.md` (via `.beaver-skill/` directory) to save user preferences like default providers, models, and quality settings.
 
 **Safety & Reliability**: 
 - API keys are handled securely (e.g., via temporary config files for curl).

@@ -20,8 +20,8 @@ Official API-based image generation. Supports OpenAI, Google, DashScope (阿里�
 Check EXTEND.md existence (priority: project → user):
 
 ```bash
-test -f .beaver-skills/beaver-image-gen/EXTEND.md && echo "project"
-test -f "$HOME/.beaver-skills/beaver-image-gen/EXTEND.md" && echo "user"
+test -f .beaver-skill/beaver-image-gen/EXTEND.md && echo "project"
+test -f "$HOME/.beaver-skill/beaver-image-gen/EXTEND.md" && echo "user"
 ```
 
 | Result | Action |
@@ -33,8 +33,8 @@ test -f "$HOME/.beaver-skills/beaver-image-gen/EXTEND.md" && echo "user"
 
 | Path | Location |
 |------|----------|
-| `.beaver-skills/beaver-image-gen/EXTEND.md` | Project directory |
-| `$HOME/.beaver-skills/beaver-image-gen/EXTEND.md` | User home |
+| `.beaver-skill/beaver-image-gen/EXTEND.md` | Project directory |
+| `$HOME/.beaver-skill/beaver-image-gen/EXTEND.md` | User home |
 
 **EXTEND.md Supports**: Default provider | Default quality | Default aspect ratio | Default image size | Default models
 
@@ -51,7 +51,7 @@ Use AskUserQuestion with ALL questions in ONE call:
    - DashScope: `z-image-turbo` (Recommended) | `z-image-ultra`
    - Replicate: `google/nano-banana-pro` (Recommended) | `google/nano-banana`
 3. **Default Quality**: `2k` (Recommended) | `normal`
-4. **Save Location**: Project `.beaver-skills/` (Recommended) | User `~/.beaver-skills/`
+4. **Save Location**: Project `.beaver-skill/` (Recommended) | User `~/.beaver-skill/`
 
 EXTEND.md template:
 
@@ -142,7 +142,7 @@ npx -y bun ${SKILL_DIR}/scripts/main.ts --prompt "A cat" --image out.png --provi
 | `DASHSCOPE_BASE_URL` | Custom DashScope endpoint |
 | `REPLICATE_BASE_URL` | Custom Replicate endpoint |
 
-**Load Priority**: CLI args > EXTEND.md > env vars > `<cwd>/.beaver-skills/.env` > `~/.beaver-skills/.env`
+**Load Priority**: CLI args > EXTEND.md > env vars > `<cwd>/.beaver-skill/.env` > `~/.beaver-skill/.env`
 
 ## Model Resolution
 

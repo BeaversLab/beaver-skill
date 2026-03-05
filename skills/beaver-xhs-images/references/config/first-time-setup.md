@@ -104,17 +104,17 @@ header: "Save"
 question: "Where to save preferences?"
 options:
   - label: "Project"
-    description: ".beaver-skills/ (this project only)"
+    description: ".beaver-skill/ (this project only)"
   - label: "User"
-    description: "~/.beaver-skills/ (all projects)"
+    description: "~/.beaver-skill/ (all projects)"
 ```
 
 ## Save Locations
 
 | Choice | Path | Scope |
 |--------|------|-------|
-| Project | `.beaver-skills/beaver-xhs-images/EXTEND.md` | Current project |
-| User | `~/.beaver-skills/beaver-xhs-images/EXTEND.md` | All projects |
+| Project | `.beaver-skill/beaver-xhs-images/EXTEND.md` | Current project |
+| User | `~/.beaver-skill/beaver-xhs-images/EXTEND.md` | All projects |
 
 ## After Setup
 

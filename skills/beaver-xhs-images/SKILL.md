@@ -203,18 +203,18 @@ Use Bash to check EXTEND.md existence (priority order):
 
 ```bash
 # Check project-level first
-test -f .beaver-skills/beaver-xhs-images/EXTEND.md && echo "project"
+test -f .beaver-skill/beaver-xhs-images/EXTEND.md && echo "project"
 
 # Then user-level (cross-platform: $HOME works on macOS/Linux/WSL)
-test -f "$HOME/.beaver-skills/beaver-xhs-images/EXTEND.md" && echo "user"
+test -f "$HOME/.beaver-skill/beaver-xhs-images/EXTEND.md" && echo "user"
 ```
 
 ┌────────────────────────────────────────────────────┬───────────────────┐
 │                        Path                        │     Location      │
 ├────────────────────────────────────────────────────┼───────────────────┤
-│ .beaver-skills/beaver-xhs-images/EXTEND.md           │ Project directory │
+│ .beaver-skill/beaver-xhs-images/EXTEND.md           │ Project directory │
 ├────────────────────────────────────────────────────┼───────────────────┤
-│ $HOME/.beaver-skills/beaver-xhs-images/EXTEND.md     │ User home         │
+│ $HOME/.beaver-skill/beaver-xhs-images/EXTEND.md     │ User home         │
 └────────────────────────────────────────────────────┴───────────────────┘
 
 ┌───────────┬─────────────────────────────────────────────────────────────────────────────────────────────────────┐

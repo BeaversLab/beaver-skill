@@ -41,7 +41,7 @@ Environment variables:
   DASHSCOPE_BASE_URL        Custom DashScope endpoint
   REPLICATE_BASE_URL        Custom Replicate endpoint
 
-Env file load order: CLI args > EXTEND.md > process.env > <cwd>/.beaver-skills/.env > ~/.beaver-skills/.env`);
+Env file load order: CLI args > EXTEND.md > process.env > <cwd>/.beaver-skill/.env > ~/.beaver-skill/.env`);
 }
 
 function parseArgs(argv: string[]): CliArgs {
@@ -208,8 +208,8 @@ async function loadEnv(): Promise<void> {
   const home = homedir();
   const cwd = process.cwd();
 
-  const homeEnv = await loadEnvFile(path.join(home, ".beaver-skills", ".env"));
-  const cwdEnv = await loadEnvFile(path.join(cwd, ".beaver-skills", ".env"));
+  const homeEnv = await loadEnvFile(path.join(home, ".beaver-skill", ".env"));
+  const cwdEnv = await loadEnvFile(path.join(cwd, ".beaver-skill", ".env"));
 
   for (const [k, v] of Object.entries(cwdEnv)) {
     if (!process.env[k]) process.env[k] = v;
@@ -271,8 +271,8 @@ async function loadExtendConfig(): Promise<Partial<ExtendConfig>> {
   const cwd = process.cwd();
 
   const paths = [
-    path.join(cwd, ".beaver-skills", "beaver-image-gen", "EXTEND.md"),
-    path.join(home, ".beaver-skills", "beaver-image-gen", "EXTEND.md"),
+    path.join(cwd, ".beaver-skill", "beaver-image-gen", "EXTEND.md"),
+    path.join(home, ".beaver-skill", "beaver-image-gen", "EXTEND.md"),
   ];
 
   for (const p of paths) {
@@ -356,7 +356,7 @@ function detectProvider(args: CliArgs): Provider {
 
   throw new Error(
     "No API key found. Set GOOGLE_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, DASHSCOPE_API_KEY, or REPLICATE_API_TOKEN.\n" +
-      "Create ~/.beaver-skills/.env or <cwd>/.beaver-skills/.env with your keys."
+      "Create ~/.beaver-skill/.env or <cwd>/.beaver-skill/.env with your keys."
   );
 }
 
