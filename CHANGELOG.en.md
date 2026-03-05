@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 - 2026-03-05
+
+### Features
+- **project**: Add .gitignore and convert core skills section to table format for better readability
+- **beaver-release-skills**: Add detailed Chinese and English README documentation
+
 ## 0.2.0 - 2026-03-05
 
 ### Features
