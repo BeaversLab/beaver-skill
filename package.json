@@ -1,6 +1,6 @@
 {
   "name": "@beaverslab/beaver-skill",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "AI-powered agent skills collection for image generation and Xiaohongshu infographics",
   "keywords": [
     "agent-skills",
