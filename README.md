@@ -6,15 +6,12 @@ AI 驱动的自动化工作流技能合集，使用 OpenClaw, Claude Code, Codex
 
 本项目目前包含以下核心技能：
 
-### 1. [beaver-image-gen](./skills/beaver-image-gen)
-**统一的 AI 图像生成工具**
-- **功能**：将 Google Gemini、OpenAI DALL-E/GPT Image、阿里通义万象（DashScope）和 Replicate 四个平台的图像生成 API 封装为一条简单的 CLI 命令。
-- **亮点**：自动检测可用 API、支持参考图编辑、内置 2K/4K 质量预设、多平台透明切换。
-
-### 2. [beaver-xhs-images](./skills/beaver-xhs-images)
-**小红书信息图系列生成器**
-- **功能**：将长文内容自动拆解并生成 1–10 张风格统一、适合小红书传播的信息图（从封面到结尾）。
-- **亮点**：内置 10 种视觉风格 × 8 种布局策略，支持智能内容分析和参考图链一致性。
+| 技能名称 | 功能描述 | 核心亮点 |
+| :--- | :--- | :--- |
+| [beaver-image-gen](./skills/beaver-image-gen) | **统一的 AI 图像生成工具**：封装了 Gemini、DALL-E、DashScope 和 Replicate 四个平台的图像生成 API。 | 自动检测可用 API、支持参考图编辑、内置 2K/4K 质量预设、多平台透明切换。 |
+| [beaver-xhs-images](./skills/beaver-xhs-images) | **小红书信息图系列生成器**：将长文内容自动拆解并生成 1–10 张风格统一的小红书信息图。 | 内置 10 种视觉风格 × 8 种布局策略，支持智能内容分析和参考图链一致性。 |
+| [beaver-release-skills](./skills/beaver-release-skills) | **全能自动化发布工作流**：自动检测项目类型（Node, Python, Rust 等），生成多语言更新日志并完成版本发布。 | 零配置起步、智能语义化版本建议、原生支持多语言 Changelog 同步。 |
+| [beaver-skill-analysis](./skills/beaver-skill-analysis) | **技能分析与优化工具**：用于分析、逆向工程和改进 AI 技能的元工具。 | 提供结构化的分析报告、风险检查清单以及改进路线图。 |
 
 ## 🛠️ 安装与配置
 
