@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0 - 2026-03-06
+
+### Features
+- **beaver-cover-image**: Introduced cover image generation skill with 5 dimensions of visual customization.
+- **beaver-release-skills**: Added comprehensive English documentation.
+
+### Improvements & Fixes
+- **beaver-release-skills**: Removed automated npm publishing workflow (use npx skills for direct installation).
+- **beaver-cover-image**: Added more aspect ratio options (4:3, 3:2) and set 16:9 as default.
+- **Project**: Enhanced README with structured installation and quick start instructions.
+
 ## 0.2.4 - 2026-03-05
 
 ### Optimizations
