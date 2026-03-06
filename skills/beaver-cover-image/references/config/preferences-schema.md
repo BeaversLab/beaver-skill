@@ -26,7 +26,7 @@ preferred_text: title-only  # none|title-only|title-subtitle|text-rich
 
 preferred_mood: balanced    # subtle|balanced|bold
 
-default_aspect: "2.35:1"  # 2.35:1|16:9|1:1
+default_aspect: "16:9"   # 16:9|2.35:1|4:3|3:2|1:1|3:4
 
 quick_mode: false         # Skip confirmation when true
 
@@ -57,7 +57,7 @@ custom_palettes:
 | `preferred_rendering` | string | null | Rendering name or null for auto |
 | `preferred_text` | string | title-only | Text density level |
 | `preferred_mood` | string | balanced | Mood intensity level |
-| `default_aspect` | string | "2.35:1" | Default aspect ratio |
+| `default_aspect` | string | "16:9" | Default aspect ratio |
 | `quick_mode` | bool | false | Skip confirmation step |
 | `language` | string | null | Output language (null = auto-detect) |
 | `custom_palettes` | array | [] | User-defined palettes |
@@ -128,9 +128,12 @@ custom_palettes:
 
 | Value | Description | Best For |
 |-------|-------------|----------|
+| `16:9` | Standard widescreen (default) | Presentations, video thumbnails |
 | `2.35:1` | Cinematic widescreen | Article headers, blog covers |
-| `16:9` | Standard widescreen | Presentations, video thumbnails |
+| `4:3` | Classic | Traditional displays, slides |
+| `3:2` | Photo standard | Photography, editorial |
 | `1:1` | Square | Social media, profile images |
+| `3:4` | Portrait | Xiaohongshu, Pinterest, mobile content |
 
 ## Custom Palette Fields
 

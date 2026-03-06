@@ -109,13 +109,15 @@ options:
     description: "Standard widescreen - YouTube, presentations, versatile"
   - label: "2.35:1"
     description: "Cinematic widescreen - article headers, blog posts"
+  - label: "4:3"
+    description: "Classic - traditional displays, slides"
+  - label: "3:2"
+    description: "Photo standard - photography, editorial"
   - label: "1:1"
     description: "Square - Instagram, WeChat, social cards"
   - label: "3:4"
     description: "Portrait - Xiaohongshu, Pinterest, mobile content"
 ```
-
-Note: More ratios (4:3, 3:2) available during generation. This sets the default recommendation.
 
 ### Question 6: Default Output Directory
 
@@ -184,7 +186,7 @@ preferred_palette: [selected palette or null]
 preferred_rendering: [selected rendering or null]
 preferred_text: title-only
 preferred_mood: balanced
-default_aspect: [16:9/2.35:1/1:1/3:4]
+default_aspect: [16:9/2.35:1/4:3/3:2/1:1/3:4]
 default_output_dir: [independent/same-dir/imgs-subdir]
 quick_mode: [true/false]
 language: null

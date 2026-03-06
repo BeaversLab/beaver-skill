@@ -300,7 +300,7 @@ Status: Pushed to origin  # or "Local only - run git push when ready"
    ```bash
    gh run list --limit 1
    ```
-   If a CI workflow was triggered by the tag push (e.g. npm publish via GitHub Actions), display its status and URL so the user can monitor it. If `gh` is unavailable, remind the user to check the Actions tab manually.
+   If a CI workflow was triggered by the tag push (e.g. documentation builds or testing via GitHub Actions), display its status and URL so the user can monitor it. If `gh` is unavailable, remind the user to check the Actions tab manually.
 
 ## Configuration (.releaserc.yml)
 

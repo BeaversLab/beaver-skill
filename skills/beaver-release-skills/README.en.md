@@ -24,7 +24,7 @@ English | [简体中文](README.md)
 - **Step Responsibilities**: Step 4 defines changelog format and i18n rules; Step 7 is clarified as the "write files & update version" step, eliminating semantic overlap.
 - **Project Type Detection**: Step 5 now checks for a `skills/` directory before grouping changes by skill/module. Standard single-package projects (Python, Rust, etc.) skip Steps 5–6 and go directly to Step 7 with a single release commit.
 - **gh CLI Fallback**: Third-party contributor detection requires `gh`; if unavailable or unauthenticated, contributor attribution is skipped without blocking the release.
-- **CI Status Check**: After Step 9, if pushed and `gh` is available, prompts `gh run list --limit 1` to check tag-triggered CI status (e.g. npm publish); otherwise reminds the user to check the Actions tab manually.
+- **CI Status Check**: After Step 9, if pushed and `gh` is available, prompts `gh run list --limit 1` to check tag-triggered CI status; otherwise reminds the user to check the Actions tab manually.
 - **Documentation Split**: Changelog section title translations and multi-language examples moved to `references/changelog-i18n.md`, keeping the main SKILL.md concise via reference links.
 
 ## Use Cases

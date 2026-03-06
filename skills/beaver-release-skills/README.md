@@ -24,7 +24,7 @@
 - **步骤分工**：Step 4 负责定义 Changelog 格式与多语言规则，Step 7 明确为「执行写入与版本更新」，避免语义重叠。
 - **项目类型判断**：Step 5 增加适用性检查：仅当项目存在 `skills/` 目录时执行按技能分组；普通单包项目（Python/Rust 等）跳过 Step 5–6，直接进入 Step 7 单次发布提交。
 - **gh CLI 回退**：第三方贡献者识别依赖 `gh`；若未安装或未登录，则跳过贡献者检测、不写入 `(by @username)`，且不阻断发布流程。
-- **CI 状态提示**：Step 9 完成后，若已推送且 `gh` 可用，提示运行 `gh run list --limit 1` 查看由 tag 触发的 CI（如 npm 发布）状态；否则提醒用户手动查看 Actions 页。
+- **CI Status Check**: Step 9 完成后，若已推送且 `gh` 可用，提示运行 `gh run list --limit 1` 查看由 tag 触发的 CI 状态；否则提醒用户手动查看 Actions 页。
 - **文档拆分**：将 Changelog 章节标题翻译对照表及多语言示例移至 `references/changelog-i18n.md`，主流程 SKILL.md 通过引用保持精简。
 
 ## 使用场景
