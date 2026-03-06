@@ -7,6 +7,8 @@ description: Generates article cover images with 5 dimensions (type, palette, re
 
 Generate elegant cover images for articles with 5-dimensional customization.
 
+> **Reference loading**: Files under `references/` are loaded **on-demand** — only read a reference file when its content is needed for the current step. Do NOT read all references upfront.
+
 ## Usage
 
 ```bash
@@ -172,11 +174,13 @@ Save to `prompts/cover.md`. Template: [references/workflow/prompt-template.md](r
 
 1. **Backup existing** `cover.png` if regenerating
 2. **Check image generation skills**; if multiple, ask preference
-3. **Process references** from prompt frontmatter:
-   - `direct` usage → pass via `--ref` (use ref-capable backend)
+3. **Detect `--ref` support**: Check if the selected image generation skill supports the `--ref` parameter (read its SKILL.md). If references have `direct` usage but the backend does not support `--ref`, auto-downgrade to `style` extraction and notify user: "Selected backend does not support reference images directly; extracting style traits into prompt instead."
+4. **Process references** from prompt frontmatter:
+   - `direct` usage + backend supports `--ref` → pass via `--ref`
+   - `direct` usage + backend lacks `--ref` → extract detailed style/layout traits into prompt body
    - `style`/`palette` → extract traits, append to prompt
-4. **Generate**: Call skill with prompt file, output path, aspect ratio
-5. On failure: auto-retry once
+5. **Generate**: Call skill with prompt file, output path, aspect ratio
+6. On failure: auto-retry once
 
 ### Step 5: Completion Report
 

@@ -147,6 +147,25 @@ options:
 
 *Note*: "Other" (auto-added) allows typing custom combo. Parse `/`-separated values matching the question format.
 
+## Compatibility Check
+
+After all dimensions are confirmed, check the compatibility matrices in [compatibility.md](../compatibility.md):
+
+1. Verify **Palette × Rendering** compatibility
+2. Verify **Type × Rendering** compatibility
+3. Verify **Type × Text** compatibility
+4. Verify **Font × Rendering** compatibility
+
+If any combination is marked `✗` (not recommended), warn the user:
+
+```
+⚠️ Compatibility warning: [palette] × [rendering] is not recommended.
+   Suggested alternative: [closest ✓✓ option].
+   Proceed anyway? (yes / switch to suggestion)
+```
+
+If the user accepts the incompatible combination, proceed without further warnings.
+
 ## After Response
 
 Proceed to Step 3 with confirmed dimensions.

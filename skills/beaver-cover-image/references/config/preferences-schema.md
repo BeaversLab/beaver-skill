@@ -9,7 +9,7 @@ description: EXTEND.md YAML schema for beaver-cover-image user preferences
 
 ```yaml
 ---
-version: 3
+version: 1
 
 watermark:
   enabled: false
@@ -48,7 +48,7 @@ custom_palettes:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `version` | int | 3 | Schema version |
+| `version` | int | 1 | Schema version |
 | `watermark.enabled` | bool | false | Enable watermark |
 | `watermark.content` | string | "" | Watermark text (@username or custom) |
 | `watermark.position` | enum | bottom-right | Position on image |
@@ -151,7 +151,7 @@ custom_palettes:
 
 ```yaml
 ---
-version: 3
+version: 1
 watermark:
   enabled: true
   content: "@myhandle"
@@ -168,7 +168,7 @@ quick_mode: false
 
 ```yaml
 ---
-version: 3
+version: 1
 watermark:
   enabled: true
   content: "myblog.com"
@@ -202,63 +202,3 @@ custom_palettes:
 ---
 ```
 
-## Migration from v2
-
-When loading v2 schema, auto-upgrade:
-
-| v2 Field | v3 Field | Migration |
-|----------|----------|-----------|
-| `version: 2` | `version: 3` | Update |
-| `preferred_style` | `preferred_palette` + `preferred_rendering` | Use preset mapping table |
-| `custom_styles` | `custom_palettes` | Rename, restructure fields |
-
-**Style → Palette + Rendering mapping**:
-
-| v2 `preferred_style` | v3 `preferred_palette` | v3 `preferred_rendering` |
-|----------------------|----------------------|-------------------------|
-| `elegant` | `elegant` | `hand-drawn` |
-| `blueprint` | `cool` | `digital` |
-| `chalkboard` | `dark` | `chalk` |
-| `dark-atmospheric` | `dark` | `digital` |
-| `editorial-infographic` | `cool` | `digital` |
-| `fantasy-animation` | `pastel` | `painterly` |
-| `flat-doodle` | `pastel` | `flat-vector` |
-| `intuition-machine` | `retro` | `digital` |
-| `minimal` | `mono` | `flat-vector` |
-| `nature` | `earth` | `hand-drawn` |
-| `notion` | `mono` | `digital` |
-| `pixel-art` | `vivid` | `pixel` |
-| `playful` | `pastel` | `hand-drawn` |
-| `retro` | `retro` | `digital` |
-| `sketch-notes` | `warm` | `hand-drawn` |
-| `vector-illustration` | `retro` | `flat-vector` |
-| `vintage` | `retro` | `hand-drawn` |
-| `warm` | `warm` | `hand-drawn` |
-| `watercolor` | `earth` | `painterly` |
-| null (auto) | null | null |
-
-**Custom style migration**:
-
-| v2 Field | v3 Field |
-|----------|----------|
-| `custom_styles[].name` | `custom_palettes[].name` |
-| `custom_styles[].description` | `custom_palettes[].description` |
-| `custom_styles[].color_palette` | `custom_palettes[].colors` |
-| `custom_styles[].visual_elements` | `custom_palettes[].decorative_hints` |
-| `custom_styles[].typography` | (removed — determined by rendering) |
-| `custom_styles[].best_for` | `custom_palettes[].best_for` |
-
-## Migration from v1
-
-When loading v1 schema, auto-upgrade to v3:
-
-| v1 Field | v3 Field | Default Value |
-|----------|----------|---------------|
-| (missing) | `version` | 3 |
-| (missing) | `preferred_palette` | null |
-| (missing) | `preferred_rendering` | null |
-| (missing) | `preferred_text` | title-only |
-| (missing) | `preferred_mood` | balanced |
-| (missing) | `quick_mode` | false |
-
-v1 `--no-title` flag maps to `preferred_text: none`.

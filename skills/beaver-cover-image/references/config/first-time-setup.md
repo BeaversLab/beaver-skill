@@ -175,7 +175,7 @@ options:
 
 ```yaml
 ---
-version: 3
+version: 1
 watermark:
   enabled: [true/false]
   content: "[user input or empty]"

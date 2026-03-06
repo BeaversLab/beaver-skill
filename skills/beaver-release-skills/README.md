@@ -16,7 +16,7 @@
 
 🛠️ 版本说明：本项目基于 [技能 baoyu-release-skills](https://github.com/JimLiu/baoyu-skills/tree/main/skills/baoyu-release-skills) 进行二次开发。
 
-**与本仓库的差异与修改要点**：
+**重要更新点**：
 
 - **示例与默认语言**：所有示例中的技能名由 `baoyu-*` 替换为 `beaver-*`（如 `beaver-image-gen`、`beaver-xhs-images`）；无后缀的 `CHANGELOG.md` 默认语言统一为中文（zh）。
 - **推送与分支**：推送命令由 `git push origin main` 改为 `git push origin HEAD`，避免在非 main 分支上误推。
