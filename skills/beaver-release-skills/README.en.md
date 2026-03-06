@@ -14,6 +14,19 @@ English | [简体中文](README.md)
 - **Module-Aware**: Supports grouping changes by module/skill, ideal for monorepos or multi-plugin projects.
 - **Safe & Reliable**: Provides a `--dry-run` mode to preview changes before execution and requires confirmation for versioning and pushing.
 
+🛠️ Version Note: This project is a fork of [baoyu-release-skills](https://github.com/JimLiu/baoyu-skills/tree/main/skills/baoyu-release-skills).
+
+**Key Changes**:
+
+- **Examples & Default Language**: All skill name references changed from `baoyu-*` to `beaver-*` (e.g. `beaver-image-gen`, `beaver-xhs-images`); the unsuffixed `CHANGELOG.md` now defaults to Chinese (zh).
+- **Push & Branch Safety**: Push command changed from `git push origin main` to `git push origin HEAD` to prevent accidental pushes on non-main branches.
+- **No-Tag Scenario**: Step 2 adds a fallback when no git tags exist (`if [ -z "$LAST_TAG" ]`), treating all commits as unreleased instead of failing.
+- **Step Responsibilities**: Step 4 defines changelog format and i18n rules; Step 7 is clarified as the "write files & update version" step, eliminating semantic overlap.
+- **Project Type Detection**: Step 5 now checks for a `skills/` directory before grouping changes by skill/module. Standard single-package projects (Python, Rust, etc.) skip Steps 5–6 and go directly to Step 7 with a single release commit.
+- **gh CLI Fallback**: Third-party contributor detection requires `gh`; if unavailable or unauthenticated, contributor attribution is skipped without blocking the release.
+- **CI Status Check**: After Step 9, if pushed and `gh` is available, prompts `gh run list --limit 1` to check tag-triggered CI status (e.g. npm publish); otherwise reminds the user to check the Actions tab manually.
+- **Documentation Split**: Changelog section title translations and multi-language examples moved to `references/changelog-i18n.md`, keeping the main SKILL.md concise via reference links.
+
 ## Use Cases
 
 ### Recommended
@@ -83,3 +96,9 @@ Activate the skill by typing phrases like:
 
 **Q: Does it work without GitHub CLI?**
 **A:** Yes. `gh` is only used for non-critical features like PR author identification; the core release flow remains fully functional.
+
+## Acknowledgements
+
+This project is heavily inspired by and built upon:
+
+- [baoyu-release-skills](https://github.com/JimLiu/baoyu-skills/tree/main/skills/baoyu-release-skills) by [@Jim Liu (宝玉)](https://github.com/JimLiu/)
