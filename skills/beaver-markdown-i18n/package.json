@@ -1,0 +1,17 @@
+{
+  "name": "beaver-markdown-i18n",
+  "version": "2.2.0",
+  "description": "Translate and sync markdown documentation between languages. AI coding assistant skill.",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "diff": "^7.0.0",
+    "js-yaml": "^4.1.0",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.5"
+  }
+}
