@@ -3,20 +3,11 @@
 Default terminology conventions bundled with the skill.
 Project-level `.i18n/translation-consistency.yaml` takes precedence over entries here.
 
-## Link Localization
+## Links
 
-Internal site links must be localized to the target language:
-
-| Source Pattern | Target Pattern (ZH) | Example |
-|---|---|---|
-| `/en/*` | `/zh/*` | `/en/guide` → `/zh/guide` |
-| `/xxx` (no locale) | `/zh/xxx` | `/install` → `/zh/install` |
-| `http://*` or `https://*` | Keep unchanged | External links stay as-is |
-
-**Internal links**: Start with `/`, no `http://` or `https://`
-**External links**: Start with `http://` or `https://` — keep unchanged
-**Relative links**: `../`, `./` — keep unchanged
-**Anchor links**: Localize path, keep anchor: `/en/guide#install` → `/zh/guide#install`
+Link URLs are masked as placeholders and restored unchanged. Locale prefix rewriting
+(e.g. `/en/` → `/zh/`) is the project's responsibility and is **not** performed by
+this skill.
 
 ## Terms to Keep in English
 

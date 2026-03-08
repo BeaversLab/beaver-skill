@@ -82,11 +82,21 @@ node scripts/apply.js <source> <target> [--lang <locale>]
 - Auto-strips remaining `<!-- i18n:todo -->` markers
 - Auto-fixes common placeholder mangling (spacing, casing)
 - Restores `%%Pn%%` → original inline code/URLs, `%%CB_<hash>%%` → original code blocks
-- Validates: code block integrity, heading count, link localization, frontmatter keys
+- Validates: code block integrity, heading count, link count, variables, frontmatter keys
 - Updates Translation Memory with new translations
 - Reports structured results per file
 
 **If validation fails:** fix the reported errors and re-run `apply.js`. Only after it passes is the file done.
+
+### Step 3b: Full Quality Check (optional but recommended)
+
+Run the full quality check CLI for comprehensive validation:
+
+```bash
+npx i18n-quality <source> <target> --target-locale <locale>
+```
+
+This runs all checks including terminology compliance, untranslated content detection, section omission, external/relative link preservation, and frontmatter value translation. See `references/quality-checklist.md` for the full check list.
 
 ---
 
@@ -133,3 +143,62 @@ To seed TM from existing translations:
 ```bash
 node scripts/prepare.js --seed-tm <source_dir> <target_dir> --lang <locale>
 ```
+
+---
+
+## Plan Management (`i18n-plan`)
+
+Unified CLI for managing translation plans. Replaces the old `create-plan.js`, `update-plan.js`, `list-remaining.js` scripts.
+
+```bash
+npx i18n-plan <command> [options]
+```
+
+### Lifecycle
+
+```bash
+# 1. Initialize: create run dir, detect changes, scan targets
+i18n-plan init <source_dir> --lang zh
+
+# 2. Check progress
+i18n-plan status
+
+# 3. List files to translate (sorted by size)
+i18n-plan list --status pending --sort lines
+
+# 4. After translating a file, mark it done
+i18n-plan set <file_pattern> done
+
+# 5. Re-scan targets after batch completion
+i18n-plan scan
+
+# 6. Clean up temp files when plan is complete
+i18n-plan clean
+```
+
+### Commands
+
+| Command | Purpose |
+|---|---|
+| `init` | Create run dir, sync source changes, scan targets |
+| `scan` | Scan target files, compute translation completeness |
+| `sync` | Detect source file changes (git diff or hash mode) |
+| `add` | Add files to the plan (single, glob, or file list) |
+| `status` | Show overall progress with completeness metrics |
+| `list` | Filter/sort files by status, size, name |
+| `set` | Update file status (single or batch) |
+| `clean` | Remove temp files (run directories) |
+
+### Sync modes
+
+```bash
+# Git mode (default): compare two commits
+i18n-plan sync --mode git --from abc1234 --to HEAD
+
+# Hash mode: compare file hashes against plan records
+i18n-plan sync --mode hash
+```
+
+### Run directories
+
+Each `init` creates `.i18n/runs/<timestamp>/` for temporary files (task-meta, chunks, manifest). `clean` removes the current run directory.

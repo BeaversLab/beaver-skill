@@ -7,9 +7,6 @@
  * Inline tokens use sequential %%Pn%% tags (safe — they stay within segments).
  * Code blocks use content-hash tags %%CB_<hash8>%% so that placeholder identity
  * is position-independent and survives chunk split/merge reordering.
- *
- * Also handles link localization: internal URLs are rewritten to the target
- * locale during masking, so the restored text already has correct links.
  */
 
 import { createHash } from 'crypto';
@@ -59,29 +56,10 @@ export class PlaceholderState {
 }
 
 /**
- * Localize an internal link URL from source locale to target locale.
- */
-function localizeURL(url, sourceLocale, targetLocale) {
-  if (!targetLocale) return url;
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('#') || url.startsWith('../') || url.startsWith('./')) {
-    return url;
-  }
-  if (sourceLocale && url.startsWith(`/${sourceLocale}/`)) {
-    return url.replace(`/${sourceLocale}/`, `/${targetLocale}/`);
-  }
-  if (url.startsWith('/') && !url.match(/^\/[a-z]{2}(?:-[A-Za-z]{2,})?\//)) {
-    return `/${targetLocale}${url}`;
-  }
-  return url;
-}
-
-/**
  * Mask markdown content, returning the masked text and placeholder state.
  *
  * @param {string} text - raw segment text
  * @param {object} opts
- * @param {string} [opts.sourceLocale]
- * @param {string} [opts.targetLocale]
  * @param {PlaceholderState} [opts.state] - reuse across segments
  * @returns {{ masked: string, state: PlaceholderState }}
  */
@@ -97,8 +75,7 @@ export function maskMarkdown(text, opts = {}) {
 
   // 3. Markdown link URLs (keep link text for translation, mask URL)
   masked = masked.replace(LINK_URL_RE, (_match, linkText, url) => {
-    const localizedUrl = localizeURL(url, opts.sourceLocale, opts.targetLocale);
-    const tag = state.next(`(${localizedUrl})`);
+    const tag = state.next(`(${url})`);
     return `[${linkText}]${tag}`;
   });
 

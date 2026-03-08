@@ -1,49 +1,84 @@
 # Quality Checklist
 
-Use this checklist after EVERY file translation, BEFORE running the validation script.
-
-## Pre-validation Self-check [MUST complete before saving]
-
-### Structure
-- [ ] Same number of headings (## / ###) as source
-- [ ] Same number of code blocks as source
-- [ ] Same number of list items as source (minor tolerance allowed)
-- [ ] Frontmatter keys match source exactly (only values translated)
-
-### Code Blocks
-- [ ] Every code block content is byte-identical to source
-- [ ] Code block language tags match source (```bash, ```yaml, etc.)
-- [ ] No command-line flags or technical commands were translated inside or outside code blocks
-
-### Variables and Placeholders
-- [ ] All `{{variables}}` preserved exactly
-- [ ] All `$ENV_VARS` and `${variables}` preserved exactly
-- [ ] All `%s`, `%d` format specifiers preserved
-- [ ] All `:param` URL parameters preserved
-
-### Links
-- [ ] Internal links have target locale prefix (`/zh/`, `/ja/`, etc.)
-- [ ] No internal links still use source locale prefix (`/en/`)
-- [ ] External URLs (http/https) are completely unchanged
-- [ ] Relative links (`../`, `./`) are unchanged
-- [ ] Anchor links preserved (path localized, anchor kept)
-
-### Terminology
-- [ ] Terms listed in `.i18n/no-translate.yaml` are kept in source language
-- [ ] Terms listed in `.i18n/translation-consistency.yaml` use the exact specified translation
-- [ ] Industry-standard terms (API, CLI, OAuth, JWT, etc.) kept in English
-
-### Completeness
-- [ ] No source-language paragraphs left untranslated
-- [ ] No sections accidentally omitted
-- [ ] Frontmatter values translated (not just keys)
-
-## After Self-check
-
-Run the validation script:
+All checks below are automated by `i18n-quality` CLI. Run after translation:
 
 ```bash
-node scripts/validate.js <source.md> <target.md> --source-locale <src> --target-locale <tgt>
+npx i18n-quality <source.md> <target.md> --target-locale <tgt>
+npx i18n-quality --dir <source_dir> <target_dir> --target-locale <tgt>
 ```
 
-If validation fails, fix issues and re-run until all checks pass.
+## Automated Checks
+
+### Structure (`--check structure`)
+| Check | ID | Severity | Description |
+|---|---|---|---|
+| Heading count | S1 | error | Same number of `#`/`##`/`###` headings |
+| Code block count | S2 | error | Same number of fenced code blocks |
+| List item count | S3 | warning | Same number of list items (tolerance: 2) |
+| Frontmatter keys | S4 | error | Keys match source exactly (only values translated) |
+| Link count | L1 | warning | Same number of `[text](url)` links |
+
+### Code Blocks (`--check codeBlocks`)
+| Check | ID | Severity | Description |
+|---|---|---|---|
+| Content identical | C1 | error | Every code block content is byte-identical to source |
+| Language tags | C2 | error | Language tags match source (`bash`, `yaml`, etc.) |
+
+### Variables (`--check variables`)
+| Check | ID | Severity | Description |
+|---|---|---|---|
+| Mustache variables | V1 | error | All `{{variables}}` preserved exactly (by count) |
+| Env/template vars | V2 | error | All `$ENV_VARS` and `${variables}` preserved |
+| Format specifiers | V3 | error | All `%s`, `%d` preserved |
+
+### Links (`--check links`)
+| Check | ID | Severity | Description |
+|---|---|---|---|
+| External URLs | L2 | warning | `http(s)://` URLs completely unchanged |
+| Relative links | L3 | warning | `../`, `./` links unchanged |
+| Anchor links | L4 | warning | `#anchor` parts preserved |
+
+### Terminology (`--check terminology`)
+| Check | ID | Severity | Description |
+|---|---|---|---|
+| No-translate terms | T1 | error | Terms in `.i18n/no-translate.yaml` kept in source language |
+| Consistency terms | T2 | warning | Terms in `.i18n/translation-consistency.yaml` use exact translation |
+| Industry terms | T3 | error | Common terms (API, CLI, OAuth, JWT, etc.) not mistranslated |
+
+### Completeness (`--check untranslated,sections,frontmatterTranslated`)
+| Check | ID | Severity | Description |
+|---|---|---|---|
+| Untranslated content | K1 | warning | No source-language paragraphs left untranslated |
+| Section omission | K2 | warning | Heading hierarchy sequence matches source |
+| Frontmatter values | K3 | warning | `title`/`summary`/`description`/`sidebar_label` translated (CJK targets) |
+
+## Manual Checks (not automated)
+
+| Check | Reason |
+|---|---|
+| Command-line flags/technical commands not translated | Context-dependent; hard to distinguish from translatable text |
+| `:param` URL parameters preserved | Already handled by `prepare.js` placeholder masking |
+
+## CLI Options
+
+```bash
+# Run all checks
+npx i18n-quality source.md target.md --target-locale zh
+
+# Run specific checks only
+npx i18n-quality source.md target.md --target-locale zh --check structure,codeBlocks
+
+# Skip specific checks
+npx i18n-quality source.md target.md --target-locale zh --skip terminology
+
+# JSON output (for programmatic use)
+npx i18n-quality source.md target.md --target-locale zh --json
+
+# Directory mode
+npx i18n-quality --dir docs/en/ docs/zh/ --target-locale zh
+```
+
+## Exit Codes
+
+- `0` — all checks passed (warnings are OK)
+- `1` — one or more checks failed (errors found)

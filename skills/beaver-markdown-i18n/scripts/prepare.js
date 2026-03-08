@@ -79,7 +79,7 @@ function prepareFrontmatter(fmYaml, tm, segments, relPath, srcLang, tgtLang, sta
     if (cached) {
       data[key] = cached.translated;
     } else {
-      const { masked } = maskMarkdown(val, { sourceLocale: srcLang, targetLocale: tgtLang, state });
+      const { masked } = maskMarkdown(val, { state });
       data[key] = `<!-- i18n:todo -->${masked}<!-- /i18n:todo -->`;
       todoCount++;
     }
@@ -130,11 +130,7 @@ async function prepareFile(sourcePath, targetPath, tm, noTranslateConfig, srcLan
     }
 
     // Mask the segment for translation
-    const { masked } = maskMarkdown(seg.text, {
-      sourceLocale: srcLang,
-      targetLocale: tgtLang,
-      state,
-    });
+    const { masked } = maskMarkdown(seg.text, { state });
 
     translations.set(seg.segmentId, `<!-- i18n:todo -->\n${masked}\n<!-- /i18n:todo -->`);
     todoCount++;

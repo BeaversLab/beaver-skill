@@ -1,9 +1,13 @@
 {
   "name": "beaver-markdown-i18n",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "description": "Translate and sync markdown documentation between languages. AI coding assistant skill.",
   "type": "module",
   "private": true,
+  "bin": {
+    "i18n-plan": "scripts/plan-cli.js",
+    "i18n-quality": "scripts/quality-cli.js"
+  },
   "engines": {
     "node": ">=18.0.0"
   },

@@ -49,20 +49,9 @@ summary: "故障排查枢纽：症状 → 检查 → 修复"
 
 ### Internal Links
 
-**Rule:** Internal site links must use the target language prefix.
-
-| Source Pattern | Target Pattern (ZH) | Example |
-|---|---|---|
-| `/en/*` | `/zh/*` | `/en/guide` → `/zh/guide` |
-| `/xxx` (no locale) | `/zh/xxx` | `/install` → `/zh/install` |
-| `http://*` or `https://*` | Keep unchanged | External links stay as-is |
-| `../relative` | Keep unchanged | Relative links stay as-is |
-
-**Anchor links**: Localize the path, keep the anchor:
-- `/en/guide#install` → `/zh/guide#install`
-
-**Mixed content**: Localize path, keep anchor and query params:
-- `/en/guide?version=2.0#install` → `/zh/guide?version=2.0#install`
+Link URLs are masked as placeholders and restored as-is. Locale prefix changes
+(e.g. `/en/` → `/zh/`) are the project's responsibility (batch find-replace, build
+scripts, etc.) and are **not** performed by this skill.
 
 ### Section Headings
 
@@ -143,17 +132,16 @@ summary: "快速入门指南"
 curl -fsSL https://example.com/install.sh | bash
 \`\`\`
 
-参见[配置](/zh/config)了解选项。
+参见[配置](/en/config)了解选项。
 
 更多详情：
-- [安装指南](/zh/install)
-- [API 文档](/zh/api/reference)
+- [安装指南](/en/install)
+- [API 文档](/api/reference)
 - [外部资源](https://developer.mozilla.org)
 ```
 
 **Key transformations:**
-- `/en/config` → `/zh/config` (replace locale)
-- `/api/reference` → `/zh/api/reference` (add locale prefix)
+- Link URLs preserved as-is (locale prefix changes are the project's responsibility)
 - `https://developer.mozilla.org` → unchanged (external URL)
 - Code block content → unchanged
 - Frontmatter key `summary` → unchanged, value translated

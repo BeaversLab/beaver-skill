@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 /**
+ * @deprecated Use `i18n-plan sync` (scripts/plan-cli.js) instead.
+ *
  * Create a sync plan by comparing source and target directories.
  *
  * Two detection modes:

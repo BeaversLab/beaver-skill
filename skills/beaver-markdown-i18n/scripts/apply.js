@@ -20,93 +20,11 @@ import yaml from 'js-yaml';
 import { TranslationMemory, cacheKey, textHash, tmPath } from './lib/tm.js';
 import { extractSegments, splitFrontmatter } from './lib/segments.js';
 import { unmaskMarkdown, validatePlaceholders, fixMangledPlaceholders } from './lib/masking.js';
+import { runAllChecks } from './lib/quality.js';
 import { findI18nDir, readNoTranslateConfig } from './read-no-translate.js';
 
 const TODO_RE = /<!--\s*i18n:todo\s*-->/g;
 const TODO_BLOCK_RE = /<!--\s*i18n:todo\s*-->\n?([\s\S]*?)\n?<!--\s*\/i18n:todo\s*-->/g;
-
-// ---------------------------------------------------------------------------
-// Validation checks (reuses logic from validate.js, self-contained)
-// ---------------------------------------------------------------------------
-
-function extractCodeBlocks(content) {
-  return [...content.matchAll(/```(\w*)\n([\s\S]*?)```/g)].map(m => [m[1], m[2]]);
-}
-
-function extractLinks(content) {
-  return [...content.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g)].map(m => ({ text: m[1], url: m[2] }));
-}
-
-function extractHeadings(content) {
-  return [...content.matchAll(/^(#{1,6})\s+(.+)$/gm)].map(m => [m[1], m[2]]);
-}
-
-function extractFrontmatterKeys(content) {
-  const match = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!match) return {};
-  const keys = {};
-  for (const line of match[1].split('\n')) {
-    const colonIdx = line.indexOf(':');
-    if (colonIdx > 0) keys[line.slice(0, colonIdx).trim()] = true;
-  }
-  return keys;
-}
-
-function runChecks(sourceContent, targetContent, sourceLocale, targetLocale) {
-  const errors = [];
-  const warnings = [];
-
-  // 1. Remaining TODO markers (should be 0 after auto-strip; if any remain they are malformed)
-  const remaining = (targetContent.match(TODO_RE) || []).length;
-  if (remaining > 0) {
-    warnings.push(`${remaining} malformed <!-- i18n:todo --> marker(s) found (auto-strip missed them)`);
-  }
-
-  // 2. Code blocks
-  const srcBlocks = extractCodeBlocks(sourceContent);
-  const tgtBlocks = extractCodeBlocks(targetContent);
-  if (srcBlocks.length !== tgtBlocks.length) {
-    errors.push(`Code block count: source=${srcBlocks.length}, target=${tgtBlocks.length}`);
-  } else {
-    for (let i = 0; i < srcBlocks.length; i++) {
-      if (srcBlocks[i][0] !== tgtBlocks[i][0]) {
-        errors.push(`Code block ${i + 1} language: source='${srcBlocks[i][0]}', target='${tgtBlocks[i][0]}'`);
-      }
-      if (srcBlocks[i][1].trim() !== tgtBlocks[i][1].trim()) {
-        errors.push(`Code block ${i + 1} content changed (must be identical)`);
-      }
-    }
-  }
-
-  // 3. Headings count
-  const srcHeadings = extractHeadings(sourceContent);
-  const tgtHeadings = extractHeadings(targetContent);
-  if (srcHeadings.length !== tgtHeadings.length) {
-    warnings.push(`Heading count: source=${srcHeadings.length}, target=${tgtHeadings.length}`);
-  }
-
-  // 4. Links
-  const srcLinks = extractLinks(sourceContent);
-  const tgtLinks = extractLinks(targetContent);
-  if (srcLinks.length !== tgtLinks.length) {
-    warnings.push(`Link count: source=${srcLinks.length}, target=${tgtLinks.length}`);
-  }
-  for (const link of tgtLinks) {
-    if (sourceLocale && link.url.startsWith(`/${sourceLocale}/`)) {
-      warnings.push(`Link still uses source locale: "${link.url}"`);
-    }
-  }
-
-  // 5. Frontmatter keys
-  const srcKeys = Object.keys(extractFrontmatterKeys(sourceContent));
-  const tgtKeys = new Set(Object.keys(extractFrontmatterKeys(targetContent)));
-  const missingKeys = srcKeys.filter(k => !tgtKeys.has(k));
-  if (missingKeys.length > 0) {
-    errors.push(`Missing frontmatter keys: ${missingKeys.join(', ')}`);
-  }
-
-  return { errors, warnings };
-}
 
 // ---------------------------------------------------------------------------
 // Auto-strip TODO markers
@@ -152,8 +70,16 @@ async function applyFile(sourcePath, targetPath, tm, placeholders, srcLang, tgtL
   // 4. Write unmasked content back
   await fs.writeFile(targetPath, targetContent, 'utf-8');
 
-  // 5. Run validation
-  const result = runChecks(sourceContent, targetContent, srcLang, tgtLang);
+  // 5. Run core quality checks (structure, codeBlocks, variables, links)
+  const result = runAllChecks(sourceContent, targetContent, {
+    only: ['structure', 'codeBlocks', 'variables', 'links'],
+  });
+
+  // 5b. Check for malformed TODO markers that survived auto-strip
+  const remaining = (targetContent.match(TODO_RE) || []).length;
+  if (remaining > 0) {
+    result.warnings.push(`${remaining} malformed <!-- i18n:todo --> marker(s) found (auto-strip missed them)`);
+  }
 
   // 6. Update TM with new translations
   const relPath = path.basename(sourcePath);
