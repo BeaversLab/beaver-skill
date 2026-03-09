@@ -1,10 +1,10 @@
 # Quality Checklist
 
-All checks below are automated by `i18n-quality` CLI. Run after translation:
+All checks below are automated by `quality-cli.js`. Run after translation:
 
 ```bash
-npx i18n-quality <source.md> <target.md> --target-locale <tgt>
-npx i18n-quality --dir <source_dir> <target_dir> --target-locale <tgt>
+node $SKILL_DIR/scripts/quality-cli.js <source.md> <target.md> --target-locale <tgt>
+node $SKILL_DIR/scripts/quality-cli.js --dir <source_dir> <target_dir> --target-locale <tgt>
 ```
 
 ## Automated Checks
@@ -63,19 +63,19 @@ npx i18n-quality --dir <source_dir> <target_dir> --target-locale <tgt>
 
 ```bash
 # Run all checks
-npx i18n-quality source.md target.md --target-locale zh
+node $SKILL_DIR/scripts/quality-cli.js source.md target.md --target-locale zh
 
 # Run specific checks only
-npx i18n-quality source.md target.md --target-locale zh --check structure,codeBlocks
+node $SKILL_DIR/scripts/quality-cli.js source.md target.md --target-locale zh --check structure,codeBlocks
 
 # Skip specific checks
-npx i18n-quality source.md target.md --target-locale zh --skip terminology
+node $SKILL_DIR/scripts/quality-cli.js source.md target.md --target-locale zh --skip terminology
 
 # JSON output (for programmatic use)
-npx i18n-quality source.md target.md --target-locale zh --json
+node $SKILL_DIR/scripts/quality-cli.js source.md target.md --target-locale zh --json
 
 # Directory mode
-npx i18n-quality --dir docs/en/ docs/zh/ --target-locale zh
+node $SKILL_DIR/scripts/quality-cli.js --dir docs/en/ docs/zh/ --target-locale zh
 ```
 
 ## Exit Codes

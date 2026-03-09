@@ -22,10 +22,31 @@
 import fs from 'fs/promises';
 import path from 'path';
 import yaml from 'js-yaml';
-import { TranslationMemory, cacheKey, textHash, tmPath } from './lib/tm.js';
-import { extractSegments, splitFrontmatter, joinFrontmatter } from './lib/segments.js';
-import { maskMarkdown, maskCodeBlocks, PlaceholderState } from './lib/masking.js';
-import { findI18nDir, readNoTranslateConfig, shouldNotTranslate } from './read-no-translate.js';
+import { TranslationMemory, cacheKey, textHash, tmPath } from './tm.js';
+import { extractSegments, splitFrontmatter, joinFrontmatter } from './segments.js';
+import { maskMarkdown, maskCodeBlocks, PlaceholderState } from './masking.js';
+import { findI18nDir, readNoTranslateConfig, shouldNotTranslate, getFmTranslateKeys } from './read-no-translate.js';
+import { loadPlan, findPlanFile } from './plan.js';
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+async function resolveSourceDir(explicit, projectDir) {
+  if (explicit) return explicit;
+  try {
+    const plan = await loadPlan(findPlanFile(projectDir));
+    if (plan?.meta?.source_dir) return plan.meta.source_dir;
+  } catch { /* no plan file */ }
+  return undefined;
+}
+
+function fileRelPath(filePath, sourceDir) {
+  if (!sourceDir) return filePath;
+  const rel = path.relative(sourceDir, filePath);
+  if (rel.startsWith('..')) return filePath;
+  return rel;
+}
 
 // ---------------------------------------------------------------------------
 // Config loading
@@ -50,9 +71,7 @@ function detectLocaleFromPath(p) {
 // Frontmatter handling
 // ---------------------------------------------------------------------------
 
-const FM_TRANSLATE_KEYS = new Set(['title', 'summary', 'description', 'read_when']);
-
-function prepareFrontmatter(fmYaml, tm, segments, relPath, srcLang, tgtLang, state) {
+function prepareFrontmatter(fmYaml, tm, segments, relPath, srcLang, tgtLang, state, noTranslateConfig) {
   if (!fmYaml) return { translated: null, todoCount: 0 };
 
   let data;
@@ -65,8 +84,9 @@ function prepareFrontmatter(fmYaml, tm, segments, relPath, srcLang, tgtLang, sta
 
   let todoCount = 0;
   let fieldCount = 0;
+  const fmKeys = getFmTranslateKeys(noTranslateConfig);
 
-  for (const key of FM_TRANSLATE_KEYS) {
+  for (const key of fmKeys) {
     const val = data[key];
     if (typeof val !== 'string' || !val.trim()) continue;
     fieldCount++;
@@ -93,7 +113,7 @@ function prepareFrontmatter(fmYaml, tm, segments, relPath, srcLang, tgtLang, sta
 // Skeleton generation for a single file
 // ---------------------------------------------------------------------------
 
-async function prepareFile(sourcePath, targetPath, tm, noTranslateConfig, srcLang, tgtLang, relPath, sharedState) {
+export async function prepareFile(sourcePath, targetPath, tm, noTranslateConfig, srcLang, tgtLang, relPath, sharedState) {
   const sourceContent = await fs.readFile(sourcePath, 'utf-8');
   const { frontmatter, body, hasFrontmatter } = splitFrontmatter(sourceContent);
 
@@ -101,7 +121,7 @@ async function prepareFile(sourcePath, targetPath, tm, noTranslateConfig, srcLan
   const segments = extractSegments(body, relPath);
 
   // Prepare frontmatter
-  const fmResult = prepareFrontmatter(frontmatter, tm, segments, relPath, srcLang, tgtLang, state);
+  const fmResult = prepareFrontmatter(frontmatter, tm, segments, relPath, srcLang, tgtLang, state, noTranslateConfig);
 
   // Build translation map: segmentId → translated text or TODO marker
   const translations = new Map();
@@ -177,7 +197,7 @@ function applySkeletonTranslations(source, segments, translations) {
 // Directory handling
 // ---------------------------------------------------------------------------
 
-async function findMarkdownFiles(dir) {
+export async function findMarkdownFiles(dir) {
   const files = [];
 
   async function walk(d) {
@@ -202,32 +222,52 @@ async function findMarkdownFiles(dir) {
 // ---------------------------------------------------------------------------
 
 const TODO_OPEN_RE = /<!--\s*i18n:todo\s*-->/;
+const TODO_CLOSE_RE = /<!--\s*\/i18n:todo\s*-->/;
 
-function splitIntoChunks(skeleton, maxTodos) {
+const DEFAULT_MAX_CHUNK_CHARS = 3000;
+
+/**
+ * Split a skeleton into chunks based on character count.
+ * Splits only on segment boundaries (blank lines outside TODO blocks)
+ * to ensure each chunk is self-contained and translatable in one pass.
+ *
+ * @param {string} skeleton - The full skeleton content
+ * @param {number} maxChars - Max characters per chunk (default 6000)
+ * @returns {string[]|null} Array of chunk strings, or null if no splitting needed
+ */
+export function splitIntoChunks(skeleton, maxChars = DEFAULT_MAX_CHUNK_CHARS) {
+  if (skeleton.length <= maxChars) return null;
+
   const lines = skeleton.split('\n');
 
-  let totalTodos = 0;
+  let hasTodos = false;
   for (const line of lines) {
-    if (TODO_OPEN_RE.test(line)) totalTodos++;
+    if (TODO_OPEN_RE.test(line)) { hasTodos = true; break; }
   }
-  if (totalTodos <= maxTodos) return null;
+  if (!hasTodos) return null;
 
   const chunks = [];
   let chunkStart = 0;
-  let todoCount = 0;
+  let chunkCharCount = 0;
+  let insideTodo = false;
 
   for (let i = 0; i < lines.length; i++) {
-    if (TODO_OPEN_RE.test(lines[i])) todoCount++;
+    const lineLen = lines[i].length + 1; // +1 for newline
+    chunkCharCount += lineLen;
+
+    if (TODO_OPEN_RE.test(lines[i])) insideTodo = true;
+    if (TODO_CLOSE_RE.test(lines[i])) insideTodo = false;
 
     const isBlank = lines[i].trim() === '';
-    const atSoftLimit = todoCount >= maxTodos;
-    const atHardLimit = todoCount >= maxTodos * 2;
+    const atSoftLimit = chunkCharCount >= maxChars;
+    const atHardLimit = chunkCharCount >= maxChars * 2;
     const hasMore = i < lines.length - 1;
 
-    if ((atSoftLimit && isBlank && hasMore) || (atHardLimit && hasMore)) {
+    const canSplit = !insideTodo && isBlank && hasMore;
+    if ((atSoftLimit && canSplit) || (atHardLimit && hasMore && !insideTodo)) {
       chunks.push(lines.slice(chunkStart, i + 1).join('\n'));
       chunkStart = i + 1;
-      todoCount = 0;
+      chunkCharCount = 0;
     }
   }
 
@@ -235,10 +275,10 @@ function splitIntoChunks(skeleton, maxTodos) {
     chunks.push(lines.slice(chunkStart).join('\n'));
   }
 
-  return chunks;
+  return chunks.length > 1 ? chunks : null;
 }
 
-async function writeChunks(chunks, relPath, chunksDir) {
+export async function writeChunks(chunks, relPath, chunksDir) {
   const safeName = relPath.replace(/[/\\]/g, '_');
   await fs.mkdir(chunksDir, { recursive: true });
 
@@ -255,14 +295,14 @@ async function writeChunks(chunks, relPath, chunksDir) {
 // TM seeding from existing translations
 // ---------------------------------------------------------------------------
 
-async function seedTM(sourcePath, targetPath, tm, srcLang, tgtLang) {
+export async function seedTM(sourcePath, targetPath, tm, srcLang, tgtLang, relPath) {
   const sourceContent = await fs.readFile(sourcePath, 'utf-8');
   const targetContent = await fs.readFile(targetPath, 'utf-8');
 
   const { body: srcBody } = splitFrontmatter(sourceContent);
   const { body: tgtBody } = splitFrontmatter(targetContent);
 
-  const relPath = path.basename(sourcePath);
+  if (!relPath) relPath = sourcePath;
   const srcSegments = extractSegments(srcBody, relPath);
   const tgtSegments = extractSegments(tgtBody, relPath);
 
@@ -301,23 +341,26 @@ async function main() {
   let source, target, tgtLang = null, srcLang = null;
   let projectDir = process.cwd();
   let isSeedMode = false;
-  let maxTodos = 80;
+  let maxChunkChars = DEFAULT_MAX_CHUNK_CHARS;
+  let explicitSourceDir = null;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--lang') { tgtLang = args[++i]; }
     else if (args[i] === '--src-lang') { srcLang = args[++i]; }
     else if (args[i] === '--project-dir') { projectDir = args[++i]; }
+    else if (args[i] === '--source-dir') { explicitSourceDir = args[++i]; }
     else if (args[i] === '--seed-tm') { isSeedMode = true; }
-    else if (args[i] === '--max-todos') { maxTodos = parseInt(args[++i], 10); }
+    else if (args[i] === '--max-chunk-chars') { maxChunkChars = parseInt(args[++i], 10); }
     else if (args[i] === '--help' || args[i] === '-h') {
       console.log('Usage: node scripts/prepare.js <source> <target> --lang <locale> [options]');
       console.log('');
       console.log('Options:');
-      console.log('  --lang          Target locale (e.g. zh-CN, ja, ko)');
-      console.log('  --src-lang      Source locale (default: auto-detect or "en")');
-      console.log('  --seed-tm       Seed TM from existing source/target pairs');
-      console.log('  --max-todos N   Max TODO segments per chunk (default: 80)');
-      console.log('  --project-dir   Project root for .i18n/ config lookup');
+      console.log('  --lang               Target locale (e.g. zh-CN, ja, ko)');
+      console.log('  --src-lang           Source locale (default: auto-detect or "en")');
+      console.log('  --source-dir         Source root dir (for TM source_path; auto-read from plan)');
+      console.log('  --seed-tm            Seed TM from existing source/target pairs');
+      console.log('  --max-chunk-chars N  Max characters per chunk (default: 3000)');
+      console.log('  --project-dir        Project root for .i18n/ config lookup');
       process.exit(0);
     }
     else if (!source) { source = args[i]; }
@@ -356,9 +399,10 @@ async function main() {
   // Check if source/target are directories
   const sourceStat = await fs.stat(source);
   const isDir = sourceStat.isDirectory();
+  const sourceDir = isDir ? source : await resolveSourceDir(explicitSourceDir, projectDir);
 
   if (isSeedMode) {
-    return await runSeedMode(source, target, tm, tmFile, srcLang, tgtLang, isDir);
+    return await runSeedMode(source, target, tm, tmFile, srcLang, tgtLang, isDir, sourceDir);
   }
 
   // Prepare task metadata
@@ -366,6 +410,7 @@ async function main() {
     created: new Date().toISOString(),
     source_locale: srcLang,
     target_locale: tgtLang,
+    source_dir: sourceDir || (isDir ? source : undefined),
     files: [],
     placeholders: {},
     consistency: consistencyConfig,
@@ -394,8 +439,8 @@ async function main() {
     Object.assign(taskMeta.placeholders, result.placeholders);
 
     // Generate chunks for large files
-    if (result.todoCount > maxTodos) {
-      const chunks = splitIntoChunks(result.skeleton, maxTodos);
+    if (result.skeleton.length > maxChunkChars && result.todoCount > 0) {
+      const chunks = splitIntoChunks(result.skeleton, maxChunkChars);
       if (chunks) {
         const chunkPaths = await writeChunks(chunks, relPath, chunksDir);
         fileMeta.chunks = chunkPaths.length;
@@ -420,7 +465,7 @@ async function main() {
       await processFile(srcFile, tgtFile, relPath);
     }
   } else {
-    const relPath = path.basename(source);
+    const relPath = fileRelPath(source, sourceDir);
     console.log('');
     await processFile(source, target, relPath);
   }
@@ -459,7 +504,7 @@ async function main() {
   }
 }
 
-async function runSeedMode(source, target, tm, tmFile, srcLang, tgtLang, isDir) {
+async function runSeedMode(source, target, tm, tmFile, srcLang, tgtLang, isDir, sourceDir) {
   let totalSeeded = 0;
 
   if (isDir) {
@@ -471,7 +516,7 @@ async function runSeedMode(source, target, tm, tmFile, srcLang, tgtLang, isDir) 
       const tgtFile = path.join(target, relPath);
       try {
         await fs.access(tgtFile);
-        const n = await seedTM(srcFile, tgtFile, tm, srcLang, tgtLang);
+        const n = await seedTM(srcFile, tgtFile, tm, srcLang, tgtLang, relPath);
         if (n > 0) console.log(`  ${relPath}: ${n} segment(s) seeded`);
         totalSeeded += n;
       } catch {
@@ -479,7 +524,8 @@ async function runSeedMode(source, target, tm, tmFile, srcLang, tgtLang, isDir) 
       }
     }
   } else {
-    totalSeeded = await seedTM(source, target, tm, srcLang, tgtLang);
+    const relPath = fileRelPath(source, sourceDir);
+    totalSeeded = await seedTM(source, target, tm, srcLang, tgtLang, relPath);
   }
 
   await tm.save();
@@ -487,7 +533,13 @@ async function runSeedMode(source, target, tm, tmFile, srcLang, tgtLang, isDir) 
   console.log(`  Saved to: ${tmFile}`);
 }
 
-main().catch(err => {
-  console.error('Error:', err.message);
-  process.exit(1);
-});
+const isDirectRun = process.argv[1] && (
+  import.meta.url === `file://${process.argv[1]}` ||
+  process.argv[1].endsWith('/prepare.js')
+);
+if (isDirectRun) {
+  main().catch(err => {
+    console.error('Error:', err.message);
+    process.exit(1);
+  });
+}

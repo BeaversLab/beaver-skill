@@ -7,53 +7,55 @@ Install dependencies first:
 cd <skill-path> && pnpm install
 ```
 
-## Pipeline Scripts (primary workflow)
+## Translation Pipeline CLI (`translate-cli.js`)
 
-| Script | Purpose | Usage |
-|---|---|---|
-| `prepare.js` | Pre-process source -> skeleton with TM cache | `node scripts/prepare.js <src> <tgt> --lang <locale>` |
-| `apply.js` | Post-process: unmask, validate, update TM | `node scripts/apply.js <src> <tgt>` |
-| `merge-chunks.js` | Merge translated chunks into target file | `node scripts/merge-chunks.js <target>` |
-
-### prepare.js
-
-Generate a skeleton target file with Translation Memory caching and placeholder masking.
+Unified CLI for the core translation workflow.
 
 ```bash
-# Single file
-node scripts/prepare.js docs/en/guide.md docs/zh/guide.md --lang zh-CN
-
-# Directory (batch)
-node scripts/prepare.js docs/en/ docs/zh/ --lang zh-CN
-
-# Seed TM from existing translations
-node scripts/prepare.js --seed-tm docs/en/ docs/zh/ --lang zh-CN
-
-# With explicit source locale
-node scripts/prepare.js docs/en/ docs/zh/ --lang zh-CN --src-lang en
+node $SKILL_DIR/scripts/translate-cli.js <command> [options]
 ```
+
+### Commands
+
+| Command | Purpose | Example |
+|---|---|---|
+| `prepare` | Generate skeleton target with TM caching & masking | `translate-cli.js prepare <src> <tgt> --lang zh` |
+| `apply` | Validate, unmask placeholders, update TM | `translate-cli.js apply <src> <tgt>` |
+| `merge` | Merge translated chunks into target | `translate-cli.js merge <target>` |
+| `seed` | Seed TM from existing translation pairs | `translate-cli.js seed <src> <tgt> --lang zh` |
+| `fix` | Quick-fix common translation issues | See fix subcommands below |
+
+### prepare
+
+```bash
+translate-cli.js prepare <source> <target> --lang <locale> [options]
+```
+
+| Option | Description |
+|---|---|
+| `--lang` | Target locale (e.g. zh-CN, ja, ko) |
+| `--src-lang` | Source locale (default: auto-detect or "en") |
+| `--max-chunk-chars N` | Max characters per chunk (default: 3000) |
+| `--project-dir` | Project root for .i18n/ config lookup |
 
 **Output:**
 - Skeleton file(s) at target path with `<!-- i18n:todo -->` markers
-- Task metadata at `.i18n/runs/<ts>/task-meta.json`
+- Task metadata at `.i18n/task-meta.json`
 - Console summary: segments to translate vs cached
 
 **Internally loads:** `.i18n/no-translate.yaml`, `.i18n/translation-consistency.yaml`, glossary.md, Translation Memory.
 
-### apply.js
-
-Validate translations, unmask placeholders, and update Translation Memory.
+### apply
 
 ```bash
-# Single file
-node scripts/apply.js docs/en/guide.md docs/zh/guide.md
-
-# Directory
-node scripts/apply.js docs/en/ docs/zh/
-
-# With explicit locale
-node scripts/apply.js docs/en/guide.md docs/zh/guide.md --lang zh-CN
+translate-cli.js apply <source> <target> [options]
 ```
+
+| Option | Description |
+|---|---|
+| `--lang` | Target locale (auto-detected from task-meta or path) |
+| `--src-lang` | Source locale (default: auto-detect or "en") |
+| `--project-dir` | Project root for .i18n/ config lookup |
 
 **Checks performed (via lib/quality.js):**
 - No remaining `<!-- i18n:todo -->` markers
@@ -65,15 +67,44 @@ node scripts/apply.js docs/en/guide.md docs/zh/guide.md --lang zh-CN
 
 **Output:** Per-file PASS/FAIL report, TM update summary.
 
+### merge
+
+```bash
+translate-cli.js merge <target> [--project-dir .] [--dry-run]
+```
+
+Finds chunk files in `.i18n/chunks/` matching the target filename and merges them in order.
+
+### seed
+
+```bash
+translate-cli.js seed <source> <target> --lang <locale> [--src-lang en] [--project-dir .]
+```
+
+Seed Translation Memory from existing translation pairs (one-time migration). No skeleton output.
+
+### fix — Quick-Fix Subcommands
+
+| Subcommand | Purpose | Usage |
+|---|---|---|
+| `fix codeblocks` | Replace target code blocks with source (positional) | `translate-cli.js fix codeblocks <source> <target>` |
+| `fix links` | Replace target link URLs with source (positional) | `translate-cli.js fix links <source> <target>` |
+| `fix placeholders` | Fix mangled `%%Pn%%`/`%%CB_hash%%` placeholders | `translate-cli.js fix placeholders <target>` |
+| `fix markers` | Strip remaining `<!-- i18n:todo -->` markers | `translate-cli.js fix markers <target>` |
+
+**fix codeblocks**: When code block count matches between source and target but content was accidentally translated, replaces each target code block with the source one (positional 1:1). Aborts if counts differ.
+
+**fix links**: When link count matches but URLs differ (e.g., URLs were accidentally translated), replaces each target link URL with the source URL. Preserves translated link text. Reports each changed URL.
+
 ---
 
-## Quality Check CLI (`i18n-quality`)
+## Quality Check CLI (`quality-cli.js`)
 
 Comprehensive translation quality checker. Runs all automated checks from the quality checklist.
 
 ```bash
-npx i18n-quality <source> <target> [options]
-npx i18n-quality --dir <source_dir> <target_dir> [options]
+node $SKILL_DIR/scripts/quality-cli.js <source> <target> [options]
+node $SKILL_DIR/scripts/quality-cli.js --dir <source_dir> <target_dir> [options]
 ```
 
 ### Options
@@ -103,31 +134,31 @@ See `references/quality-checklist.md` for the full checklist with severity level
 
 ---
 
-## Plan Management CLI (`i18n-plan`)
+## Plan Management CLI (`plan-cli.js`)
 
-Unified CLI replacing the old `create-plan.js`, `update-plan.js`, `sync-plan.js`, and `list-remaining.js` scripts.
+Unified CLI for translation plan management.
 
 ```bash
-npx i18n-plan <command> [options]
+node $SKILL_DIR/scripts/plan-cli.js <command> [options]
 ```
 
 ### Commands
 
 | Command | Purpose | Example |
 |---|---|---|
-| `init` | Initialize translation session | `i18n-plan init docs/en --lang zh` |
-| `scan` | Scan target files, build manifest | `i18n-plan scan` |
-| `sync` | Detect source file changes | `i18n-plan sync --mode git --from abc --to HEAD` |
-| `add` | Add files to plan | `i18n-plan add guide.md` |
-| `status` | Show progress overview | `i18n-plan status` |
-| `list` | Filter/sort files | `i18n-plan list --status pending --sort lines` |
-| `set` | Update file status | `i18n-plan set guide.md done` |
-| `clean` | Remove temp files | `i18n-plan clean` |
+| `init` | Initialize translation session | `plan-cli.js init docs/en --lang zh` |
+| `scan` | Scan target files, build manifest | `plan-cli.js scan` |
+| `sync` | Detect source file changes | `plan-cli.js sync --mode git --from abc --to HEAD` |
+| `add` | Add files to plan | `plan-cli.js add guide.md` |
+| `status` | Show progress overview | `plan-cli.js status` |
+| `list` | Filter/sort files | `plan-cli.js list --status pending --sort lines` |
+| `set` | Update file status | `plan-cli.js set guide.md done` |
+| `clean` | Remove temp files | `plan-cli.js clean` |
 
 ### init
 
 ```bash
-i18n-plan init <source_dir> [--lang <locale>] [--output <path>]
+plan-cli.js init <source_dir> [--lang <locale>] [--output <path>]
 ```
 
 - Creates `.i18n/runs/<timestamp>/` directory
@@ -137,17 +168,17 @@ i18n-plan init <source_dir> [--lang <locale>] [--output <path>]
 ### scan
 
 ```bash
-i18n-plan scan [<target_dir>] [--lang <locale>]
+plan-cli.js scan [<target_dir>] [--lang <locale>]
 ```
 
-Scans target directory, computes per-file `target_ratio` (target-language character proportion after stripping code blocks). Saves manifest to `.i18n/runs/<ts>/target-manifest.yaml`.
+Scans target directory, computes per-file `target_ratio` (target-language chars / (english chars + target-language chars), after stripping code blocks). Saves manifest to `.i18n/runs/<ts>/target-manifest.yaml`.
 
 Reuses `target_hash`/`target_ratio` from plan entries when file hash hasn't changed.
 
 ### sync
 
 ```bash
-i18n-plan sync [<source_dir>] [--mode git|hash] [--from <commit>] [--to <commit>]
+plan-cli.js sync [<source_dir>] [--mode git|hash] [--from <commit>] [--to <commit>]
 ```
 
 - **Git mode** (default): compares two commits, only looks at source_dir changes
@@ -158,15 +189,15 @@ Unchanged files are not recorded in the plan.
 ### add
 
 ```bash
-i18n-plan add <source_file> [--status pending]
-i18n-plan add --match "gateway/*.md"
-i18n-plan add --file list.txt
+plan-cli.js add <source_file> [--status pending]
+plan-cli.js add --match "gateway/*.md"
+plan-cli.js add --file list.txt
 ```
 
 ### list
 
 ```bash
-i18n-plan list [--status <status>] [--sort lines|name] [--limit N] [--json]
+plan-cli.js list [--status <status>] [--sort lines|name] [--limit N] [--json]
 ```
 
 `--status` supports comma-separated values: `--status pending,needs_update`
@@ -174,8 +205,8 @@ i18n-plan list [--status <status>] [--sort lines|name] [--limit N] [--json]
 ### set
 
 ```bash
-i18n-plan set <file_pattern> <status> [--notes "..."]
-i18n-plan set --batch --from pending --to in_progress [--match "gateway/*"]
+plan-cli.js set <file_pattern> <status> [--notes "..."]
+plan-cli.js set --batch --from pending --to in_progress [--match "gateway/*"]
 ```
 
 Marking `done` auto-computes `target_hash` and `target_ratio`.
@@ -183,7 +214,7 @@ Marking `done` auto-computes `target_hash` and `target_ratio`.
 ### clean
 
 ```bash
-i18n-plan clean [--all] [--keep-plan] [--dry-run]
+plan-cli.js clean [--all] [--keep-plan] [--dry-run]
 ```
 
 Default: removes current run directory. `--all` removes all runs + plan file.
@@ -194,23 +225,18 @@ Never removes: `.i18n/no-translate.yaml`, `.i18n/translation-consistency.yaml`, 
 
 ## Core Libraries (`scripts/lib/`)
 
+All non-CLI modules live under `scripts/lib/`.
+
 | Module | Purpose |
 |---|---|
+| `prepare.js` | Core preparation pipeline: TM lookup, masking, skeleton generation |
+| `apply.js` | Post-processing pipeline: validation, unmasking, TM update |
+| `merge-chunks.js` | Merge translated chunk files back into a single target |
+| `read-no-translate.js` | Load `.i18n/no-translate.yaml` config, `findI18nDir()` utility |
 | `quality.js` | All quality check functions, `runAllChecks()` orchestrator |
+| `fix.js` | Quick-fix functions: code blocks, links, placeholders, markers |
 | `plan.js` | Plan file I/O, filtering, status updates, run dir management, sync logic |
 | `scan.js` | Target file scanning, target_ratio computation, manifest I/O |
 | `tm.js` | Translation Memory — JSONL load/save, cache key generation |
 | `segments.js` | Markdown AST parsing (remark/unified), segment extraction |
 | `masking.js` | Placeholder masking/unmasking for inline code, URLs, variables, code blocks |
-
----
-
-## Deprecated Scripts
-
-| Script | Replaced by |
-|---|---|
-| `create-plan.js` | `i18n-plan init` (deleted) |
-| `update-plan.js` | `i18n-plan set` (deleted) |
-| `list-remaining.js` | `i18n-plan list` (deleted) |
-| `sync-plan.js` | `i18n-plan sync` (kept for backward compat, deprecated) |
-| `validate.js` | `i18n-quality` (kept as thin wrapper, deprecated) |

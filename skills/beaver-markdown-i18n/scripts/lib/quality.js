@@ -8,6 +8,8 @@
  * quality-cli.js) can compose the subset they need.
  */
 
+import { getFmTranslateKeys } from './read-no-translate.js';
+
 // ---------------------------------------------------------------------------
 // Content extraction helpers
 // ---------------------------------------------------------------------------
@@ -78,8 +80,8 @@ export function checkStructure(srcContent, tgtContent) {
 
   // S3 listItemCount
   details.listItemCount = { src: src.listItems.length, tgt: tgt.listItems.length };
-  if (Math.abs(src.listItems.length - tgt.listItems.length) > 2) {
-    warnings.push(`List item count differs significantly: source=${src.listItems.length}, target=${tgt.listItems.length}`);
+  if (src.listItems.length !== tgt.listItems.length) {
+    warnings.push(`List item count mismatch: source=${src.listItems.length}, target=${tgt.listItems.length}`);
   }
 
   // S4 frontmatterKeys
@@ -387,9 +389,7 @@ export function checkSections(srcContent, tgtContent) {
 // K3: Frontmatter values translated
 // ---------------------------------------------------------------------------
 
-const TRANSLATABLE_FM_FIELDS = new Set(['title', 'summary', 'description', 'sidebar_label']);
-
-export function checkFrontmatterTranslated(srcContent, tgtContent, targetLocale) {
+export function checkFrontmatterTranslated(srcContent, tgtContent, targetLocale, noTranslateConfig) {
   const warnings = [];
   if (!targetLocale) return { id: 'frontmatterTranslated', errors: [], warnings, details: {} };
 
@@ -398,11 +398,13 @@ export function checkFrontmatterTranslated(srcContent, tgtContent, targetLocale)
     return { id: 'frontmatterTranslated', errors: [], warnings, details: {} };
   }
 
+  const fmFields = getFmTranslateKeys(noTranslateConfig);
+
   const srcFm = extractFrontmatter(srcContent);
   const tgtFm = extractFrontmatter(tgtContent);
   const details = { checked: [], untranslated: [] };
 
-  for (const field of TRANSLATABLE_FM_FIELDS) {
+  for (const field of fmFields) {
     const srcVal = srcFm.entries[field];
     const tgtVal = tgtFm.entries[field];
     if (!srcVal || !tgtVal) continue;
@@ -473,7 +475,7 @@ export function runAllChecks(srcContent, tgtContent, opts = {}) {
   if (active.has('terminology'))           collect(checkTerminology(tgtContent, targetLocale, noTranslateConfig, consistencyConfig));
   if (active.has('untranslated'))          collect(checkUntranslated(tgtContent, targetLocale));
   if (active.has('sections'))              collect(checkSections(srcContent, tgtContent));
-  if (active.has('frontmatterTranslated')) collect(checkFrontmatterTranslated(srcContent, tgtContent, targetLocale));
+  if (active.has('frontmatterTranslated')) collect(checkFrontmatterTranslated(srcContent, tgtContent, targetLocale, noTranslateConfig));
 
   return {
     passed: allErrors.length === 0,

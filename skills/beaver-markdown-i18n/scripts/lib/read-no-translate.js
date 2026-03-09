@@ -162,4 +162,11 @@ if (process.argv[1] === __filename) {
   });
 }
 
-export { findI18nDir, readNoTranslateConfig, shouldNotTranslate };
+const DEFAULT_FM_TRANSLATE_KEYS = ['title', 'summary', 'description', 'read_when'];
+
+function getFmTranslateKeys(config) {
+  const keys = config?.frontmatter_translate_keys;
+  return new Set(Array.isArray(keys) && keys.length > 0 ? keys : DEFAULT_FM_TRANSLATE_KEYS);
+}
+
+export { findI18nDir, readNoTranslateConfig, shouldNotTranslate, getFmTranslateKeys };

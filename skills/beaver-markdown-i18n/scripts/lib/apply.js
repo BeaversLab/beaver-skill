@@ -17,11 +17,12 @@
 import fs from 'fs/promises';
 import path from 'path';
 import yaml from 'js-yaml';
-import { TranslationMemory, cacheKey, textHash, tmPath } from './lib/tm.js';
-import { extractSegments, splitFrontmatter } from './lib/segments.js';
-import { unmaskMarkdown, validatePlaceholders, fixMangledPlaceholders } from './lib/masking.js';
-import { runAllChecks } from './lib/quality.js';
+import { TranslationMemory, cacheKey, textHash, tmPath } from './tm.js';
+import { extractSegments, splitFrontmatter } from './segments.js';
+import { unmaskMarkdown, validatePlaceholders, fixMangledPlaceholders } from './masking.js';
+import { runAllChecks } from './quality.js';
 import { findI18nDir, readNoTranslateConfig } from './read-no-translate.js';
+import { loadPlan, findPlanFile } from './plan.js';
 
 const TODO_RE = /<!--\s*i18n:todo\s*-->/g;
 const TODO_BLOCK_RE = /<!--\s*i18n:todo\s*-->\n?([\s\S]*?)\n?<!--\s*\/i18n:todo\s*-->/g;
@@ -30,7 +31,7 @@ const TODO_BLOCK_RE = /<!--\s*i18n:todo\s*-->\n?([\s\S]*?)\n?<!--\s*\/i18n:todo\
 // Auto-strip TODO markers
 // ---------------------------------------------------------------------------
 
-function stripTodoMarkers(text) {
+export function stripTodoMarkers(text) {
   let strippedCount = 0;
   const cleaned = text.replace(TODO_BLOCK_RE, (_match, content) => {
     strippedCount++;
@@ -43,7 +44,8 @@ function stripTodoMarkers(text) {
 // Apply pipeline for a single file
 // ---------------------------------------------------------------------------
 
-async function applyFile(sourcePath, targetPath, tm, placeholders, srcLang, tgtLang) {
+export async function applyFile(sourcePath, targetPath, tm, placeholders, srcLang, tgtLang, relPath) {
+  if (!relPath) relPath = sourcePath;
   const sourceContent = await fs.readFile(sourcePath, 'utf-8');
   let targetContent = await fs.readFile(targetPath, 'utf-8');
   const autoFixes = [];
@@ -82,7 +84,6 @@ async function applyFile(sourcePath, targetPath, tm, placeholders, srcLang, tgtL
   }
 
   // 6. Update TM with new translations
-  const relPath = path.basename(sourcePath);
   const { body: srcBody } = splitFrontmatter(sourceContent);
   const { body: tgtBody } = splitFrontmatter(targetContent);
   const srcSegments = extractSegments(srcBody, relPath);
@@ -153,21 +154,41 @@ function detectLocaleFromPath(p) {
   return match ? match[1] : null;
 }
 
+async function resolveSourceDir(explicit, projectDir, taskMeta) {
+  if (explicit) return explicit;
+  if (taskMeta?.source_dir) return taskMeta.source_dir;
+  try {
+    const plan = await loadPlan(findPlanFile(projectDir));
+    if (plan?.meta?.source_dir) return plan.meta.source_dir;
+  } catch { /* no plan file */ }
+  return undefined;
+}
+
+function fileRelPath(filePath, sourceDir) {
+  if (!sourceDir) return filePath;
+  const rel = path.relative(sourceDir, filePath);
+  if (rel.startsWith('..')) return filePath;
+  return rel;
+}
+
 async function main() {
   const args = process.argv.slice(2);
   let source, target, tgtLang = null, srcLang = null;
   let projectDir = process.cwd();
+  let explicitSourceDir = null;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--lang') { tgtLang = args[++i]; }
     else if (args[i] === '--src-lang') { srcLang = args[++i]; }
     else if (args[i] === '--project-dir') { projectDir = args[++i]; }
+    else if (args[i] === '--source-dir') { explicitSourceDir = args[++i]; }
     else if (args[i] === '--help' || args[i] === '-h') {
       console.log('Usage: node scripts/apply.js <source> <target> [options]');
       console.log('');
       console.log('Options:');
       console.log('  --lang          Target locale (auto-detected from task-meta or path)');
       console.log('  --src-lang      Source locale (default: auto-detect or "en")');
+      console.log('  --source-dir    Source root dir (for TM source_path; auto-read from task-meta/plan)');
       console.log('  --project-dir   Project root for .i18n/ config lookup');
       process.exit(0);
     }
@@ -213,6 +234,7 @@ async function main() {
 
   const sourceStat = await fs.stat(source);
   const isDir = sourceStat.isDirectory();
+  const sourceDir = isDir ? source : await resolveSourceDir(explicitSourceDir, projectDir, taskMeta);
 
   let allPassed = true;
   let totalNew = 0;
@@ -232,15 +254,15 @@ async function main() {
         continue;
       }
 
-      const result = await applyFile(srcFile, tgtFile, tm, placeholders, srcLang, tgtLang);
+      const result = await applyFile(srcFile, tgtFile, tm, placeholders, srcLang, tgtLang, relPath);
       totalNew += result.newEntries;
       totalCached += result.cachedEntries;
       printFileResult(relPath, result);
       if (!result.passed) allPassed = false;
     }
   } else {
-    const relPath = path.basename(source);
-    const result = await applyFile(source, target, tm, placeholders, srcLang, tgtLang);
+    const relPath = fileRelPath(source, sourceDir);
+    const result = await applyFile(source, target, tm, placeholders, srcLang, tgtLang, relPath);
     totalNew += result.newEntries;
     totalCached += result.cachedEntries;
     printFileResult(relPath, result);
@@ -275,7 +297,13 @@ function printFileResult(relPath, result) {
   }
 }
 
-main().catch(err => {
-  console.error('Error:', err.message);
-  process.exit(1);
-});
+const isDirectRun = process.argv[1] && (
+  import.meta.url === `file://${process.argv[1]}` ||
+  process.argv[1].endsWith('/apply.js')
+);
+if (isDirectRun) {
+  main().catch(err => {
+    console.error('Error:', err.message);
+    process.exit(1);
+  });
+}

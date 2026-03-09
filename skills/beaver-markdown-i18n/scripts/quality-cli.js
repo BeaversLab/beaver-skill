@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * i18n-quality — Translation quality check CLI.
+ * quality-cli.js — Translation quality check CLI.
  *
  * Usage:
- *   npx i18n-quality <source> <target> [options]
- *   npx i18n-quality --dir <source_dir> <target_dir> [options]
+ *   node scripts/quality-cli.js <source> <target> [options]
+ *   node scripts/quality-cli.js --dir <source_dir> <target_dir> [options]
  *
  * Options:
  *   --source-locale <code>  Source locale (auto-detected from path)
@@ -23,7 +23,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import yaml from 'js-yaml';
 import { runAllChecks, ALL_CHECK_IDS } from './lib/quality.js';
-import { findI18nDir, readNoTranslateConfig } from './read-no-translate.js';
+import { findI18nDir, readNoTranslateConfig } from './lib/read-no-translate.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -159,8 +159,8 @@ async function validateFile(srcPath, tgtPath, opts) {
 
 function printHelp() {
   console.log(`Usage:
-  npx i18n-quality <source> <target> [options]
-  npx i18n-quality --dir <source_dir> <target_dir> [options]
+  node scripts/quality-cli.js <source> <target> [options]
+  node scripts/quality-cli.js --dir <source_dir> <target_dir> [options]
 
 Options:
   --source-locale <code>  Source locale (auto-detected from path)

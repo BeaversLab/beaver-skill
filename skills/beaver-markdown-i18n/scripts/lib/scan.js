@@ -1,8 +1,8 @@
 /**
  * Target file scanning and translation completeness estimation.
  *
- * Scans target directory, computes per-file `target_ratio` (proportion of
- * target-language characters after stripping fenced code blocks), and
+ * Scans target directory, computes per-file `target_ratio`
+ * (targetChars / (englishChars + targetChars) after stripping code blocks), and
  * manages `.i18n/runs/<ts>/target-manifest.yaml`.
  */
 
@@ -31,22 +31,33 @@ function getLangPattern(lang) {
 // ---------------------------------------------------------------------------
 
 const FENCED_CODE_RE = /^(`{3,})[^\n]*\n[\s\S]*?^\1[ \t]*$/gm;
+const ENGLISH_LETTER_RE = /[a-zA-Z]/g;
+
+const CJK_WEIGHT = 3;
 
 /**
- * Compute the ratio of target-language characters in the given content.
+ * Compute translation coverage ratio.
+ * Formula: (CJK_WEIGHT * targetChars) / (CJK_WEIGHT * targetChars + englishChars)
+ * CJK characters carry more information density per char than English letters,
+ * so a weight of 3 normalizes the comparison.
  * Strips fenced code blocks but keeps frontmatter.
  * Returns a number between 0 and 1.
  */
 export function computeTargetRatio(content, lang) {
   const stripped = content.replace(FENCED_CODE_RE, '');
-  const noWhitespace = stripped.replace(/\s/g, '');
-  if (noWhitespace.length === 0) return 0;
 
   const pattern = getLangPattern(lang);
-  const matches = noWhitespace.match(pattern);
-  const targetChars = matches ? matches.length : 0;
+  const targetMatches = stripped.match(pattern);
+  const targetChars = targetMatches ? targetMatches.length : 0;
 
-  return Math.round((targetChars / noWhitespace.length) * 1000) / 1000;
+  const englishMatches = stripped.match(ENGLISH_LETTER_RE);
+  const englishChars = englishMatches ? englishMatches.length : 0;
+
+  const weightedTarget = CJK_WEIGHT * targetChars;
+  const total = weightedTarget + englishChars;
+  if (total === 0) return 0;
+
+  return Math.round((weightedTarget / total) * 1000) / 1000;
 }
 
 // ---------------------------------------------------------------------------

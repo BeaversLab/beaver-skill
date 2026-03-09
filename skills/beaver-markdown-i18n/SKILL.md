@@ -7,23 +7,25 @@ description: Translate and sync markdown documentation between languages (EN↔Z
 
 Token-efficient translation pipeline. Scripts handle parsing, caching, masking, and validation — you only translate the marked segments.
 
+> **SKILL_DIR** — set this to the absolute path of this skill's root directory (the folder containing this SKILL.md). All `node` commands below use `$SKILL_DIR/scripts/`.
+
 ## Workflow (3 steps)
 
 All scenarios — single file, batch, incremental sync — use the same pipeline.
 
 ### Step 1: Prepare [MUST]
 
-Run the prepare script to generate a skeleton target file:
+Run the prepare command to generate a skeleton target file:
 
 ```bash
 # Single file
-node scripts/prepare.js <source.md> <target.md> --lang <locale>
+node $SKILL_DIR/scripts/translate-cli.js prepare <source.md> <target.md> --lang <locale>
 
 # Directory (batch / sync)
-node scripts/prepare.js <source_dir/> <target_dir/> --lang <locale>
+node $SKILL_DIR/scripts/translate-cli.js prepare <source_dir/> <target_dir/> --lang <locale>
 
 # Seed TM from existing translations (one-time migration)
-node scripts/prepare.js --seed-tm <source_dir/> <target_dir/> --lang <locale>
+node $SKILL_DIR/scripts/translate-cli.js seed <source_dir/> <target_dir/> --lang <locale>
 ```
 
 **What prepare does internally (you do NOT need to do these):**
@@ -34,7 +36,7 @@ node scripts/prepare.js --seed-tm <source_dir/> <target_dir/> --lang <locale>
 - Masks inline code, URLs, variables as `%%Pn%%` placeholders
 - Masks fenced code blocks as `%%CB_<hash>%%` placeholders — hash-based IDs derived from content, so they survive chunk reordering
 - Marks untranslated segments with `<!-- i18n:todo -->` markers
-- Large files (>80 TODOs): auto-splits into chunks in `.i18n/chunks/`
+- Large files (>3000 chars): auto-splits into chunks in `.i18n/chunks/`, splitting at segment boundaries
 - Writes skeleton + task metadata to `.i18n/task-meta.json`
 
 Review the console output — it shows segments to translate, cached count, and any chunks generated.
@@ -65,17 +67,17 @@ See [configuration]%%P2%% for %%P1%% flag details.
 
 > **WARNING — Placeholders:** `%%Pn%%` and `%%CB_<hash>%%` are restored to original content (inline code, URLs, code blocks) by the apply script. If you delete or modify them, the final document will be broken. When in doubt, leave them in place.
 
-**Large files (chunked):** If prepare generated chunks in `.i18n/chunks/`, translate each chunk file in order. After all chunks are done, merge before applying:
+**Large files (chunked):** If prepare generated chunks in `.i18n/chunks/`, translate **one chunk file at a time** in order (chunk-001, chunk-002, …). Read only the current chunk, translate all its `<!-- i18n:todo -->` sections, save, then move to the next chunk. Do NOT open multiple chunks simultaneously. After all chunks are translated, merge them back:
 ```bash
-node scripts/merge-chunks.js <target>
+node $SKILL_DIR/scripts/translate-cli.js merge <target>
 ```
 
 ### Step 3: Apply [MUST]
 
-Run the apply script to validate, unmask placeholders, and update TM:
+Run the apply command to validate, unmask placeholders, and update TM:
 
 ```bash
-node scripts/apply.js <source> <target> [--lang <locale>]
+node $SKILL_DIR/scripts/translate-cli.js apply <source> <target> [--lang <locale>]
 ```
 
 **What apply does internally:**
@@ -86,17 +88,99 @@ node scripts/apply.js <source> <target> [--lang <locale>]
 - Updates Translation Memory with new translations
 - Reports structured results per file
 
-**If validation fails:** fix the reported errors and re-run `apply.js`. Only after it passes is the file done.
+**If validation fails:** use quick-fix commands to resolve common issues, then re-run apply:
+
+```bash
+# Replace code blocks with source originals (when count matches)
+node $SKILL_DIR/scripts/translate-cli.js fix codeblocks <source> <target>
+
+# Restore link URLs from source (when count matches, keeps translated text)
+node $SKILL_DIR/scripts/translate-cli.js fix links <source> <target>
+
+# Fix mangled placeholders
+node $SKILL_DIR/scripts/translate-cli.js fix placeholders <target>
+
+# Strip leftover i18n:todo markers
+node $SKILL_DIR/scripts/translate-cli.js fix markers <target>
+```
 
 ### Step 3b: Full Quality Check (optional but recommended)
 
 Run the full quality check CLI for comprehensive validation:
 
 ```bash
-npx i18n-quality <source> <target> --target-locale <locale>
+node $SKILL_DIR/scripts/quality-cli.js <source> <target> --target-locale <locale>
 ```
 
 This runs all checks including terminology compliance, untranslated content detection, section omission, external/relative link preservation, and frontmatter value translation. See `references/quality-checklist.md` for the full check list.
+
+---
+
+## CLI Quick Reference
+
+Three CLI tools. All invoked as `node $SKILL_DIR/scripts/<cli>.js`.
+
+### translate-cli.js — Translation Pipeline
+
+```bash
+T="node $SKILL_DIR/scripts/translate-cli.js"
+
+# Core pipeline
+$T prepare <source> <target> --lang <locale>           # Step 1: generate skeleton
+$T apply <source> <target> [--lang <locale>]            # Step 3: validate & unmask
+$T merge <target> [--project-dir .]                     # Merge chunks before apply
+$T seed <source> <target> --lang <locale>               # Seed TM from existing pairs
+
+# Quick fixes (run when apply reports errors, then re-run apply)
+$T fix codeblocks <source> <target>                     # Restore source code blocks
+$T fix links <source> <target>                          # Restore source link URLs
+$T fix placeholders <target>                            # Fix mangled %%Pn%% / %%CB_hash%%
+$T fix markers <target>                                 # Strip leftover i18n:todo markers
+
+# Translation Memory management
+$T tm stats [--lang <locale>]                           # Show TM entry counts
+$T tm search <query> --lang <locale> [--limit N]        # Search by source/translated text
+$T tm get <cache_key> --lang <locale>                   # Get single entry
+$T tm add --lang <locale> --source <text> --translated <text>  # Add entry
+$T tm update <cache_key> --lang <locale> --translated <text>   # Update translation
+$T tm delete <cache_key> --lang <locale>                # Delete single entry
+$T tm delete --file <rel_path> --lang <locale> [--dry-run]     # Delete all entries for a file
+$T tm delete --match <query> --lang <locale> [--dry-run]       # Batch delete by text match
+$T tm export --lang <locale> [--format jsonl|json]      # Export TM
+$T tm compact --lang <locale>                           # Deduplicate & compact TM file
+```
+
+### quality-cli.js — Quality Checks
+
+```bash
+Q="node $SKILL_DIR/scripts/quality-cli.js"
+
+$Q <source> <target> --target-locale <locale>           # Single file check
+$Q --dir <source_dir> <target_dir> --target-locale <locale>  # Directory check
+$Q <source> <target> --check structure,codeBlocks       # Run specific checks only
+$Q <source> <target> --skip terminology                 # Skip specific checks
+$Q <source> <target> --json                             # JSON output
+```
+
+Check IDs: `structure`, `codeBlocks`, `variables`, `links`, `terminology`, `untranslated`, `sections`, `frontmatterTranslated`
+
+### plan-cli.js — Plan Management
+
+```bash
+P="node $SKILL_DIR/scripts/plan-cli.js"
+
+$P init <source_dir> --lang <locale>                    # Initialize plan + run dir
+$P status                                               # Show overall progress
+$P list --status pending --sort lines [--limit N]       # Filter/list files
+$P set <file_pattern> done [--notes "..."]              # Update single file status
+$P set --batch --from pending --to in_progress [--match "gateway/*"]  # Batch update
+$P add <file> [--status pending]                        # Add file to plan
+$P add --match "gateway/*.md"                           # Add files by glob
+$P scan [<target_dir>] [--lang <locale>]                # Re-scan target completeness
+$P sync --mode git --from <commit> --to HEAD            # Detect source changes (git)
+$P sync --mode hash                                     # Detect source changes (hash)
+$P clean [--all] [--keep-plan] [--dry-run]              # Clean temp files
+```
 
 ---
 
@@ -107,6 +191,14 @@ This runs all checks including terminology compliance, untranslated content dete
 Terms, headings, and sections to keep in the source language:
 
 ```yaml
+# Frontmatter keys whose values should be translated
+# Default: [title, summary, description, read_when]
+frontmatter_translate_keys:
+  - title
+  - summary
+  - description
+  - read_when
+
 headings:
   - text: "API Reference"
     reason: "Industry standard term"
@@ -141,39 +233,41 @@ Segment-level cache. On subsequent runs, `prepare.js` skips segments whose sourc
 
 To seed TM from existing translations:
 ```bash
-node scripts/prepare.js --seed-tm <source_dir> <target_dir> --lang <locale>
+node $SKILL_DIR/scripts/translate-cli.js seed <source_dir> <target_dir> --lang <locale>
 ```
 
 ---
 
-## Plan Management (`i18n-plan`)
+## Plan Management
 
-Unified CLI for managing translation plans. Replaces the old `create-plan.js`, `update-plan.js`, `list-remaining.js` scripts.
+Unified CLI for managing translation plans.
 
 ```bash
-npx i18n-plan <command> [options]
+node $SKILL_DIR/scripts/plan-cli.js <command> [options]
 ```
 
 ### Lifecycle
 
 ```bash
+PLAN="node $SKILL_DIR/scripts/plan-cli.js"
+
 # 1. Initialize: create run dir, detect changes, scan targets
-i18n-plan init <source_dir> --lang zh
+$PLAN init <source_dir> --lang zh
 
 # 2. Check progress
-i18n-plan status
+$PLAN status
 
 # 3. List files to translate (sorted by size)
-i18n-plan list --status pending --sort lines
+$PLAN list --status pending --sort lines
 
 # 4. After translating a file, mark it done
-i18n-plan set <file_pattern> done
+$PLAN set <file_pattern> done
 
 # 5. Re-scan targets after batch completion
-i18n-plan scan
+$PLAN scan
 
 # 6. Clean up temp files when plan is complete
-i18n-plan clean
+$PLAN clean
 ```
 
 ### Commands
@@ -193,10 +287,10 @@ i18n-plan clean
 
 ```bash
 # Git mode (default): compare two commits
-i18n-plan sync --mode git --from abc1234 --to HEAD
+$PLAN sync --mode git --from abc1234 --to HEAD
 
 # Hash mode: compare file hashes against plan records
-i18n-plan sync --mode hash
+$PLAN sync --mode hash
 ```
 
 ### Run directories

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * i18n-plan — Unified CLI for translation plan management.
+ * plan-cli.js — Unified CLI for translation plan management.
  *
  * Subcommands:
  *   init    Initialize a translation session (create run dir, sync, scan)
@@ -68,7 +68,7 @@ async function cmdInit(args) {
   const planPath = flags.output || findPlanFile(flags['project-dir'] || process.cwd());
 
   if (!sourceDir) {
-    console.log('Usage: i18n-plan init <source_dir> [--lang <locale>] [--output <path>]');
+    console.log('Usage: node plan-cli.js init <source_dir> [--lang <locale>] [--output <path>]');
     process.exit(1);
   }
 
@@ -110,7 +110,7 @@ async function cmdInit(args) {
     await runScan(plan, planPath, i18nDir, flags);
   }
 
-  console.log(`\nInit complete. Run: i18n-plan status`);
+  console.log(`\nInit complete. Run: node plan-cli.js status`);
 }
 
 // ---------------------------------------------------------------------------
@@ -164,7 +164,7 @@ async function cmdScan(args) {
   const planPath = findPlanFile(flags['project-dir'] || process.cwd());
 
   if (!(await planExists(planPath))) {
-    console.error('Error: No plan found. Run `i18n-plan init` first.');
+    console.error('Error: No plan found. Run `node plan-cli.js init` first.');
     process.exit(1);
   }
 
@@ -245,7 +245,7 @@ async function cmdSync(args) {
   const planPath = findPlanFile(flags['project-dir'] || process.cwd());
 
   if (!(await planExists(planPath))) {
-    console.error('Error: No plan found. Run `i18n-plan init` first.');
+    console.error('Error: No plan found. Run `node plan-cli.js init` first.');
     process.exit(1);
   }
 
@@ -264,7 +264,7 @@ async function cmdAdd(args) {
   const planPath = findPlanFile(flags['project-dir'] || process.cwd());
 
   if (!(await planExists(planPath))) {
-    console.error('Error: No plan found. Run `i18n-plan init` first.');
+    console.error('Error: No plan found. Run `node plan-cli.js init` first.');
     process.exit(1);
   }
 
@@ -292,9 +292,9 @@ async function cmdAdd(args) {
   } else if (positional[0]) {
     filesToAdd = [positional[0]];
   } else {
-    console.log('Usage: i18n-plan add <source_file> [--status pending]');
-    console.log('       i18n-plan add --match "gateway/*.md"');
-    console.log('       i18n-plan add --file list.txt');
+    console.log('Usage: node plan-cli.js add <source_file> [--status pending]');
+    console.log('       node plan-cli.js add --match "gateway/*.md"');
+    console.log('       node plan-cli.js add --file list.txt');
     process.exit(1);
   }
 
@@ -328,7 +328,7 @@ async function cmdStatus(args) {
   const planPath = findPlanFile(flags['project-dir'] || process.cwd());
 
   if (!(await planExists(planPath))) {
-    console.error('Error: No plan found. Run `i18n-plan init` first.');
+    console.error('Error: No plan found. Run `node plan-cli.js init` first.');
     process.exit(1);
   }
 
@@ -379,7 +379,7 @@ async function cmdStatus(args) {
     }
   }
 
-  console.log(`\n下一步: i18n-plan list --status pending --sort lines\n`);
+  console.log(`\n下一步: node plan-cli.js list --status pending --sort lines\n`);
 }
 
 // ---------------------------------------------------------------------------
@@ -391,7 +391,7 @@ async function cmdList(args) {
   const planPath = findPlanFile(flags['project-dir'] || process.cwd());
 
   if (!(await planExists(planPath))) {
-    console.error('Error: No plan found. Run `i18n-plan init` first.');
+    console.error('Error: No plan found. Run `node plan-cli.js init` first.');
     process.exit(1);
   }
 
@@ -456,7 +456,7 @@ async function cmdSet(args) {
   const planPath = findPlanFile(flags['project-dir'] || process.cwd());
 
   if (!(await planExists(planPath))) {
-    console.error('Error: No plan found. Run `i18n-plan init` first.');
+    console.error('Error: No plan found. Run `node plan-cli.js init` first.');
     process.exit(1);
   }
 
@@ -486,8 +486,8 @@ async function cmdSet(args) {
     const newStatus = positional[1];
 
     if (!filePattern || !newStatus) {
-      console.log('Usage: i18n-plan set <file_pattern> <status> [--notes "..."]');
-      console.log('       i18n-plan set --batch --from <status> --to <status> [--match "pattern"]');
+      console.log('Usage: node plan-cli.js set <file_pattern> <status> [--notes "..."]');
+      console.log('       node plan-cli.js set --batch --from <status> --to <status> [--match "pattern"]');
       process.exit(1);
     }
 
@@ -603,8 +603,8 @@ async function main() {
   const command = args[0];
 
   if (!command || command === '--help' || command === '-h') {
-    console.log(`i18n-plan — Translation plan management CLI\n`);
-    console.log(`Usage: i18n-plan <command> [options]\n`);
+    console.log(`plan-cli.js — Translation plan management CLI\n`);
+    console.log(`Usage: node plan-cli.js <command> [options]\n`);
     console.log(`Commands:`);
     console.log(`  init    Initialize translation session (create run dir, sync, scan)`);
     console.log(`  scan    Scan target files and generate manifest`);
@@ -614,14 +614,14 @@ async function main() {
     console.log(`  list    Filter and list files by status`);
     console.log(`  set     Update file status (single or batch)`);
     console.log(`  clean   Clean up temporary files and run directories`);
-    console.log(`\nRun 'i18n-plan <command> --help' for command-specific help.`);
+    console.log(`\nRun 'node plan-cli.js <command> --help' for command-specific help.`);
     process.exit(0);
   }
 
   const handler = COMMANDS[command];
   if (!handler) {
     console.error(`Unknown command: ${command}`);
-    console.error(`Run 'i18n-plan --help' for available commands.`);
+    console.error(`Run 'node plan-cli.js --help' for available commands.`);
     process.exit(1);
   }
 
