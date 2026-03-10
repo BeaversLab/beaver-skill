@@ -2,25 +2,26 @@
 /**
  * translate-cli.js — Unified translation pipeline CLI.
  *
- * Consolidates prepare, apply, merge, seed, fix, and tm commands.
+ * Consolidates prepare, checkpoint, apply, afterTranslate, merge, seed, and tm commands.
  *
  * Usage:
  *   node scripts/translate-cli.js <command> [options]
  *
  * Commands:
  *   prepare           Generate skeleton target with TM caching & masking
+ *   checkpoint        Persist translated chunk progress into TM
  *   apply             Validate, unmask placeholders, update TM
+ *   afterTranslate    Run apply + quality + plan set done in one command
  *   merge             Merge translated chunks into target
  *   seed              Seed TM from existing translation pairs
- *   fix codeblocks    Replace target code blocks with source (positional)
- *   fix links         Replace target link URLs with source (positional)
- *   fix placeholders  Fix mangled %%Pn%%/%%CB_hash%% placeholders
- *   fix markers       Strip remaining <!-- i18n:todo --> markers
  */
 
 import fs from 'fs/promises';
 import path from 'path';
 import yaml from 'js-yaml';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+import { fileURLToPath } from 'url';
 import { TranslationMemory, cacheKey, textHash, tmPath } from './lib/tm.js';
 import { extractSegments, splitFrontmatter } from './lib/segments.js';
 import { PlaceholderState, unmaskMarkdown, fixMangledPlaceholders } from './lib/masking.js';
@@ -30,9 +31,14 @@ import {
   prepareFile, splitIntoChunks, writeChunks, seedTM, findMarkdownFiles,
 } from './lib/prepare.js';
 import { applyFile, stripTodoMarkers } from './lib/apply.js';
+import { checkpointChunk } from './lib/checkpoint.js';
 import { mergeChunks } from './lib/merge-chunks.js';
-import { fixCodeBlocks, fixLinks, fixPlaceholdersInFile, fixMarkers } from './lib/fix.js';
+import { validateFile, formatReport } from './quality-cli.js';
 import { loadPlan, findPlanFile } from './lib/plan.js';
+
+const execFileAsync = promisify(execFile);
+const TRANSLATE_CLI_PATH = fileURLToPath(import.meta.url);
+const PLAN_CLI_PATH = fileURLToPath(new URL('./plan-cli.js', import.meta.url));
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -87,6 +93,18 @@ function parseGlobalOpts(args) {
   return { opts, remaining };
 }
 
+async function runNodeScript(scriptPath, args, cwd) {
+  try {
+    const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath, ...args], { cwd });
+    if (stdout) process.stdout.write(stdout);
+    if (stderr) process.stderr.write(stderr);
+  } catch (error) {
+    if (error.stdout) process.stdout.write(error.stdout);
+    if (error.stderr) process.stderr.write(error.stderr);
+    throw error;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // prepare command
 // ---------------------------------------------------------------------------
@@ -96,6 +114,7 @@ async function cmdPrepare(args) {
   let projectDir = process.cwd();
   let maxChunkChars = 3000;
   let explicitSourceDir = null;
+  let overwriteChunks = false;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--lang') { tgtLang = args[++i]; }
@@ -103,6 +122,7 @@ async function cmdPrepare(args) {
     else if (args[i] === '--project-dir') { projectDir = args[++i]; }
     else if (args[i] === '--source-dir') { explicitSourceDir = args[++i]; }
     else if (args[i] === '--max-chunk-chars') { maxChunkChars = parseInt(args[++i], 10); }
+    else if (args[i] === '--overwrite-chunks') { overwriteChunks = true; }
     else if (args[i] === '--help' || args[i] === '-h') {
       console.log(`Usage: node translate-cli.js prepare <source> <target> --lang <locale> [options]
 
@@ -111,6 +131,7 @@ Options:
   --src-lang           Source locale (default: auto-detect or "en")
   --source-dir         Source root dir (for TM source_path; auto-read from plan)
   --max-chunk-chars N  Max characters per chunk (default: 3000)
+  --overwrite-chunks   Overwrite existing chunk files for the same target
   --project-dir        Project root for .i18n/ config lookup`);
       process.exit(0);
     }
@@ -174,9 +195,15 @@ Options:
     if (result.skeleton.length > maxChunkChars && result.todoCount > 0) {
       const chunks = splitIntoChunks(result.skeleton, maxChunkChars);
       if (chunks) {
-        const chunkPaths = await writeChunks(chunks, relPath, chunksDir);
+        const chunkPaths = await writeChunks(chunks, relPath, chunksDir, {
+          overwrite: overwriteChunks,
+          todoEntries: result.todoEntries,
+          srcLang,
+          tgtLang,
+        });
         fileMeta.chunks = chunkPaths.length;
         fileMeta.chunk_dir = chunksDir;
+        fileMeta.chunk_files = chunkPaths;
       }
     }
 
@@ -219,13 +246,56 @@ Options:
     console.log(`\n  Large file(s) split into chunks in: ${chunksDir}`);
     for (const f of chunkedFiles) console.log(`    ${f.rel_path}: ${f.chunks} chunk(s)`);
     console.log(`\nNext:`);
-    console.log(`  1. Translate chunk files in ${chunksDir}`);
-    console.log(`  2. node translate-cli.js merge ${target}`);
-    console.log(`  3. node translate-cli.js apply ${source} ${target}`);
+    console.log(`  1. Translate a chunk file in ${chunksDir}`);
+    console.log(`  2. node translate-cli.js checkpoint <chunk-file>`);
+    console.log(`  3. Repeat for remaining chunks, then node translate-cli.js merge ${target}`);
+    console.log(`  4. node translate-cli.js apply ${source} ${target}`);
   } else {
     console.log(`\nNext: translate <!-- i18n:todo --> sections, then run:`);
     console.log(`  node translate-cli.js apply ${source} ${target}`);
   }
+}
+
+// ---------------------------------------------------------------------------
+// checkpoint command
+// ---------------------------------------------------------------------------
+
+async function cmdCheckpoint(args) {
+  let chunkFile = null;
+  let projectDir = process.cwd();
+  let tgtLang = null;
+  let srcLang = null;
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--project-dir') { projectDir = args[++i]; }
+    else if (args[i] === '--lang') { tgtLang = args[++i]; }
+    else if (args[i] === '--src-lang') { srcLang = args[++i]; }
+    else if (args[i] === '--help' || args[i] === '-h') {
+      console.log(`Usage: node translate-cli.js checkpoint <chunk-file> [options]
+
+Options:
+  --lang          Target locale (auto-detected from task-meta when omitted)
+  --src-lang      Source locale (default: auto-detect or "en")
+  --project-dir   Project root for .i18n/ config lookup`);
+      process.exit(0);
+    }
+    else if (!chunkFile) { chunkFile = args[i]; }
+  }
+
+  if (!chunkFile) {
+    console.error('Error: chunk file path required.');
+    process.exit(1);
+  }
+
+  const result = await checkpointChunk(chunkFile, { projectDir, tgtLang, srcLang });
+  console.log(
+    `✓ ${chunkFile}: ${result.added} added, ${result.updated} updated, ` +
+    `${result.cached} unchanged, ${result.skipped} skipped`,
+  );
+  if (result.autoFixed > 0) {
+    console.log(`  FIX: normalized ${result.autoFixed} placeholder(s) before TM checkpoint`);
+  }
+  console.log(`  TM: ${result.tmFile}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -263,6 +333,7 @@ Options:
 
   const i18nDir = await findI18nDir(projectDir);
   const effectiveI18nDir = i18nDir || path.join(projectDir, '.i18n');
+  const noTranslateConfig = await readNoTranslateConfig(effectiveI18nDir);
   const taskMetaPath = path.join(effectiveI18nDir, 'task-meta.json');
   let taskMeta = null;
 
@@ -291,11 +362,11 @@ Options:
   const sourceStat = await fs.stat(source);
   const isDir = sourceStat.isDirectory();
   const sourceDir = isDir ? source : await resolveSourceDir(explicitSourceDir, projectDir, taskMeta);
-  let allPassed = true, totalNew = 0, totalCached = 0;
+  let allPassed = true, totalNew = 0, totalUpdated = 0, totalCached = 0;
 
   function printResult(relPath, result) {
     const icon = result.passed ? '✓' : '✗';
-    const summary = `${result.newEntries} new, ${result.cachedEntries} cached`;
+    const summary = `${result.newEntries} new, ${result.updatedEntries} updated, ${result.cachedEntries} cached`;
     if (result.passed && result.warnings.length === 0 && result.autoFixes.length === 0) {
       console.log(`  ${icon} ${relPath}: PASS (${summary})`);
     } else {
@@ -312,21 +383,21 @@ Options:
       const relPath = path.relative(source, srcFile);
       const tgtFile = path.join(target, relPath);
       try { await fs.access(tgtFile); } catch { console.log(`  SKIP ${relPath}: target not found`); continue; }
-      const result = await applyFile(srcFile, tgtFile, tm, placeholders, srcLang, tgtLang, relPath);
-      totalNew += result.newEntries; totalCached += result.cachedEntries;
+      const result = await applyFile(srcFile, tgtFile, tm, placeholders, srcLang, tgtLang, relPath, noTranslateConfig);
+      totalNew += result.newEntries; totalUpdated += result.updatedEntries; totalCached += result.cachedEntries;
       printResult(relPath, result);
       if (!result.passed) allPassed = false;
     }
   } else {
     const relPath = fileRelPath(source, sourceDir);
-    const result = await applyFile(source, target, tm, placeholders, srcLang, tgtLang, relPath);
-    totalNew += result.newEntries; totalCached += result.cachedEntries;
+    const result = await applyFile(source, target, tm, placeholders, srcLang, tgtLang, relPath, noTranslateConfig);
+    totalNew += result.newEntries; totalUpdated += result.updatedEntries; totalCached += result.cachedEntries;
     printResult(relPath, result);
     if (!result.passed) allPassed = false;
   }
 
   await tm.save();
-  console.log(`\nTranslation Memory: ${totalNew} new, ${totalCached} existing (${tm.size} total)`);
+  console.log(`\nTranslation Memory: ${totalNew} new, ${totalUpdated} updated, ${totalCached} unchanged (${tm.size} total)`);
   console.log(`  Saved to: ${tmFile}`);
 
   if (allPassed) {
@@ -335,6 +406,78 @@ Options:
     console.log('\n✗ Some files failed validation. Fix errors above and re-run.');
     process.exit(1);
   }
+}
+
+// ---------------------------------------------------------------------------
+// afterTranslate command
+// ---------------------------------------------------------------------------
+
+async function cmdAfterTranslate(args) {
+  let source, target, tgtLang = null, srcLang = null;
+  let projectDir = process.cwd();
+  let explicitSourceDir = null;
+  let allowWarnings = false;
+  let notes = null;
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--lang') { tgtLang = args[++i]; }
+    else if (args[i] === '--src-lang') { srcLang = args[++i]; }
+    else if (args[i] === '--project-dir') { projectDir = args[++i]; }
+    else if (args[i] === '--source-dir') { explicitSourceDir = args[++i]; }
+    else if (args[i] === '--allow-warnings') { allowWarnings = true; }
+    else if (args[i] === '--notes') { notes = args[++i]; }
+    else if (args[i] === '--help' || args[i] === '-h') {
+      console.log(`Usage: node translate-cli.js afterTranslate <source> <target> [options]
+
+Options:
+  --lang            Target locale (auto-detected from task-meta or path)
+  --src-lang        Source locale (default: auto-detect or "en")
+  --source-dir      Source root dir (for TM source_path; auto-read from task-meta/plan)
+  --project-dir     Project root for .i18n/ config lookup
+  --allow-warnings  Continue to plan set done after quality warnings
+  --notes           Notes to store when marking done`);
+      process.exit(0);
+    }
+    else if (!source) { source = args[i]; }
+    else if (!target) { target = args[i]; }
+  }
+
+  if (!source || !target) {
+    console.error('Error: source and target paths required.');
+    process.exit(1);
+  }
+
+  const applyArgs = [source, target];
+  if (tgtLang) applyArgs.push('--lang', tgtLang);
+  if (srcLang) applyArgs.push('--src-lang', srcLang);
+  if (explicitSourceDir) applyArgs.push('--source-dir', explicitSourceDir);
+  if (projectDir) applyArgs.push('--project-dir', projectDir);
+
+  await runNodeScript(TRANSLATE_CLI_PATH, ['apply', ...applyArgs], projectDir);
+
+  const qualityResult = await validateFile(source, target, {
+    sourceLocale: srcLang,
+    targetLocale: tgtLang,
+    cwd: projectDir,
+  });
+
+  console.log('');
+  console.log(formatReport(path.basename(target), qualityResult));
+
+  if (qualityResult.errors.length > 0) {
+    console.error('\n✗ afterTranslate stopped: quality has ERRORs. Fix them before marking done.');
+    process.exit(1);
+  }
+
+  if (qualityResult.warnings.length > 0 && !allowWarnings) {
+    console.error('\n✗ afterTranslate stopped: quality has WARNings.');
+    console.error('Re-run with explicit user confirmation, then pass --allow-warnings to continue to plan set done.');
+    process.exit(1);
+  }
+
+  const planArgs = ['set', target, 'done', '--skip-validation', '--project-dir', projectDir];
+  if (notes) planArgs.push('--notes', notes);
+  await runNodeScript(PLAN_CLI_PATH, planArgs, projectDir);
 }
 
 // ---------------------------------------------------------------------------
@@ -410,6 +553,7 @@ Options:
 
   const i18nDir = await findI18nDir(projectDir);
   const effectiveI18nDir = i18nDir || path.join(projectDir, '.i18n');
+  const noTranslateConfig = await readNoTranslateConfig(effectiveI18nDir);
   const tmFile = tmPath(effectiveI18nDir, tgtLang);
   const tm = await TranslationMemory.load(tmFile);
   console.log(`Translation Memory: ${tm.size} entries loaded from ${tmFile}`);
@@ -427,132 +571,19 @@ Options:
       const tgtFile = path.join(target, relPath);
       try {
         await fs.access(tgtFile);
-        const n = await seedTM(srcFile, tgtFile, tm, srcLang, tgtLang, relPath);
+        const n = await seedTM(srcFile, tgtFile, tm, srcLang, tgtLang, relPath, noTranslateConfig);
         if (n > 0) console.log(`  ${relPath}: ${n} segment(s) seeded`);
         totalSeeded += n;
       } catch { /* target doesn't exist */ }
     }
   } else {
     const relPath = fileRelPath(source, sourceDir);
-    totalSeeded = await seedTM(source, target, tm, srcLang, tgtLang, relPath);
+    totalSeeded = await seedTM(source, target, tm, srcLang, tgtLang, relPath, noTranslateConfig);
   }
 
   await tm.save();
   console.log(`\n✓ TM seeded: ${totalSeeded} new entries (${tm.size} total)`);
   console.log(`  Saved to: ${tmFile}`);
-}
-
-// ---------------------------------------------------------------------------
-// fix command
-// ---------------------------------------------------------------------------
-
-async function cmdFix(args) {
-  if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
-    console.log(`Usage: node translate-cli.js fix <subcommand> [options]
-
-Subcommands:
-  codeblocks <source> <target>   Replace target code blocks with source (positional)
-  links <source> <target>        Replace target link URLs with source (positional)
-  placeholders <target>          Fix mangled %%Pn%%/%%CB_hash%% placeholders
-  markers <target>               Strip remaining <!-- i18n:todo --> markers`);
-    process.exit(0);
-  }
-
-  const sub = args[0];
-  const subArgs = args.slice(1);
-
-  switch (sub) {
-    case 'codeblocks': return await cmdFixCodeblocks(subArgs);
-    case 'links':      return await cmdFixLinks(subArgs);
-    case 'placeholders': return await cmdFixPlaceholders(subArgs);
-    case 'markers':    return await cmdFixMarkers(subArgs);
-    default:
-      console.error(`Unknown fix subcommand: ${sub}. Use --help for usage.`);
-      process.exit(1);
-  }
-}
-
-async function cmdFixCodeblocks(args) {
-  if (args.length < 2 || args[0] === '--help') {
-    console.log('Usage: node translate-cli.js fix codeblocks <source> <target>');
-    process.exit(args[0] === '--help' ? 0 : 1);
-  }
-  const [source, target] = args;
-  const srcContent = await fs.readFile(source, 'utf-8');
-  const tgtContent = await fs.readFile(target, 'utf-8');
-
-  const result = fixCodeBlocks(srcContent, tgtContent);
-  if (result.error) {
-    console.error(`Error: ${result.error}`);
-    process.exit(1);
-  }
-
-  if (result.replaced === 0) {
-    console.log('✓ All code blocks already match source. No changes needed.');
-  } else {
-    await fs.writeFile(target, result.text, 'utf-8');
-    console.log(`✓ Fixed ${result.replaced} code block(s) in ${target}`);
-  }
-}
-
-async function cmdFixLinks(args) {
-  if (args.length < 2 || args[0] === '--help') {
-    console.log('Usage: node translate-cli.js fix links <source> <target>');
-    process.exit(args[0] === '--help' ? 0 : 1);
-  }
-  const [source, target] = args;
-  const srcContent = await fs.readFile(source, 'utf-8');
-  const tgtContent = await fs.readFile(target, 'utf-8');
-
-  const result = fixLinks(srcContent, tgtContent);
-  if (result.error) {
-    console.error(`Error: ${result.error}`);
-    process.exit(1);
-  }
-
-  if (result.replaced === 0) {
-    console.log('✓ All link URLs already match source. No changes needed.');
-  } else {
-    await fs.writeFile(target, result.text, 'utf-8');
-    console.log(`✓ Fixed ${result.replaced} link URL(s) in ${target}:`);
-    for (const c of result.changes) {
-      console.log(`  #${c.pos}: "${c.from}" → "${c.to}"`);
-    }
-  }
-}
-
-async function cmdFixPlaceholders(args) {
-  if (args.length < 1 || args[0] === '--help') {
-    console.log('Usage: node translate-cli.js fix placeholders <target>');
-    process.exit(args[0] === '--help' ? 0 : 1);
-  }
-  const target = args[0];
-  const content = await fs.readFile(target, 'utf-8');
-
-  const result = fixPlaceholdersInFile(content);
-  if (result.fixCount === 0) {
-    console.log('✓ No mangled placeholders found. No changes needed.');
-  } else {
-    await fs.writeFile(target, result.text, 'utf-8');
-    console.log(`✓ Fixed ${result.fixCount} mangled placeholder(s) in ${target}`);
-  }
-}
-
-async function cmdFixMarkers(args) {
-  if (args.length < 1 || args[0] === '--help') {
-    console.log('Usage: node translate-cli.js fix markers <target>');
-    process.exit(args[0] === '--help' ? 0 : 1);
-  }
-  const target = args[0];
-  const content = await fs.readFile(target, 'utf-8');
-
-  const result = fixMarkers(content);
-  if (result.strippedCount === 0) {
-    console.log('✓ No i18n:todo markers found. No changes needed.');
-  } else {
-    await fs.writeFile(target, result.text, 'utf-8');
-    console.log(`✓ Stripped ${result.strippedCount} i18n:todo marker(s) from ${target}`);
-  }
 }
 
 // ---------------------------------------------------------------------------
@@ -935,17 +966,12 @@ Usage: node scripts/translate-cli.js <command> [options]
 
 Commands:
   prepare     Generate skeleton target with TM caching & masking
+  checkpoint  Persist translated chunk progress into TM
   apply       Validate, unmask placeholders, update TM
+  afterTranslate  Run apply + quality + plan set done
   merge       Merge translated chunks into target
   seed        Seed TM from existing translation pairs
-  fix         Quick-fix common translation issues
   tm          Translation Memory CRUD operations
-
-Fix subcommands:
-  fix codeblocks <source> <target>   Replace code blocks from source
-  fix links <source> <target>        Replace link URLs from source
-  fix placeholders <target>          Fix mangled placeholders
-  fix markers <target>               Strip i18n:todo markers
 
 TM subcommands:
   tm stats [--lang <locale>]                        Show TM statistics
@@ -976,10 +1002,12 @@ async function main() {
 
   switch (command) {
     case 'prepare':  return await cmdPrepare(commandArgs);
+    case 'checkpoint': return await cmdCheckpoint(commandArgs);
     case 'apply':    return await cmdApply(commandArgs);
+    case 'afterTranslate':
+    case 'after-translate': return await cmdAfterTranslate(commandArgs);
     case 'merge':    return await cmdMerge(commandArgs);
     case 'seed':     return await cmdSeed(commandArgs);
-    case 'fix':      return await cmdFix(commandArgs);
     case 'tm':       return await cmdTm(commandArgs);
     default:
       console.error(`Unknown command: ${command}\n`);

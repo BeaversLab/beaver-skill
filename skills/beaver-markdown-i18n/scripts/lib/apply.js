@@ -21,7 +21,7 @@ import { TranslationMemory, cacheKey, textHash, tmPath } from './tm.js';
 import { extractSegments, splitFrontmatter } from './segments.js';
 import { unmaskMarkdown, validatePlaceholders, fixMangledPlaceholders } from './masking.js';
 import { runAllChecks } from './quality.js';
-import { findI18nDir, readNoTranslateConfig } from './read-no-translate.js';
+import { findI18nDir, readNoTranslateConfig, getFmTranslateKeys } from './read-no-translate.js';
 import { loadPlan, findPlanFile } from './plan.js';
 
 const TODO_RE = /<!--\s*i18n:todo\s*-->/g;
@@ -40,11 +40,72 @@ export function stripTodoMarkers(text) {
   return { text: cleaned, strippedCount };
 }
 
+function extractFrontmatterEntries(content, noTranslateConfig) {
+  const { frontmatter } = splitFrontmatter(content);
+  if (!frontmatter) return new Map();
+
+  let data;
+  try {
+    data = yaml.load(frontmatter);
+  } catch {
+    return new Map();
+  }
+
+  if (!data || typeof data !== 'object') return new Map();
+
+  const entries = new Map();
+  for (const key of getFmTranslateKeys(noTranslateConfig)) {
+    const value = data[key];
+    if (typeof value !== 'string') continue;
+    const trimmed = value.trim();
+    if (!trimmed) continue;
+    entries.set(key, trimmed);
+  }
+  return entries;
+}
+
+function updateFrontmatterTM(sourceContent, targetContent, tm, srcLang, tgtLang, relPath, noTranslateConfig) {
+  const sourceEntries = extractFrontmatterEntries(sourceContent, noTranslateConfig);
+  const targetEntries = extractFrontmatterEntries(targetContent, noTranslateConfig);
+  let newEntries = 0;
+  let updatedEntries = 0;
+  let cachedEntries = 0;
+
+  for (const [key, sourceText] of sourceEntries) {
+    const targetText = targetEntries.get(key);
+    if (!targetText) continue;
+
+    const hash = textHash(sourceText);
+    const segId = `${relPath}:fm:${key}`;
+    const ck = cacheKey(srcLang, tgtLang, segId, hash);
+
+    const existing = tm.entries.get(ck);
+    if (existing?.translated === targetText) {
+      cachedEntries++;
+      continue;
+    }
+
+    tm.put({
+      cache_key: ck,
+      segment_id: segId,
+      source_path: relPath,
+      text_hash: hash,
+      text: sourceText,
+      translated: targetText,
+      updated_at: new Date().toISOString(),
+    });
+    if (existing) updatedEntries++;
+    else newEntries++;
+  }
+
+  return { newEntries, updatedEntries, cachedEntries };
+}
+
 // ---------------------------------------------------------------------------
 // Apply pipeline for a single file
 // ---------------------------------------------------------------------------
 
-export async function applyFile(sourcePath, targetPath, tm, placeholders, srcLang, tgtLang, relPath) {
+export async function applyFile(sourcePath, targetPath, tm, placeholders, srcLang, tgtLang, relPath, noTranslateConfig) {
   if (!relPath) relPath = sourcePath;
   const sourceContent = await fs.readFile(sourcePath, 'utf-8');
   let targetContent = await fs.readFile(targetPath, 'utf-8');
@@ -89,7 +150,9 @@ export async function applyFile(sourcePath, targetPath, tm, placeholders, srcLan
   const srcSegments = extractSegments(srcBody, relPath);
   const tgtSegments = extractSegments(tgtBody, relPath);
 
-  let newEntries = 0;
+  let bodyNewEntries = 0;
+  let bodyUpdatedEntries = 0;
+  let bodyCachedEntries = 0;
   const minLen = Math.min(srcSegments.length, tgtSegments.length);
   for (let i = 0; i < minLen; i++) {
     const src = srcSegments[i];
@@ -97,27 +160,43 @@ export async function applyFile(sourcePath, targetPath, tm, placeholders, srcLan
     if (src.type !== tgt.type) continue;
 
     const ck = cacheKey(srcLang, tgtLang, src.segmentId, src.textHash);
-    if (!tm.get(ck)) {
-      tm.put({
-        cache_key: ck,
-        segment_id: src.segmentId,
-        source_path: relPath,
-        text_hash: src.textHash,
-        text: src.text,
-        translated: tgt.text,
-        updated_at: new Date().toISOString(),
-      });
-      newEntries++;
+    const existing = tm.entries.get(ck);
+    if (existing?.translated === tgt.text) {
+      bodyCachedEntries++;
+      continue;
     }
+
+    tm.put({
+      cache_key: ck,
+      segment_id: src.segmentId,
+      source_path: relPath,
+      text_hash: src.textHash,
+      text: src.text,
+      translated: tgt.text,
+      updated_at: new Date().toISOString(),
+    });
+    if (existing) bodyUpdatedEntries++;
+    else bodyNewEntries++;
   }
+
+  const fmStats = updateFrontmatterTM(
+    sourceContent,
+    targetContent,
+    tm,
+    srcLang,
+    tgtLang,
+    relPath,
+    noTranslateConfig,
+  );
 
   return {
     passed: result.errors.length === 0,
     errors: result.errors,
     warnings: result.warnings,
     autoFixes,
-    newEntries,
-    cachedEntries: minLen - newEntries,
+    newEntries: bodyNewEntries + fmStats.newEntries,
+    updatedEntries: bodyUpdatedEntries + fmStats.updatedEntries,
+    cachedEntries: bodyCachedEntries + fmStats.cachedEntries,
   };
 }
 
@@ -204,6 +283,7 @@ async function main() {
   // Load task metadata
   const i18nDir = await findI18nDir(projectDir);
   const effectiveI18nDir = i18nDir || path.join(projectDir, '.i18n');
+  const noTranslateConfig = await readNoTranslateConfig(effectiveI18nDir);
   const taskMetaPath = path.join(effectiveI18nDir, 'task-meta.json');
   let taskMeta = null;
 
@@ -238,6 +318,7 @@ async function main() {
 
   let allPassed = true;
   let totalNew = 0;
+  let totalUpdated = 0;
   let totalCached = 0;
 
   if (isDir) {
@@ -254,16 +335,18 @@ async function main() {
         continue;
       }
 
-      const result = await applyFile(srcFile, tgtFile, tm, placeholders, srcLang, tgtLang, relPath);
+      const result = await applyFile(srcFile, tgtFile, tm, placeholders, srcLang, tgtLang, relPath, noTranslateConfig);
       totalNew += result.newEntries;
+      totalUpdated += result.updatedEntries;
       totalCached += result.cachedEntries;
       printFileResult(relPath, result);
       if (!result.passed) allPassed = false;
     }
   } else {
     const relPath = fileRelPath(source, sourceDir);
-    const result = await applyFile(source, target, tm, placeholders, srcLang, tgtLang, relPath);
+    const result = await applyFile(source, target, tm, placeholders, srcLang, tgtLang, relPath, noTranslateConfig);
     totalNew += result.newEntries;
+    totalUpdated += result.updatedEntries;
     totalCached += result.cachedEntries;
     printFileResult(relPath, result);
     if (!result.passed) allPassed = false;
@@ -272,7 +355,7 @@ async function main() {
   // Save TM
   await tm.save();
 
-  console.log(`\nTranslation Memory: ${totalNew} new, ${totalCached} existing (${tm.size} total)`);
+  console.log(`\nTranslation Memory: ${totalNew} new, ${totalUpdated} updated, ${totalCached} unchanged (${tm.size} total)`);
   console.log(`  Saved to: ${tmFile}`);
 
   if (allPassed) {
@@ -285,7 +368,7 @@ async function main() {
 
 function printFileResult(relPath, result) {
   const icon = result.passed ? '✓' : '✗';
-  const summary = `${result.newEntries} new, ${result.cachedEntries} cached`;
+  const summary = `${result.newEntries} new, ${result.updatedEntries} updated, ${result.cachedEntries} cached`;
 
   if (result.passed && result.warnings.length === 0 && result.autoFixes.length === 0) {
     console.log(`  ${icon} ${relPath}: PASS (${summary})`);

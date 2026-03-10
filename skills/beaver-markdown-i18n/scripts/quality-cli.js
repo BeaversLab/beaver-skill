@@ -22,6 +22,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import yaml from 'js-yaml';
+import { fileURLToPath } from 'url';
 import { runAllChecks, ALL_CHECK_IDS } from './lib/quality.js';
 import { findI18nDir, readNoTranslateConfig } from './lib/read-no-translate.js';
 
@@ -120,7 +121,7 @@ function formatSection(id, sec) {
   return lines.join('\n');
 }
 
-function formatReport(filePath, result) {
+export function formatReport(filePath, result) {
   const lines = [`=== Quality Report: ${filePath} ===`];
   for (const [id, sec] of Object.entries(result.sections)) {
     lines.push(formatSection(id, sec));
@@ -134,7 +135,7 @@ function formatReport(filePath, result) {
 // Core validation
 // ---------------------------------------------------------------------------
 
-async function validateFile(srcPath, tgtPath, opts) {
+export async function validateFile(srcPath, tgtPath, opts) {
   const srcContent = await fs.readFile(srcPath, 'utf-8');
   const tgtContent = await fs.readFile(tgtPath, 'utf-8');
 
@@ -249,7 +250,14 @@ async function main() {
   }
 }
 
-main().catch(err => {
-  console.error('Error:', err.message);
-  process.exit(1);
-});
+const isDirectRun = process.argv[1] && (
+  import.meta.url === `file://${process.argv[1]}` ||
+  process.argv[1] === fileURLToPath(import.meta.url)
+);
+
+if (isDirectRun) {
+  main().catch(err => {
+    console.error('Error:', err.message);
+    process.exit(1);
+  });
+}

@@ -72,18 +72,20 @@ function detectLocaleFromPath(p) {
 // ---------------------------------------------------------------------------
 
 function prepareFrontmatter(fmYaml, tm, segments, relPath, srcLang, tgtLang, state, noTranslateConfig) {
-  if (!fmYaml) return { translated: null, todoCount: 0 };
+  if (!fmYaml) return { translated: null, todoCount: 0, cachedCount: 0, todoEntries: [] };
 
   let data;
   try {
     data = yaml.load(fmYaml);
   } catch {
-    return { translated: fmYaml, todoCount: 0 };
+    return { translated: fmYaml, todoCount: 0, cachedCount: 0, todoEntries: [] };
   }
-  if (!data || typeof data !== 'object') return { translated: fmYaml, todoCount: 0 };
+  if (!data || typeof data !== 'object') return { translated: fmYaml, todoCount: 0, cachedCount: 0, todoEntries: [] };
 
   let todoCount = 0;
+  let cachedCount = 0;
   let fieldCount = 0;
+  const todoEntries = [];
   const fmKeys = getFmTranslateKeys(noTranslateConfig);
 
   for (const key of fmKeys) {
@@ -98,15 +100,77 @@ function prepareFrontmatter(fmYaml, tm, segments, relPath, srcLang, tgtLang, sta
     const cached = tm.get(ck);
     if (cached) {
       data[key] = cached.translated;
+      cachedCount++;
     } else {
       const { masked } = maskMarkdown(val, { state });
       data[key] = `<!-- i18n:todo -->${masked}<!-- /i18n:todo -->`;
       todoCount++;
+      todoEntries.push({
+        kind: 'frontmatter',
+        segment_id: segId,
+        text_hash: hash,
+        text: val.trim(),
+        source_path: relPath,
+        field: key,
+      });
     }
   }
 
   const result = yaml.dump(data, { indent: 2, lineWidth: -1, quotingType: '"', forceQuotes: true });
-  return { translated: result.trimEnd(), todoCount, fieldCount };
+  return { translated: result.trimEnd(), todoCount, cachedCount, fieldCount, todoEntries };
+}
+
+function extractFrontmatterEntries(content, noTranslateConfig) {
+  const { frontmatter } = splitFrontmatter(content);
+  if (!frontmatter) return new Map();
+
+  let data;
+  try {
+    data = yaml.load(frontmatter);
+  } catch {
+    return new Map();
+  }
+
+  if (!data || typeof data !== 'object') return new Map();
+
+  const entries = new Map();
+  for (const key of getFmTranslateKeys(noTranslateConfig)) {
+    const value = data[key];
+    if (typeof value !== 'string') continue;
+    const trimmed = value.trim();
+    if (!trimmed) continue;
+    entries.set(key, trimmed);
+  }
+  return entries;
+}
+
+function seedFrontmatterTM(sourceContent, targetContent, tm, srcLang, tgtLang, relPath, noTranslateConfig) {
+  const sourceEntries = extractFrontmatterEntries(sourceContent, noTranslateConfig);
+  const targetEntries = extractFrontmatterEntries(targetContent, noTranslateConfig);
+  let seeded = 0;
+
+  for (const [key, sourceText] of sourceEntries) {
+    const targetText = targetEntries.get(key);
+    if (!targetText) continue;
+
+    const hash = textHash(sourceText);
+    const segId = `${relPath}:fm:${key}`;
+    const ck = cacheKey(srcLang, tgtLang, segId, hash);
+    if (tm.get(ck)) continue;
+
+    tm.put({
+      cache_key: ck,
+      segment_id: segId,
+      source_path: relPath,
+      text_hash: hash,
+      text: sourceText,
+      translated: targetText,
+      updated_at: new Date().toISOString(),
+    });
+    seeded++;
+  }
+
+  return seeded;
 }
 
 // ---------------------------------------------------------------------------
@@ -126,7 +190,8 @@ export async function prepareFile(sourcePath, targetPath, tm, noTranslateConfig,
   // Build translation map: segmentId → translated text or TODO marker
   const translations = new Map();
   let todoCount = fmResult.todoCount;
-  let cachedCount = 0;
+  let cachedCount = fmResult.cachedCount;
+  const todoEntries = [...fmResult.todoEntries];
 
   for (const seg of segments) {
     const ck = cacheKey(srcLang, tgtLang, seg.segmentId, seg.textHash);
@@ -154,6 +219,14 @@ export async function prepareFile(sourcePath, targetPath, tm, noTranslateConfig,
 
     translations.set(seg.segmentId, `<!-- i18n:todo -->\n${masked}\n<!-- /i18n:todo -->`);
     todoCount++;
+    todoEntries.push({
+      kind: 'segment',
+      segment_id: seg.segmentId,
+      text_hash: seg.textHash,
+      text: seg.text,
+      source_path: relPath,
+      type: seg.type,
+    });
   }
 
   // Reconstruct the document using the original source structure
@@ -169,6 +242,7 @@ export async function prepareFile(sourcePath, targetPath, tm, noTranslateConfig,
     todoCount,
     cachedCount,
     totalSegments: segments.length + fmResult.fieldCount,
+    todoEntries,
   };
 }
 
@@ -278,15 +352,61 @@ export function splitIntoChunks(skeleton, maxChars = DEFAULT_MAX_CHUNK_CHARS) {
   return chunks.length > 1 ? chunks : null;
 }
 
-export async function writeChunks(chunks, relPath, chunksDir) {
+export async function writeChunks(chunks, relPath, chunksDir, opts = {}) {
   const safeName = relPath.replace(/[/\\]/g, '_');
   await fs.mkdir(chunksDir, { recursive: true });
 
+  const overwrite = opts.overwrite === true;
+  const existing = (await fs.readdir(chunksDir))
+    .filter(name => name.startsWith(`${safeName}.chunk-`) && name.endsWith('.md'))
+    .sort();
+
+  if (existing.length > 0) {
+    const existingPaths = existing.map(name => path.join(chunksDir, name));
+    const existingContents = await Promise.all(existingPaths.map(file => fs.readFile(file, 'utf-8')));
+    const matchesFresh =
+      existingContents.length === chunks.length &&
+      existingContents.every((content, index) => content === chunks[index]);
+
+    if (matchesFresh) {
+      return existingPaths;
+    }
+
+    if (!overwrite) {
+      throw new Error(
+        `Existing chunk files found for ${relPath} in ${chunksDir}. ` +
+        `Refusing to overwrite possible translation progress. ` +
+        `Merge/apply the existing chunks first, or rerun prepare with --overwrite-chunks.`,
+      );
+    }
+  }
+
+  const todoEntries = Array.isArray(opts.todoEntries) ? opts.todoEntries : [];
+  let todoCursor = 0;
   const paths = [];
   for (let i = 0; i < chunks.length; i++) {
     const chunkFile = path.join(chunksDir, `${safeName}.chunk-${String(i + 1).padStart(3, '0')}.md`);
     await fs.writeFile(chunkFile, chunks[i], 'utf-8');
+    const todoCount = (chunks[i].match(/<!--\s*i18n:todo\s*-->/g) || []).length;
+    const entriesForChunk = todoEntries.slice(todoCursor, todoCursor + todoCount);
+    if (entriesForChunk.length !== todoCount) {
+      throw new Error(`Chunk metadata mismatch for ${relPath}: expected ${todoCount} TODO entr${todoCount === 1 ? 'y' : 'ies'}, got ${entriesForChunk.length}.`);
+    }
+    todoCursor += todoCount;
+
+    const metaPath = chunkFile.replace(/\.md$/, '.meta.json');
+    await fs.writeFile(metaPath, JSON.stringify({
+      version: 1,
+      rel_path: relPath,
+      source_locale: opts.srcLang || '',
+      target_locale: opts.tgtLang || '',
+      entries: entriesForChunk,
+    }, null, 2), 'utf-8');
     paths.push(chunkFile);
+  }
+
+  if (todoCursor !== todoEntries.length) {
+    throw new Error(`Chunk metadata mismatch for ${relPath}: ${todoEntries.length - todoCursor} TODO entr${todoEntries.length - todoCursor === 1 ? 'y was' : 'ies were'} not assigned to any chunk.`);
   }
   return paths;
 }
@@ -295,7 +415,7 @@ export async function writeChunks(chunks, relPath, chunksDir) {
 // TM seeding from existing translations
 // ---------------------------------------------------------------------------
 
-export async function seedTM(sourcePath, targetPath, tm, srcLang, tgtLang, relPath) {
+export async function seedTM(sourcePath, targetPath, tm, srcLang, tgtLang, relPath, noTranslateConfig) {
   const sourceContent = await fs.readFile(sourcePath, 'utf-8');
   const targetContent = await fs.readFile(targetPath, 'utf-8');
 
@@ -329,7 +449,7 @@ export async function seedTM(sourcePath, targetPath, tm, srcLang, tgtLang, relPa
     }
   }
 
-  return seeded;
+  return seeded + seedFrontmatterTM(sourceContent, targetContent, tm, srcLang, tgtLang, relPath, noTranslateConfig);
 }
 
 // ---------------------------------------------------------------------------
@@ -343,6 +463,7 @@ async function main() {
   let isSeedMode = false;
   let maxChunkChars = DEFAULT_MAX_CHUNK_CHARS;
   let explicitSourceDir = null;
+  let overwriteChunks = false;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--lang') { tgtLang = args[++i]; }
@@ -351,6 +472,7 @@ async function main() {
     else if (args[i] === '--source-dir') { explicitSourceDir = args[++i]; }
     else if (args[i] === '--seed-tm') { isSeedMode = true; }
     else if (args[i] === '--max-chunk-chars') { maxChunkChars = parseInt(args[++i], 10); }
+    else if (args[i] === '--overwrite-chunks') { overwriteChunks = true; }
     else if (args[i] === '--help' || args[i] === '-h') {
       console.log('Usage: node scripts/prepare.js <source> <target> --lang <locale> [options]');
       console.log('');
@@ -360,6 +482,7 @@ async function main() {
       console.log('  --source-dir         Source root dir (for TM source_path; auto-read from plan)');
       console.log('  --seed-tm            Seed TM from existing source/target pairs');
       console.log('  --max-chunk-chars N  Max characters per chunk (default: 3000)');
+      console.log('  --overwrite-chunks   Overwrite existing chunk files for the same target');
       console.log('  --project-dir        Project root for .i18n/ config lookup');
       process.exit(0);
     }
@@ -402,7 +525,7 @@ async function main() {
   const sourceDir = isDir ? source : await resolveSourceDir(explicitSourceDir, projectDir);
 
   if (isSeedMode) {
-    return await runSeedMode(source, target, tm, tmFile, srcLang, tgtLang, isDir, sourceDir);
+    return await runSeedMode(source, target, tm, tmFile, srcLang, tgtLang, isDir, sourceDir, noTranslateConfig);
   }
 
   // Prepare task metadata
@@ -442,9 +565,15 @@ async function main() {
     if (result.skeleton.length > maxChunkChars && result.todoCount > 0) {
       const chunks = splitIntoChunks(result.skeleton, maxChunkChars);
       if (chunks) {
-        const chunkPaths = await writeChunks(chunks, relPath, chunksDir);
+        const chunkPaths = await writeChunks(chunks, relPath, chunksDir, {
+          overwrite: overwriteChunks,
+          todoEntries: result.todoEntries,
+          srcLang,
+          tgtLang,
+        });
         fileMeta.chunks = chunkPaths.length;
         fileMeta.chunk_dir = chunksDir;
+        fileMeta.chunk_files = chunkPaths;
       }
     }
 
@@ -495,16 +624,17 @@ async function main() {
       console.log(`    ${f.rel_path}: ${f.chunks} chunk(s)`);
     }
     console.log(`\nNext:`);
-    console.log(`  1. Translate chunk files in ${chunksDir}`);
-    console.log(`  2. node scripts/merge-chunks.js ${target}${tgtLang ? ' --lang ' + tgtLang : ''}`);
-    console.log(`  3. node scripts/apply.js ${source} ${target}${tgtLang ? ' --lang ' + tgtLang : ''}`);
+    console.log(`  1. Translate a chunk file in ${chunksDir}`);
+    console.log(`  2. node scripts/translate-cli.js checkpoint <chunk-file>${tgtLang ? ' --lang ' + tgtLang : ''}`);
+    console.log(`  3. Repeat for remaining chunks, then node scripts/merge-chunks.js ${target}${tgtLang ? ' --lang ' + tgtLang : ''}`);
+    console.log(`  4. node scripts/apply.js ${source} ${target}${tgtLang ? ' --lang ' + tgtLang : ''}`);
   } else {
     console.log(`\nNext: translate <!-- i18n:todo --> sections, then run:`);
     console.log(`  node scripts/apply.js ${source} ${target}${tgtLang ? ' --lang ' + tgtLang : ''}`);
   }
 }
 
-async function runSeedMode(source, target, tm, tmFile, srcLang, tgtLang, isDir, sourceDir) {
+async function runSeedMode(source, target, tm, tmFile, srcLang, tgtLang, isDir, sourceDir, noTranslateConfig) {
   let totalSeeded = 0;
 
   if (isDir) {
@@ -516,7 +646,7 @@ async function runSeedMode(source, target, tm, tmFile, srcLang, tgtLang, isDir, 
       const tgtFile = path.join(target, relPath);
       try {
         await fs.access(tgtFile);
-        const n = await seedTM(srcFile, tgtFile, tm, srcLang, tgtLang, relPath);
+        const n = await seedTM(srcFile, tgtFile, tm, srcLang, tgtLang, relPath, noTranslateConfig);
         if (n > 0) console.log(`  ${relPath}: ${n} segment(s) seeded`);
         totalSeeded += n;
       } catch {
@@ -525,7 +655,7 @@ async function runSeedMode(source, target, tm, tmFile, srcLang, tgtLang, isDir, 
     }
   } else {
     const relPath = fileRelPath(source, sourceDir);
-    totalSeeded = await seedTM(source, target, tm, srcLang, tgtLang, relPath);
+    totalSeeded = await seedTM(source, target, tm, srcLang, tgtLang, relPath, noTranslateConfig);
   }
 
   await tm.save();

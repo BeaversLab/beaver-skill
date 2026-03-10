@@ -9,6 +9,9 @@
  */
 
 import { getFmTranslateKeys } from './read-no-translate.js';
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import remarkGfm from 'remark-gfm';
 
 // ---------------------------------------------------------------------------
 // Content extraction helpers
@@ -16,6 +19,42 @@ import { getFmTranslateKeys } from './read-no-translate.js';
 
 function stripCodeBlocks(content) {
   return content.replace(/^```[^\n]*\n[\s\S]*?^```\s*$/gm, '');
+}
+
+function stripFrontmatterBlock(content) {
+  return content.replace(/^---\n[\s\S]*?\n---\n?/, '');
+}
+
+const parser = unified().use(remarkParse).use(remarkGfm);
+
+function parseMarkdownTree(content) {
+  return parser.parse(stripFrontmatterBlock(content));
+}
+
+function collectNodesByType(tree, type) {
+  const nodes = [];
+
+  function walk(node) {
+    if (!node || typeof node !== 'object') return;
+    if (node.type === type) {
+      nodes.push(node);
+    }
+    if (Array.isArray(node.children)) {
+      for (const child of node.children) walk(child);
+    }
+  }
+
+  walk(tree);
+  return nodes;
+}
+
+function extractListItems(content) {
+  return collectNodesByType(parseMarkdownTree(content), 'listItem');
+}
+
+function extractCodeBlocks(content) {
+  return collectNodesByType(parseMarkdownTree(content), 'code')
+    .map(node => [node.lang || '', node.value || '']);
 }
 
 function extractFrontmatter(content) {
@@ -37,9 +76,9 @@ function extractFrontmatter(content) {
 export function extractStructure(content) {
   return {
     headings: [...content.matchAll(/^(#{1,6})\s+(.+)$/gm)].map(m => [m[1], m[2]]),
-    codeBlocks: [...content.matchAll(/```(\w*)\n([\s\S]*?)```/g)].map(m => [m[1], m[2]]),
+    codeBlocks: extractCodeBlocks(content),
     links: [...content.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g)].map(m => ({ text: m[1], url: m[2] })),
-    listItems: [...content.matchAll(/^[-*]\s+(.+)$/gm)].map(m => m[1]),
+    listItems: extractListItems(content),
     frontmatterKeys: extractFrontmatter(content).entries,
   };
 }
@@ -72,11 +111,8 @@ export function checkStructure(srcContent, tgtContent) {
     errors.push(`Heading count mismatch: source=${src.headings.length}, target=${tgt.headings.length}`);
   }
 
-  // S2 codeBlockCount
+  // S2 codeBlockCount (reported by checkCodeBlocks; retained here for summary/details)
   details.codeBlockCount = { src: src.codeBlocks.length, tgt: tgt.codeBlocks.length };
-  if (src.codeBlocks.length !== tgt.codeBlocks.length) {
-    errors.push(`Code block count mismatch: source=${src.codeBlocks.length}, target=${tgt.codeBlocks.length}`);
-  }
 
   // S3 listItemCount
   details.listItemCount = { src: src.listItems.length, tgt: tgt.listItems.length };
@@ -107,13 +143,13 @@ export function checkStructure(srcContent, tgtContent) {
 // ---------------------------------------------------------------------------
 
 export function checkCodeBlocks(srcContent, tgtContent) {
-  const src = [...srcContent.matchAll(/```(\w*)\n([\s\S]*?)```/g)].map(m => [m[1], m[2]]);
-  const tgt = [...tgtContent.matchAll(/```(\w*)\n([\s\S]*?)```/g)].map(m => [m[1], m[2]]);
+  const src = extractCodeBlocks(srcContent);
+  const tgt = extractCodeBlocks(tgtContent);
   const errors = [];
   const details = { total: src.length, langMismatch: 0, contentChanged: 0 };
 
   if (src.length !== tgt.length) {
-    errors.push(`Code block count: source=${src.length}, target=${tgt.length}`);
+    errors.push(`Code block count mismatch: source=${src.length}, target=${tgt.length}`);
     return { id: 'codeBlocks', errors, warnings: [], details };
   }
 

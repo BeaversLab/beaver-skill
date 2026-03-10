@@ -17,6 +17,7 @@
 
 import fs from 'fs/promises';
 import path from 'path';
+import { checkpointChunks } from './checkpoint.js';
 import { findI18nDir } from './read-no-translate.js';
 
 /**
@@ -53,6 +54,24 @@ export async function mergeChunks(target, opts = {}) {
   }
 
   console.log(`Found ${chunkFiles.length} chunk(s) for ${basename}:`);
+
+  const chunkPaths = chunkFiles.map(f => path.join(chunksDir, f));
+
+  if (!dryRun) {
+    try {
+      const checkpointResults = await checkpointChunks(chunkPaths, { projectDir });
+      const added = checkpointResults.reduce((sum, r) => sum + r.added, 0);
+      const updated = checkpointResults.reduce((sum, r) => sum + r.updated, 0);
+      const cached = checkpointResults.reduce((sum, r) => sum + r.cached, 0);
+      const skipped = checkpointResults.reduce((sum, r) => sum + r.skipped, 0);
+      console.log(
+        `Checkpointed chunks into TM: ${added} added, ${updated} updated, ` +
+        `${cached} unchanged, ${skipped} skipped`,
+      );
+    } catch (err) {
+      console.log(`Warning: skipped auto-checkpoint before merge: ${err.message}`);
+    }
+  }
 
   const parts = [];
   for (const f of chunkFiles) {

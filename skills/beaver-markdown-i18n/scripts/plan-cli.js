@@ -30,7 +30,6 @@ import {
 } from './lib/scan.js';
 import { runAllChecks } from './lib/quality.js';
 import { findI18nDir, readNoTranslateConfig } from './lib/read-no-translate.js';
-import { mergeChunks } from './lib/merge-chunks.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -471,13 +470,14 @@ async function cmdSet(args) {
 
   if (flags.batch) {
     const to = flags.to;
+    const matchedBeforeUpdate = filterFiles(plan, { status: flags.from, match: flags.match });
     if (!to) {
       console.error('Error: --batch requires --to <status>');
       process.exit(1);
     }
 
     if (to === 'done' && !skipValidation) {
-      const candidates = filterFiles(plan, { status: flags.from, match: flags.match });
+      const candidates = matchedBeforeUpdate;
       const { passed, failed } = await validateForDone(candidates, plan, projectDir);
       if (failed.length > 0) {
         console.error(`\n✗ ${failed.length} file(s) failed validation, cannot mark as done.`);
@@ -494,6 +494,7 @@ async function cmdSet(args) {
 
     if (to === 'done') {
       await enrichDoneEntries(plan);
+      await cleanupChunksForFiles(matchedBeforeUpdate, projectDir);
     }
 
     await savePlan(plan, planPath);
@@ -528,6 +529,11 @@ async function cmdSet(args) {
 
     if (newStatus === 'done') {
       await enrichDoneEntries(plan);
+      const matched = plan.files.filter(f =>
+        f.source === filePattern || f.source?.endsWith(filePattern) || f.source?.includes(filePattern) ||
+        f.target === filePattern || f.target?.endsWith(filePattern) || f.target?.includes(filePattern)
+      );
+      await cleanupChunksForFiles(matched, projectDir);
     }
 
     await savePlan(plan, planPath);
@@ -556,14 +562,6 @@ async function validateForDone(files, plan, projectDir) {
   for (const f of files) {
     if (!f.source || !f.target) continue;
 
-    // Auto-merge chunks if present
-    try {
-      const result = await mergeChunks(f.target, { projectDir });
-      if (result && result.chunkCount > 0) {
-        console.log(`  Merged ${result.chunkCount} chunk(s) for ${f.target}`);
-      }
-    } catch { /* no chunks or already merged */ }
-
     let srcContent, tgtContent;
     try {
       srcContent = await fs.readFile(f.source, 'utf-8');
@@ -591,6 +589,37 @@ async function validateForDone(files, plan, projectDir) {
   }
 
   return { passed, failed };
+}
+
+async function cleanupChunksForFiles(files, projectDir) {
+  const i18nDir = await findI18nDir(projectDir);
+  const effectiveI18nDir = i18nDir || path.join(projectDir, '.i18n');
+  const chunksDir = path.join(effectiveI18nDir, 'chunks');
+
+  let entries;
+  try {
+    entries = await fs.readdir(chunksDir);
+  } catch {
+    return;
+  }
+
+  for (const f of files) {
+    if (!f?.target) continue;
+    const basename = path.basename(f.target);
+    const matches = entries.filter(name =>
+      name.includes(basename) &&
+      name.includes('.chunk-') &&
+      (name.endsWith('.md') || name.endsWith('.meta.json'))
+    );
+
+    for (const name of matches) {
+      const fullPath = path.join(chunksDir, name);
+      try {
+        await fs.unlink(fullPath);
+        console.log(`  Deleted chunk artifact: ${fullPath}`);
+      } catch { /* ignore */ }
+    }
+  }
 }
 
 async function enrichDoneEntries(plan) {

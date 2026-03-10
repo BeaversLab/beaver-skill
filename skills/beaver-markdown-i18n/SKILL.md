@@ -9,11 +9,52 @@ Token-efficient translation pipeline. Scripts handle parsing, caching, masking, 
 
 > **SKILL_DIR** — set this to the absolute path of this skill's root directory (the folder containing this SKILL.md). All `node` commands below use `$SKILL_DIR/scripts/`.
 
+## Non-negotiable Rules
+
+- MUST use scripts only for prepare/checkpoint/merge/apply/quality/TM operations.
+- MUST NOT use any script, command, tool, or automation to batch-translate file contents or chunk contents.
+- MUST translate manually in-place: one target file at a time, or one chunk at a time.
+- MUST NOT read/translate multiple chunks in the same turn/request.
+- MUST run validation before marking anything done.
+- MUST NOT mark a file as done without validation results.
+- MUST NOT mark a file as done when validation reports any `ERROR` or any `WARN` unless the user explicitly confirms acceptance.
+- If validation reports any `ERROR` or `WARN`, MUST stop, show the validation output, and wait for user confirmation before `plan set ... done`.
+
+## Required Order
+
+This skill has one correct execution order. Follow it strictly.
+
+**Normal file flow**
+1. `prepare`
+2. manually translate the target file
+3. `afterTranslate`
+5. if `ERROR`: stop and fix manually
+6. if `WARN`: stop and get explicit user confirmation
+7. rerun `afterTranslate --allow-warnings` only after explicit user confirmation
+
+**Chunked file flow**
+1. `prepare`
+2. read exactly one chunk
+3. manually translate exactly that chunk
+4. `checkpoint <chunk-file>`
+5. repeat Steps 2-4 until all chunks are finished
+6. `merge`
+7. `afterTranslate`
+9. if `ERROR`: stop and fix manually
+10. if `WARN`: stop and get explicit user confirmation
+11. rerun `afterTranslate --allow-warnings` only after explicit user confirmation
+
+MUST NOT change this order.
+MUST NOT skip `afterTranslate`.
+MUST NOT continue past `ERROR` or `WARN` without following the stop rules above.
+
 ## Workflow (3 steps)
 
 All scenarios — single file, batch, incremental sync — use the same pipeline.
 
 ### Step 1: Prepare [MUST]
+
+This step always comes first.
 
 Run the prepare command to generate a skeleton target file:
 
@@ -43,6 +84,8 @@ Review the console output — it shows segments to translate, cached count, and 
 
 ### Step 2: Translate [MUST]
 
+This step always happens after `prepare` and before `apply`.
+
 Open the skeleton file (or chunk files for large documents). For each `<!-- i18n:todo -->` section, translate the content between the markers to the target language.
 
 **Rules:**
@@ -50,6 +93,7 @@ Open the skeleton file (or chunk files for large documents). For each `<!-- i18n
 2. Keep `%%Pn%%` and `%%CB_<hash>%%` placeholders **exactly as-is** — do NOT modify, delete, or reformat them
 3. Do NOT touch segments without markers (they are cached translations)
 4. You do NOT need to remove the markers — `apply.js` strips them automatically
+5. MUST NOT use any script/tool to batch-generate translations for files or chunks
 
 **Example — before:**
 ```markdown
@@ -67,20 +111,50 @@ See [configuration]%%P2%% for %%P1%% flag details.
 
 > **WARNING — Placeholders:** `%%Pn%%` and `%%CB_<hash>%%` are restored to original content (inline code, URLs, code blocks) by the apply script. If you delete or modify them, the final document will be broken. When in doubt, leave them in place.
 
-**Large files (chunked):** If prepare generated chunks in `.i18n/chunks/`, translate **one chunk file at a time** in order (chunk-001, chunk-002, …). Read only the current chunk, translate all its `<!-- i18n:todo -->` sections, save, then move to the next chunk. Do NOT open multiple chunks simultaneously. After all chunks are translated, merge them back:
+**Large files (chunked):** If prepare generated chunks in `.i18n/chunks/`, translate **one chunk file at a time** in order (chunk-001, chunk-002, …).
+
+**CRITICAL RULE — exactly one chunk per turn/request:**
+- Read **only one chunk file**
+- Translate **only that chunk**
+- Save it, run `checkpoint`, then move to the next chunk
+- **Do NOT open, read, paste, diff, or translate multiple chunk files in the same turn/request**
+- If multiple chunks are loaded together, context contamination is likely and the output becomes unreliable
+
+This rule is mandatory. Chunk translation is designed to be strictly sequential, not batched.
+
+Read only the current chunk, translate all its `<!-- i18n:todo -->` sections, save, then checkpoint that chunk into TM before moving to the next one:
+```bash
+node $SKILL_DIR/scripts/translate-cli.js checkpoint <chunk-file>
+```
+
+After all chunks are translated, merge them back:
 ```bash
 node $SKILL_DIR/scripts/translate-cli.js merge <target>
 ```
 
-### Step 3: Apply [MUST]
+MUST NOT run `merge` before all chunks have been translated and checkpointed.
+MUST NOT run `apply` on chunk files.
 
-Run the apply command to validate, unmask placeholders, and update TM:
+If chunk files for the same target already exist, `prepare` now refuses to overwrite them by default. This is intentional to protect in-progress chunk translations. Use `--overwrite-chunks` only when you really want to discard the old chunk state and regenerate from source.
+
+### Step 3: After Translate [MUST]
+
+This step always happens after translation is complete. For chunked files, it happens only after `merge`.
+
+Run the combined command:
 
 ```bash
-node $SKILL_DIR/scripts/translate-cli.js apply <source> <target> [--lang <locale>]
+node $SKILL_DIR/scripts/translate-cli.js afterTranslate <source> <target> [--lang <locale>]
 ```
 
-**What apply does internally:**
+**What afterTranslate does internally:**
+- Runs `apply`
+- Runs `quality`
+- If quality is clean, runs `plan set ... done`
+- If quality has `ERROR`, stops
+- If quality has `WARN`, stops unless you rerun with explicit user confirmation and `--allow-warnings`
+
+**What apply does internally when called by afterTranslate:**
 - Auto-strips remaining `<!-- i18n:todo -->` markers
 - Auto-fixes common placeholder mangling (spacing, casing)
 - Restores `%%Pn%%` → original inline code/URLs, `%%CB_<hash>%%` → original code blocks
@@ -88,31 +162,22 @@ node $SKILL_DIR/scripts/translate-cli.js apply <source> <target> [--lang <locale
 - Updates Translation Memory with new translations
 - Reports structured results per file
 
-**If validation fails:** use quick-fix commands to resolve common issues, then re-run apply:
+`prepare` only reuses Translation Memory. If you translate a skeleton and then run `prepare` again before `apply` (or `seed`), the target file can be regenerated from source text again.
+
+**If afterTranslate stops on `ERROR`:** fix the target file manually, then re-run `afterTranslate`.
+**If afterTranslate stops on `WARN`:** get explicit user confirmation first, then re-run with `--allow-warnings`.
+
+### Manual Interfaces
+
+The CLI still keeps the manual interfaces for debugging or step-by-step use:
 
 ```bash
-# Replace code blocks with source originals (when count matches)
-node $SKILL_DIR/scripts/translate-cli.js fix codeblocks <source> <target>
-
-# Restore link URLs from source (when count matches, keeps translated text)
-node $SKILL_DIR/scripts/translate-cli.js fix links <source> <target>
-
-# Fix mangled placeholders
-node $SKILL_DIR/scripts/translate-cli.js fix placeholders <target>
-
-# Strip leftover i18n:todo markers
-node $SKILL_DIR/scripts/translate-cli.js fix markers <target>
-```
-
-### Step 4: Mark Done [MUST]
-
-After apply passes, mark the file as done in the plan. This triggers **mandatory quality validation** — the `set` command automatically merges remaining chunks and runs all quality checks. If validation fails, the status change is rejected:
-
-```bash
+node $SKILL_DIR/scripts/translate-cli.js apply <source> <target> [--lang <locale>]
+node $SKILL_DIR/scripts/quality-cli.js <source> <target> --target-locale <locale>
 node $SKILL_DIR/scripts/plan-cli.js set <file_pattern> done
 ```
 
-If validation fails, fix the issues (using fix commands from Step 3), then retry. Use `--skip-validation` only as a last resort.
+Use the manual commands only when you intentionally need to inspect each step separately.
 
 **Standalone quality check** (without changing status):
 
@@ -135,15 +200,13 @@ T="node $SKILL_DIR/scripts/translate-cli.js"
 
 # Core pipeline
 $T prepare <source> <target> --lang <locale>           # Step 1: generate skeleton
-$T apply <source> <target> [--lang <locale>]            # Step 3: validate & unmask
+$T checkpoint <chunk-file> [--lang <locale>]            # Persist one translated chunk into TM
+$T afterTranslate <source> <target> [--lang <locale>]   # Step 3: apply + quality + plan set done
 $T merge <target> [--project-dir .]                     # Merge chunks before apply
 $T seed <source> <target> --lang <locale>               # Seed TM from existing pairs
 
-# Quick fixes (run when apply reports errors, then re-run apply)
-$T fix codeblocks <source> <target>                     # Restore source code blocks
-$T fix links <source> <target>                          # Restore source link URLs
-$T fix placeholders <target>                            # Fix mangled %%Pn%% / %%CB_hash%%
-$T fix markers <target>                                 # Strip leftover i18n:todo markers
+# Manual interfaces
+$T apply <source> <target> [--lang <locale>]            # Manual apply only
 
 # Translation Memory management
 $T tm stats [--lang <locale>]                           # Show TM entry counts
@@ -268,7 +331,7 @@ $PLAN status
 # 3. List files to translate (sorted by size)
 $PLAN list --status pending --sort lines
 
-# 4. After translating a file, mark it done
+# 4. After translating a file, validate it, get user confirmation if any warning exists, then mark it done
 $PLAN set <file_pattern> done
 
 # 5. Re-scan targets after batch completion

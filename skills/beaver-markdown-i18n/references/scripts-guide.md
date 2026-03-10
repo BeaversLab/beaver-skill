@@ -20,10 +20,11 @@ node $SKILL_DIR/scripts/translate-cli.js <command> [options]
 | Command | Purpose | Example |
 |---|---|---|
 | `prepare` | Generate skeleton target with TM caching & masking | `translate-cli.js prepare <src> <tgt> --lang zh` |
+| `checkpoint` | Persist one translated chunk into TM | `translate-cli.js checkpoint <chunk-file>` |
 | `apply` | Validate, unmask placeholders, update TM | `translate-cli.js apply <src> <tgt>` |
+| `afterTranslate` | Run apply + quality + plan set done | `translate-cli.js afterTranslate <src> <tgt>` |
 | `merge` | Merge translated chunks into target | `translate-cli.js merge <target>` |
 | `seed` | Seed TM from existing translation pairs | `translate-cli.js seed <src> <tgt> --lang zh` |
-| `fix` | Quick-fix common translation issues | See fix subcommands below |
 
 ### prepare
 
@@ -44,6 +45,14 @@ translate-cli.js prepare <source> <target> --lang <locale> [options]
 - Console summary: segments to translate vs cached
 
 **Internally loads:** `.i18n/no-translate.yaml`, `.i18n/translation-consistency.yaml`, glossary.md, Translation Memory.
+
+### checkpoint
+
+```bash
+translate-cli.js checkpoint <chunk-file> [--lang <locale>] [--project-dir .]
+```
+
+Checkpoint one translated chunk into Translation Memory before moving to the next chunk.
 
 ### apply
 
@@ -67,6 +76,22 @@ translate-cli.js apply <source> <target> [options]
 
 **Output:** Per-file PASS/FAIL report, TM update summary.
 
+### afterTranslate
+
+```bash
+translate-cli.js afterTranslate <source> <target> [--lang <locale>] [--project-dir .] [--allow-warnings]
+```
+
+Runs the post-translation sequence in one command:
+- `apply`
+- `quality`
+- `plan set ... done`
+
+Default behavior:
+- stops on any quality `ERROR`
+- stops on any quality `WARN`
+- only continues past warnings when `--allow-warnings` is explicitly passed
+
 ### merge
 
 ```bash
@@ -82,19 +107,6 @@ translate-cli.js seed <source> <target> --lang <locale> [--src-lang en] [--proje
 ```
 
 Seed Translation Memory from existing translation pairs (one-time migration). No skeleton output.
-
-### fix — Quick-Fix Subcommands
-
-| Subcommand | Purpose | Usage |
-|---|---|---|
-| `fix codeblocks` | Replace target code blocks with source (positional) | `translate-cli.js fix codeblocks <source> <target>` |
-| `fix links` | Replace target link URLs with source (positional) | `translate-cli.js fix links <source> <target>` |
-| `fix placeholders` | Fix mangled `%%Pn%%`/`%%CB_hash%%` placeholders | `translate-cli.js fix placeholders <target>` |
-| `fix markers` | Strip remaining `<!-- i18n:todo -->` markers | `translate-cli.js fix markers <target>` |
-
-**fix codeblocks**: When code block count matches between source and target but content was accidentally translated, replaces each target code block with the source one (positional 1:1). Aborts if counts differ.
-
-**fix links**: When link count matches but URLs differ (e.g., URLs were accidentally translated), replaces each target link URL with the source URL. Preserves translated link text. Reports each changed URL.
 
 ---
 
@@ -234,7 +246,6 @@ All non-CLI modules live under `scripts/lib/`.
 | `merge-chunks.js` | Merge translated chunk files back into a single target |
 | `read-no-translate.js` | Load `.i18n/no-translate.yaml` config, `findI18nDir()` utility |
 | `quality.js` | All quality check functions, `runAllChecks()` orchestrator |
-| `fix.js` | Quick-fix functions: code blocks, links, placeholders, markers |
 | `plan.js` | Plan file I/O, filtering, status updates, run dir management, sync logic |
 | `scan.js` | Target file scanning, target_ratio computation, manifest I/O |
 | `tm.js` | Translation Memory — JSONL load/save, cache key generation |
