@@ -28,6 +28,9 @@ import {
   computeTargetRatio, computeFileHash as computeContentHash,
   computeFileHashFromPath, scanTargetDir, buildAndSaveManifest, loadManifest,
 } from './lib/scan.js';
+import { runAllChecks } from './lib/quality.js';
+import { findI18nDir, readNoTranslateConfig } from './lib/read-no-translate.js';
+import { mergeChunks } from './lib/merge-chunks.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -400,7 +403,9 @@ async function cmdList(args) {
 
   // Sort
   const sort = flags.sort || 'name';
-  if (sort === 'lines') {
+  if (sort === 'ratio') {
+    files.sort((a, b) => (a.target_ratio || 0) - (b.target_ratio || 0));
+  } else if (sort === 'lines') {
     const lineCache = new Map();
     for (const f of files) {
       try {
@@ -432,7 +437,7 @@ async function cmdList(args) {
   console.log(`\n${files.length} file(s):\n`);
   for (let i = 0; i < files.length; i++) {
     const f = files[i];
-    let line = `${String(i + 1).padStart(3)}. [${f.status.padEnd(12)}] ${f.source}`;
+    let line = `${String(i + 1).padStart(3)}. [${f.status.padEnd(12)}] ${f.target}`;
     if (sort === 'lines') {
       try {
         const content = await fs.readFile(f.source, 'utf-8');
@@ -453,7 +458,8 @@ async function cmdList(args) {
 
 async function cmdSet(args) {
   const { positional, flags } = parseArgs(args);
-  const planPath = findPlanFile(flags['project-dir'] || process.cwd());
+  const projectDir = flags['project-dir'] || process.cwd();
+  const planPath = findPlanFile(projectDir);
 
   if (!(await planExists(planPath))) {
     console.error('Error: No plan found. Run `node plan-cli.js init` first.');
@@ -461,6 +467,7 @@ async function cmdSet(args) {
   }
 
   const plan = await loadPlan(planPath);
+  const skipValidation = flags['skip-validation'] || false;
 
   if (flags.batch) {
     const to = flags.to;
@@ -468,13 +475,23 @@ async function cmdSet(args) {
       console.error('Error: --batch requires --to <status>');
       process.exit(1);
     }
+
+    if (to === 'done' && !skipValidation) {
+      const candidates = filterFiles(plan, { status: flags.from, match: flags.match });
+      const { passed, failed } = await validateForDone(candidates, plan, projectDir);
+      if (failed.length > 0) {
+        console.error(`\n✗ ${failed.length} file(s) failed validation, cannot mark as done.`);
+        console.log('Fix issues and retry, or use --skip-validation to force.');
+        process.exit(1);
+      }
+    }
+
     const count = batchUpdateStatus(plan, {
       from: flags.from,
       to,
       match: flags.match,
     });
 
-    // If marking done, compute target_hash/target_ratio
     if (to === 'done') {
       await enrichDoneEntries(plan);
     }
@@ -486,9 +503,21 @@ async function cmdSet(args) {
     const newStatus = positional[1];
 
     if (!filePattern || !newStatus) {
-      console.log('Usage: node plan-cli.js set <file_pattern> <status> [--notes "..."]');
-      console.log('       node plan-cli.js set --batch --from <status> --to <status> [--match "pattern"]');
+      console.log('Usage: node plan-cli.js set <file_pattern> <status> [--notes "..."] [--skip-validation]');
+      console.log('       node plan-cli.js set --batch --from <status> --to <status> [--match "pattern"] [--skip-validation]');
       process.exit(1);
+    }
+
+    if (newStatus === 'done' && !skipValidation) {
+      const candidates = plan.files.filter(f =>
+        f.source.includes(filePattern) || f.target?.includes(filePattern)
+      );
+      const { passed, failed } = await validateForDone(candidates, plan, projectDir);
+      if (failed.length > 0) {
+        console.error(`\n✗ Validation failed, cannot mark as done.`);
+        console.log('Fix issues and retry, or use --skip-validation to force.');
+        process.exit(1);
+      }
     }
 
     const count = updateFileStatus(plan, filePattern, newStatus, flags.notes);
@@ -497,7 +526,6 @@ async function cmdSet(args) {
       process.exit(1);
     }
 
-    // If marking done, compute target_hash/target_ratio for the matched file
     if (newStatus === 'done') {
       await enrichDoneEntries(plan);
     }
@@ -508,6 +536,61 @@ async function cmdSet(args) {
 
   const s = plan.summary;
   console.log(`Progress: ${s.done}/${s.total}`);
+}
+
+async function validateForDone(files, plan, projectDir) {
+  const i18nDir = await findI18nDir(projectDir);
+  const noTranslateConfig = i18nDir ? await readNoTranslateConfig(i18nDir) : null;
+  let consistencyConfig = null;
+  if (i18nDir) {
+    try {
+      const raw = await fs.readFile(path.join(i18nDir, 'translation-consistency.yaml'), 'utf-8');
+      const yaml = (await import('js-yaml')).default;
+      consistencyConfig = yaml.load(raw);
+    } catch { /* no config */ }
+  }
+
+  const passed = [];
+  const failed = [];
+
+  for (const f of files) {
+    if (!f.source || !f.target) continue;
+
+    // Auto-merge chunks if present
+    try {
+      const result = await mergeChunks(f.target, { projectDir });
+      if (result && result.chunkCount > 0) {
+        console.log(`  Merged ${result.chunkCount} chunk(s) for ${f.target}`);
+      }
+    } catch { /* no chunks or already merged */ }
+
+    let srcContent, tgtContent;
+    try {
+      srcContent = await fs.readFile(f.source, 'utf-8');
+      tgtContent = await fs.readFile(f.target, 'utf-8');
+    } catch {
+      console.log(`  SKIP ${f.target}: file not readable`);
+      continue;
+    }
+
+    const result = runAllChecks(srcContent, tgtContent, {
+      targetLocale: plan.meta.lang,
+      noTranslateConfig,
+      consistencyConfig,
+    });
+
+    if (result.passed) {
+      console.log(`  ✓ ${f.target}: PASS`);
+      passed.push(f);
+    } else {
+      console.log(`  ✗ ${f.target}: FAIL`);
+      for (const e of result.errors) console.log(`    ERROR: ${e}`);
+      for (const w of result.warnings) console.log(`    WARN: ${w}`);
+      failed.push(f);
+    }
+  }
+
+  return { passed, failed };
 }
 
 async function enrichDoneEntries(plan) {

@@ -326,35 +326,34 @@ export async function syncGitMode(plan, sourceDir, fromCommit, toCommit, cwd = p
   const changedRelPaths = new Set(changedFiles.map(f => path.relative(sourceDir, f)));
   const deletedRelPaths = new Set(deletedFiles.map(f => path.relative(sourceDir, f)));
 
-  const sourceFiles = await findMarkdownFiles(sourceDir, sourceDir);
-  const existingSourceSet = new Set(plan.files.map(f => f.source));
-
   const results = { added: 0, modified: 0, deleted: 0, unchanged: 0 };
 
-  const hashPromises = sourceFiles.map(async f => [f.relPath, await computeFileHash(f.fullPath)]);
-  const hashes = new Map(await Promise.all(hashPromises));
-
-  for (const { relPath, fullPath } of sourceFiles) {
+  for (const relPath of changedRelPaths) {
     const sourcePath = path.join(sourceDir, relPath);
+    const fullPath = path.resolve(sourcePath);
     const targetPath = path.join(plan.meta.target_dir, relPath);
-    const hash = hashes.get(relPath);
 
-    if (changedRelPaths.has(relPath)) {
-      const existing = plan.files.find(f => f.source === sourcePath);
-      if (existing) {
-        existing.status = 'needs_update';
-        existing.source_hash = hash;
-        existing.notes = 'MODIFIED';
-        results.modified++;
-      } else {
-        addFile(plan, sourcePath, targetPath, hash, 'pending');
-        const entry = plan.files[plan.files.length - 1];
-        entry.notes = 'NEW';
-        results.added++;
-      }
-      console.log(`  ${existing ? '* MODIFIED' : '+ NEW'}: ${relPath}`);
+    try {
+      await fs.access(fullPath);
+    } catch {
+      continue;
     }
-    // UNCHANGED files are not recorded
+
+    const hash = await computeFileHash(fullPath);
+    const existing = plan.files.find(f => f.source === sourcePath);
+    if (existing) {
+      existing.status = 'needs_update';
+      existing.source_hash = hash;
+      existing.notes = 'MODIFIED';
+      results.modified++;
+      console.log(`  * MODIFIED: ${relPath}`);
+    } else {
+      addFile(plan, sourcePath, targetPath, hash, 'pending');
+      const entry = plan.files[plan.files.length - 1];
+      entry.notes = 'NEW';
+      results.added++;
+      console.log(`  + NEW: ${relPath}`);
+    }
   }
 
   for (const relPath of deletedRelPaths) {
@@ -365,19 +364,6 @@ export async function syncGitMode(plan, sourceDir, fromCommit, toCommit, cwd = p
       existing.notes = 'DELETED';
       results.deleted++;
       console.log(`  - DELETED: ${relPath}`);
-    }
-  }
-
-  // Check for new files not in git diff (files that exist but aren't in plan)
-  for (const { relPath } of sourceFiles) {
-    const sourcePath = path.join(sourceDir, relPath);
-    if (!existingSourceSet.has(sourcePath) && !changedRelPaths.has(relPath)) {
-      const hash = hashes.get(relPath);
-      addFile(plan, sourcePath, path.join(plan.meta.target_dir, relPath), hash, 'pending');
-      const entry = plan.files[plan.files.length - 1];
-      entry.notes = 'NEW';
-      results.added++;
-      console.log(`  + NEW: ${relPath}`);
     }
   }
 

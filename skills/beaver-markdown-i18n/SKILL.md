@@ -1,5 +1,5 @@
 ---
-name: markdown-i18n
+name: beaver-markdown-i18n
 description: Translate and sync markdown documentation between languages (EN↔ZH/JA/KO). Handles new document translation and incremental sync when source updates. Preserves code blocks, frontmatter structure, links, and variables. Use when translating docs, localizing markdown, syncing i18n files, or when the user mentions translation, localization, multilingual documentation, 翻译, ローカライズ, or 번역.
 ---
 
@@ -104,9 +104,17 @@ node $SKILL_DIR/scripts/translate-cli.js fix placeholders <target>
 node $SKILL_DIR/scripts/translate-cli.js fix markers <target>
 ```
 
-### Step 3b: Full Quality Check (optional but recommended)
+### Step 4: Mark Done [MUST]
 
-Run the full quality check CLI for comprehensive validation:
+After apply passes, mark the file as done in the plan. This triggers **mandatory quality validation** — the `set` command automatically merges remaining chunks and runs all quality checks. If validation fails, the status change is rejected:
+
+```bash
+node $SKILL_DIR/scripts/plan-cli.js set <file_pattern> done
+```
+
+If validation fails, fix the issues (using fix commands from Step 3), then retry. Use `--skip-validation` only as a last resort.
+
+**Standalone quality check** (without changing status):
 
 ```bash
 node $SKILL_DIR/scripts/quality-cli.js <source> <target> --target-locale <locale>
