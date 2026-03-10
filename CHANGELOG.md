@@ -1,3 +1,11 @@
+## 0.4.0 - 2026-03-10
+### 新功能
+- beaver-markdown-i18n: 新增 Markdown 翻译流水线工具，支持 AST 级占位符掩码和增量同步
+- beaver-markdown-i18n: 新增全面的 CLI 工具（translate-cli, quality-cli, plan-cli）
+- beaver-skill: 新增 AGENTS.md 文档，定义技能结构标准
+### 优化
+- beaver-markdown-i18n: 统一脚本管理，强化质量验证流程
+
 # 更新日志
 
 ## 0.3.0 - 2026-03-06

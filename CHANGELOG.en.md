@@ -1,3 +1,11 @@
+## 0.4.0 - 2026-03-10
+### Features
+- beaver-markdown-i18n: Add comprehensive Markdown translation pipeline with AST-level masking and incremental sync
+- beaver-markdown-i18n: Add unified CLI tools (translate-cli, quality-cli, plan-cli)
+- beaver-skill: Add AGENTS.md to define skill structure standards
+### Improvements
+- beaver-markdown-i18n: Consolidate scripts and enhance quality validation process
+
 # Changelog
 
 ## 0.3.0 - 2026-03-06
@@ -34,4 +42,3 @@
 - **beaver-image-gen**: Introduce beaver-image-gen skill for AI image generation
 - **beaver-xhs-images**: Enhance with layout preferences, error recovery, and comprehensive documentation
 - **project**: Initialize project with package.json, GitHub Actions, and multilingual READMEs
-
