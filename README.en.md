@@ -6,14 +6,15 @@ A collection of AI-powered automation workflow skills designed for efficient tas
 
 ## 🚀 Core Skills
 
-This project currently includes the following core skills:
+This project currently includes the following core skills, covering everything from content creation to engineering releases:
 
 | Skill Name | Capabilities | Highlights |
 | :--- | :--- | :--- |
-| [beaver-image-gen](./skills/beaver-image-gen) | **Unified AI Image Gen Tool**: Wraps Gemini, DALL-E, DashScope, and Replicate APIs into a single CLI command. | Auto-detection, 2K/4K quality presets, seamless platform switching, reference image editing. |
-| [beaver-xhs-images](./skills/beaver-xhs-images) | **Xiaohongshu Series Generator**: Automatically deconstructs content into 1–10 consistent, social-media-ready infographics. | 10 visual styles × 8 layout strategies, smart content analysis, session-based reference image consistency. |
-| [beaver-release-skills](./skills/beaver-release-skills) | **Universal Release Workflow**: Auto-detects project types, generates multi-language changelogs, and handles SemVer updates. | Zero-config, intelligent SemVer suggestions, native multi-language changelog synchronization. |
-| [beaver-skill-analysis](./skills/beaver-skill-analysis) | **Skill Analysis & Optimization**: Meta-tool for analyzing, reverse-engineering, and optimizing AI skills. | Provides structured analysis reports, risk checklists, and implementation roadmaps. |
+| [beaver-image-gen](./skills/beaver-image-gen) | **Unified AI Image Gen**: Integrated with Google, OpenAI, DashScope, and Replicate. | Auto-detection, 2K/4K quality presets, reference image consistency. |
+| [beaver-xhs-images](./skills/beaver-xhs-images) | **Xiaohongshu Infographic**: Turns long articles into 1–10 consistent, social-media-ready cards. | 10 visual styles × 8 layout strategies, 3 distinct copywriting strategies. |
+| [beaver-markdown-i18n](./skills/beaver-markdown-i18n) | **Markdown Translation Pipeline**: AST-level masking and sync tool for documentation. | Zero structure destruction (code blocks/variable protection), TM reuse, auto-chunking. |
+| [beaver-cover-image](./skills/beaver-cover-image) | **Article Cover Generator**: 5-dimensional customization for minimal, conceptual, or typography covers. | 9 color palettes × 6 rendering styles, cinematic and widescreen support. |
+| [beaver-release-skills](./skills/beaver-release-skills) | **Universal Release Workflow**: Auto-detects project types, multi-language changelogs, and SemVer bumps. | Zero-config, intelligent SemVer suggestions, native multi-language changelog sync. |
 
 
 ## 🛠️ Installation
