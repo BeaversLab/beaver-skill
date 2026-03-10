@@ -16,8 +16,6 @@ AI 驱动的自动化工作流技能合集，使用 OpenClaw, Claude Code, Codex
 | [beaver-cover-image](./skills/beaver-cover-image) | **文章封面生成器**：5 维度自定义生成极简、概念或排版风格的封面。 | 9 种色板 × 6 种渲染风格，支持电影感、宽幅等多种比例。 |
 | [beaver-release-skills](./skills/beaver-release-skills) | **全能发布工作流**：自动检测项目、生成多语言 Changelog 并完成发布。 | 零配置起步、智能 SemVer 建议、原生支持多语言同步发布。 |
 
-
-
 ## 🛠️ 安装
 
 ### 快速安装（推荐）
