@@ -19,6 +19,7 @@ Token-efficient translation pipeline. Scripts handle parsing, caching, masking, 
 - MUST NOT mark a file as done without validation results.
 - MUST NOT mark a file as done when validation reports any `ERROR` or any `WARN` unless the user explicitly confirms acceptance.
 - If validation reports any `ERROR` or `WARN`, MUST stop, show the validation output, and wait for user confirmation before `plan set ... done`.
+- If Context usage exceeds 70%, MUST use a context cleanup or context compression command before continuing translation work.
 
 ## Required Order
 

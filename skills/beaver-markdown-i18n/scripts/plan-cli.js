@@ -18,7 +18,7 @@ import path from 'path';
 
 import {
   loadPlan, savePlan, findPlanFile, planExists, createEmptyPlan,
-  recalcSummary, filterFiles, updateFileStatus, batchUpdateStatus, addFile,
+  recalcSummary, filterFiles, updateFileStatus, batchUpdateStatus, addFile, matchesFilePattern,
   createRunDir, getRunDir, cleanRunDir, computeFileHash,
   isGitRepo, getCurrentCommit, verifyCommit,
   findMarkdownFiles, syncGitMode, syncHashMode,
@@ -303,13 +303,26 @@ async function cmdAdd(args) {
   let added = 0;
   let skipped = 0;
 
-  for (const relPath of filesToAdd) {
+  function normalizeRelPath(inputPath) {
+    const normalized = inputPath.replace(/\\/g, '/').replace(/^\.\/+/, '');
+    const sourcePrefix = `${sourceDir.replace(/\\/g, '/').replace(/\/+$/, '')}/`;
+    const targetPrefix = `${targetDir.replace(/\\/g, '/').replace(/\/+$/, '')}/`;
+    if (normalized.startsWith(sourcePrefix)) return normalized.slice(sourcePrefix.length);
+    if (normalized.startsWith(targetPrefix)) return normalized.slice(targetPrefix.length);
+    return normalized;
+  }
+
+  for (const rawPath of filesToAdd) {
+    const relPath = normalizeRelPath(rawPath);
     const sourcePath = path.join(sourceDir, relPath);
     const targetPath = path.join(targetDir, relPath);
     const hash = await computeFileHash(sourcePath);
     const ok = addFile(plan, sourcePath, targetPath, hash, status);
     if (ok) {
       added++;
+      if (rawPath !== relPath) {
+        console.log(`  ~ ${rawPath} -> ${relPath}`);
+      }
       console.log(`  + ${relPath}`);
     } else {
       skipped++;
@@ -511,7 +524,7 @@ async function cmdSet(args) {
 
     if (newStatus === 'done' && !skipValidation) {
       const candidates = plan.files.filter(f =>
-        f.source.includes(filePattern) || f.target?.includes(filePattern)
+        matchesFilePattern(f, filePattern)
       );
       const { passed, failed } = await validateForDone(candidates, plan, projectDir);
       if (failed.length > 0) {
@@ -530,8 +543,7 @@ async function cmdSet(args) {
     if (newStatus === 'done') {
       await enrichDoneEntries(plan);
       const matched = plan.files.filter(f =>
-        f.source === filePattern || f.source?.endsWith(filePattern) || f.source?.includes(filePattern) ||
-        f.target === filePattern || f.target?.endsWith(filePattern) || f.target?.includes(filePattern)
+        matchesFilePattern(f, filePattern)
       );
       await cleanupChunksForFiles(matched, projectDir);
     }

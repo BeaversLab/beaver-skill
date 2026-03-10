@@ -115,6 +115,18 @@ export function filterFiles(plan, { status, match } = {}) {
   return files;
 }
 
+export function matchesFilePattern(file, pattern) {
+  if (!pattern) return false;
+  return (
+    file.source === pattern ||
+    file.source?.endsWith(pattern) ||
+    file.source?.includes(pattern) ||
+    file.target === pattern ||
+    file.target?.endsWith(pattern) ||
+    file.target?.includes(pattern)
+  );
+}
+
 function globToRegex(glob) {
   const escaped = glob
     .replace(/[.+^${}()|[\]\\]/g, '\\$&')
@@ -134,7 +146,7 @@ function globToRegex(glob) {
 export function updateFileStatus(plan, pattern, newStatus, notes) {
   let count = 0;
   for (const file of plan.files) {
-    if (file.source === pattern || file.source.endsWith(pattern) || file.source.includes(pattern)) {
+    if (matchesFilePattern(file, pattern)) {
       file.status = newStatus;
       if (notes !== undefined) file.notes = notes;
       plan.log.push({
