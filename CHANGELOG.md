@@ -1,3 +1,10 @@
+## 0.4.1 - 2026-03-11
+### 新功能
+- beaver-markdown-i18n: 增强翻译脚本，支持占位符检查和任务元数据管理
+### 文档
+- project: 更新 README 文件并移除冗余行，提高清晰度
+- beaver-release-skills: 更新 README 文档
+
 ## 0.4.0 - 2026-03-10
 ### 新功能
 - beaver-markdown-i18n: 新增 Markdown 翻译流水线工具，支持 AST 级占位符掩码和增量同步

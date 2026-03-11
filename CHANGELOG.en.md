@@ -1,3 +1,10 @@
+## 0.4.1 - 2026-03-11
+### Features
+- beaver-markdown-i18n: enhance translation scripts with placeholder checks and task metadata management
+### Documentation
+- project: update README files and remove redundant lines for better clarity
+- beaver-release-skills: update README documentation
+
 ## 0.4.0 - 2026-03-10
 ### Features
 - beaver-markdown-i18n: Add comprehensive Markdown translation pipeline with AST-level masking and incremental sync
