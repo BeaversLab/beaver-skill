@@ -12,13 +12,14 @@
  *   --project-dir   Project root for .i18n/ lookup (default: cwd)
  *   --dry-run       Show what would be merged without writing
  *
- * The script finds chunk files by matching the target filename in .i18n/chunks/.
+ * The script finds chunk files in the target's per-run work directory.
  */
 
 import fs from 'fs/promises';
 import path from 'path';
 import { checkpointChunks } from './checkpoint.js';
 import { findI18nDir } from './read-no-translate.js';
+import { findFileDirForTarget } from './task-meta.js';
 
 /**
  * Merge translated chunk files back into a single target.
@@ -35,27 +36,30 @@ export async function mergeChunks(target, opts = {}) {
 
   const i18nDir = await findI18nDir(projectDir);
   const effectiveI18nDir = i18nDir || path.join(projectDir, '.i18n');
-  const chunksDir = path.join(effectiveI18nDir, 'chunks');
-
-  let entries;
-  try {
-    entries = await fs.readdir(chunksDir);
-  } catch {
-    throw new Error(`No chunks directory found at ${chunksDir}`);
+  const match = await findFileDirForTarget(effectiveI18nDir, target);
+  if (!match) {
+    throw new Error(`No work directory found for "${target}" in ${path.join(effectiveI18nDir, 'runs')}`);
   }
 
-  const basename = path.basename(target);
+  const { fileDir } = match;
+  let entries;
+  try {
+    entries = await fs.readdir(fileDir);
+  } catch {
+    throw new Error(`No work directory found at ${fileDir}`);
+  }
+
   const chunkFiles = entries
-    .filter(f => f.includes(basename) && f.includes('.chunk-') && f.endsWith('.md'))
+    .filter(f => /^chunk-\d{3}\.md$/.test(f))
     .sort();
 
   if (chunkFiles.length === 0) {
-    throw new Error(`No chunk files found for "${basename}" in ${chunksDir}. Expected pattern: <filename>.chunk-001.md, ...`);
+    throw new Error(`No chunk files found for "${target}" in ${fileDir}. Expected pattern: chunk-001.md, ...`);
   }
 
-  console.log(`Found ${chunkFiles.length} chunk(s) for ${basename}:`);
+  console.log(`Found ${chunkFiles.length} chunk(s) for ${target}:`);
 
-  const chunkPaths = chunkFiles.map(f => path.join(chunksDir, f));
+  const chunkPaths = chunkFiles.map(f => path.join(fileDir, f));
 
   if (!dryRun) {
     try {
@@ -75,7 +79,7 @@ export async function mergeChunks(target, opts = {}) {
 
   const parts = [];
   for (const f of chunkFiles) {
-    const content = await fs.readFile(path.join(chunksDir, f), 'utf-8');
+    const content = await fs.readFile(path.join(fileDir, f), 'utf-8');
     parts.push(content);
     const todoCount = (content.match(/<!--\s*i18n:todo\s*-->/g) || []).length;
     const status = todoCount > 0 ? `${todoCount} TODO remaining` : 'OK';

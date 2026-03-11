@@ -15,7 +15,7 @@
  *   --help                  Show help
  *
  * Check IDs:
- *   structure, codeBlocks, variables, links,
+ *   structure, codeBlocks, variables, placeholders, links,
  *   terminology, untranslated, sections, frontmatterTranslated
  */
 
@@ -89,6 +89,9 @@ function formatSection(id, sec) {
       summary = `{{var}}: ${d.mustache?.tgt ?? 0}/${d.mustache?.src ?? 0}, ` +
                 `$ENV: ${d.dollar?.tgt ?? 0}/${d.dollar?.src ?? 0}, ` +
                 `%fmt: ${d.format?.tgt ?? 0}/${d.format?.src ?? 0}`;
+      break;
+    case 'placeholders':
+      summary = d.count ? `${d.count} leaked placeholder(s)` : 'clean';
       break;
     case 'links':
       summary = `external: ${d.external?.total - (d.external?.mismatched || 0)}/${d.external?.total}, ` +

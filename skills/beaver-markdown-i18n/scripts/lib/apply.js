@@ -23,6 +23,7 @@ import { unmaskMarkdown, validatePlaceholders, fixMangledPlaceholders } from './
 import { runAllChecks } from './quality.js';
 import { findI18nDir, readNoTranslateConfig, getFmTranslateKeys } from './read-no-translate.js';
 import { loadPlan, findPlanFile } from './plan.js';
+import { loadTaskMetaForTarget } from './task-meta.js';
 
 const TODO_RE = /<!--\s*i18n:todo\s*-->/g;
 const TODO_BLOCK_RE = /<!--\s*i18n:todo\s*-->\n?([\s\S]*?)\n?<!--\s*\/i18n:todo\s*-->/g;
@@ -135,7 +136,7 @@ export async function applyFile(sourcePath, targetPath, tm, placeholders, srcLan
 
   // 5. Run core quality checks (structure, codeBlocks, variables, links)
   const result = runAllChecks(sourceContent, targetContent, {
-    only: ['structure', 'codeBlocks', 'variables', 'links'],
+    only: ['structure', 'codeBlocks', 'variables', 'placeholders', 'links'],
   });
 
   // 5b. Check for malformed TODO markers that survived auto-strip
@@ -243,10 +244,11 @@ async function resolveSourceDir(explicit, projectDir, taskMeta) {
   return undefined;
 }
 
-function fileRelPath(filePath, sourceDir) {
-  if (!sourceDir) return filePath;
-  const rel = path.relative(sourceDir, filePath);
-  if (rel.startsWith('..')) return filePath;
+function fileRelPath(filePath, sourceDir, fallbackBaseDir) {
+  const baseDir = sourceDir || fallbackBaseDir;
+  if (!baseDir) return path.basename(filePath);
+  const rel = path.relative(baseDir, filePath);
+  if (rel.startsWith('..')) return path.basename(filePath);
   return rel;
 }
 
@@ -280,18 +282,12 @@ async function main() {
     process.exit(1);
   }
 
-  // Load task metadata
   const i18nDir = await findI18nDir(projectDir);
   const effectiveI18nDir = i18nDir || path.join(projectDir, '.i18n');
   const noTranslateConfig = await readNoTranslateConfig(effectiveI18nDir);
-  const taskMetaPath = path.join(effectiveI18nDir, 'task-meta.json');
-  let taskMeta = null;
-
-  try {
-    taskMeta = JSON.parse(await fs.readFile(taskMetaPath, 'utf-8'));
-  } catch {
-    console.log('Warning: task-meta.json not found. Running without placeholder info.');
-  }
+  const sourceStat = await fs.stat(source);
+  const isDir = sourceStat.isDirectory();
+  const taskMeta = !isDir ? await loadTaskMetaForTarget(effectiveI18nDir, target) : null;
 
   // Resolve locales
   if (taskMeta) {
@@ -306,14 +302,10 @@ async function main() {
     process.exit(1);
   }
 
-  const placeholders = taskMeta?.placeholders || {};
-
   // Load TM
   const tmFile = tmPath(effectiveI18nDir, tgtLang);
   const tm = await TranslationMemory.load(tmFile);
 
-  const sourceStat = await fs.stat(source);
-  const isDir = sourceStat.isDirectory();
   const sourceDir = isDir ? source : await resolveSourceDir(explicitSourceDir, projectDir, taskMeta);
 
   let allPassed = true;
@@ -335,7 +327,17 @@ async function main() {
         continue;
       }
 
-      const result = await applyFile(srcFile, tgtFile, tm, placeholders, srcLang, tgtLang, relPath, noTranslateConfig);
+      const fileTaskMeta = await loadTaskMetaForTarget(effectiveI18nDir, tgtFile, { relPath });
+      const result = await applyFile(
+        srcFile,
+        tgtFile,
+        tm,
+        fileTaskMeta?.placeholders || {},
+        srcLang || fileTaskMeta?.source_locale || 'en',
+        tgtLang || fileTaskMeta?.target_locale,
+        relPath,
+        noTranslateConfig,
+      );
       totalNew += result.newEntries;
       totalUpdated += result.updatedEntries;
       totalCached += result.cachedEntries;
@@ -343,8 +345,17 @@ async function main() {
       if (!result.passed) allPassed = false;
     }
   } else {
-    const relPath = fileRelPath(source, sourceDir);
-    const result = await applyFile(source, target, tm, placeholders, srcLang, tgtLang, relPath, noTranslateConfig);
+    const relPath = fileRelPath(source, sourceDir, projectDir);
+    const result = await applyFile(
+      source,
+      target,
+      tm,
+      taskMeta?.placeholders || {},
+      srcLang,
+      tgtLang,
+      relPath,
+      noTranslateConfig,
+    );
     totalNew += result.newEntries;
     totalUpdated += result.updatedEntries;
     totalCached += result.cachedEntries;

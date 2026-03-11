@@ -23,6 +23,7 @@ import {
   isGitRepo, getCurrentCommit, verifyCommit,
   findMarkdownFiles, syncGitMode, syncHashMode,
 } from './lib/plan.js';
+import { findFileDirForTarget } from './lib/task-meta.js';
 
 import {
   computeTargetRatio, computeFileHash as computeContentHash,
@@ -30,6 +31,8 @@ import {
 } from './lib/scan.js';
 import { runAllChecks } from './lib/quality.js';
 import { findI18nDir, readNoTranslateConfig } from './lib/read-no-translate.js';
+import { TranslationMemory, tmPath } from './lib/tm.js';
+import { scanTmForPlaceholders } from './lib/placeholders.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -600,37 +603,40 @@ async function validateForDone(files, plan, projectDir) {
     }
   }
 
+  if (plan.meta.lang) {
+    const effectiveI18nDir = i18nDir || path.join(projectDir, '.i18n');
+    const tm = await TranslationMemory.load(tmPath(effectiveI18nDir, plan.meta.lang));
+    const tmCheck = scanTmForPlaceholders(tm);
+    if (tmCheck.passed) {
+      console.log(`  ✓ TM ${plan.meta.lang}: PASS`);
+    } else {
+      console.log(`  ✗ TM ${plan.meta.lang}: FAIL`);
+      for (const entry of tmCheck.entries.slice(0, 20)) {
+        const tokens = [...new Set(entry.occurrences.map(occurrence => occurrence.token))].join(', ');
+        console.log(`    ERROR: ${entry.sourcePath || entry.segmentId || entry.key} contains ${tokens}`);
+      }
+      if (tmCheck.entries.length > 20) {
+        console.log(`    ERROR: ... and ${tmCheck.entries.length - 20} more TM entries`);
+      }
+      failed.push({ source: `TM:${plan.meta.lang}`, target: `TM:${plan.meta.lang}` });
+    }
+  }
+
   return { passed, failed };
 }
 
 async function cleanupChunksForFiles(files, projectDir) {
   const i18nDir = await findI18nDir(projectDir);
   const effectiveI18nDir = i18nDir || path.join(projectDir, '.i18n');
-  const chunksDir = path.join(effectiveI18nDir, 'chunks');
-
-  let entries;
-  try {
-    entries = await fs.readdir(chunksDir);
-  } catch {
-    return;
-  }
 
   for (const f of files) {
     if (!f?.target) continue;
-    const basename = path.basename(f.target);
-    const matches = entries.filter(name =>
-      name.includes(basename) &&
-      name.includes('.chunk-') &&
-      (name.endsWith('.md') || name.endsWith('.meta.json'))
-    );
-
-    for (const name of matches) {
-      const fullPath = path.join(chunksDir, name);
-      try {
-        await fs.unlink(fullPath);
-        console.log(`  Deleted chunk artifact: ${fullPath}`);
-      } catch { /* ignore */ }
-    }
+    const match = await findFileDirForTarget(effectiveI18nDir, f.target);
+    if (!match?.fileDir) continue;
+    try {
+      await fs.rm(match.fileDir, { recursive: true, force: true });
+      console.log(`  Deleted work dir: ${match.fileDir}`);
+    } catch { /* ignore */ }
   }
 }
 

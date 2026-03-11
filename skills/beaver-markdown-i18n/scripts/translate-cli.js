@@ -28,13 +28,15 @@ import { PlaceholderState, unmaskMarkdown, fixMangledPlaceholders } from './lib/
 import { runAllChecks } from './lib/quality.js';
 import { findI18nDir, readNoTranslateConfig } from './lib/read-no-translate.js';
 import {
-  prepareFile, splitIntoChunks, writeChunks, seedTM, findMarkdownFiles,
+  prepareFile, splitIntoChunks, writeChunks, listTranslatableChunks, seedTM, findMarkdownFiles,
 } from './lib/prepare.js';
 import { applyFile, stripTodoMarkers } from './lib/apply.js';
 import { checkpointChunk } from './lib/checkpoint.js';
 import { mergeChunks } from './lib/merge-chunks.js';
 import { validateFile, formatReport } from './quality-cli.js';
-import { loadPlan, findPlanFile } from './lib/plan.js';
+import { loadPlan, findPlanFile, createRunDir, getRunDir } from './lib/plan.js';
+import { saveTaskMeta, targetKeyFor, loadTaskMetaForTarget } from './lib/task-meta.js';
+import { scanTranslationPathForPlaceholders, scanTmForPlaceholders } from './lib/placeholders.js';
 
 const execFileAsync = promisify(execFile);
 const TRANSLATE_CLI_PATH = fileURLToPath(import.meta.url);
@@ -63,15 +65,32 @@ async function resolveSourceDir(explicit, projectDir, taskMeta) {
   return undefined;
 }
 
+async function resolveCurrentRunDir(projectDir, i18nDir) {
+  try {
+    const plan = await loadPlan(findPlanFile(projectDir));
+    return getRunDir(plan, i18nDir);
+  } catch {
+    return null;
+  }
+}
+
+async function resolveOrCreateRunDir(projectDir, i18nDir) {
+  const existingRunDir = await resolveCurrentRunDir(projectDir, i18nDir);
+  if (existingRunDir) return existingRunDir;
+  const { runDir } = await createRunDir(i18nDir);
+  return runDir;
+}
+
 /**
  * Compute relPath for a file. In directory mode the caller already
  * has path.relative(sourceDir, file). In single-file mode we try to
  * make it relative to sourceDir; if unknown, fall back to the raw path.
  */
-function fileRelPath(filePath, sourceDir) {
-  if (!sourceDir) return filePath;
-  const rel = path.relative(sourceDir, filePath);
-  if (rel.startsWith('..')) return filePath;
+function fileRelPath(filePath, sourceDir, fallbackBaseDir) {
+  const baseDir = sourceDir || fallbackBaseDir;
+  if (!baseDir) return path.basename(filePath);
+  const rel = path.relative(baseDir, filePath);
+  if (rel.startsWith('..')) return path.basename(filePath);
   return rel;
 }
 
@@ -167,50 +186,64 @@ Options:
   const isDir = sourceStat.isDirectory();
   const sourceDir = isDir ? source : await resolveSourceDir(explicitSourceDir, projectDir);
 
-  const taskMeta = {
+  const runDir = await resolveOrCreateRunDir(projectDir, effectiveI18nDir);
+  const summary = {
     created: new Date().toISOString(),
     source_locale: srcLang,
     target_locale: tgtLang,
     source_dir: sourceDir || (isDir ? source : undefined),
     files: [],
-    placeholders: {},
-    consistency: consistencyConfig,
   };
-
   const sharedState = new PlaceholderState('');
-  const chunksDir = path.join(effectiveI18nDir, 'chunks');
 
   async function processFile(srcFile, tgtFile, relPath) {
     const result = await prepareFile(srcFile, tgtFile, tm, noTranslateConfig, srcLang, tgtLang, relPath, sharedState);
     await fs.mkdir(path.dirname(tgtFile), { recursive: true });
     await fs.writeFile(tgtFile, result.skeleton, 'utf-8');
 
+    const fileDir = path.join(runDir, targetKeyFor(relPath, tgtFile));
     const fileMeta = {
       source: srcFile, target: tgtFile, rel_path: relPath,
       todo: result.todoCount, cached: result.cachedCount,
-      total: result.totalSegments, chunks: 0,
+      total: result.totalSegments, chunks: 0, work_dir: fileDir, chunks_to_translate: [],
     };
-    Object.assign(taskMeta.placeholders, result.placeholders);
 
-    if (result.skeleton.length > maxChunkChars && result.todoCount > 0) {
-      const chunks = splitIntoChunks(result.skeleton, maxChunkChars);
-      if (chunks) {
-        const chunkPaths = await writeChunks(chunks, relPath, chunksDir, {
-          overwrite: overwriteChunks,
-          todoEntries: result.todoEntries,
-          srcLang,
-          tgtLang,
-        });
-        fileMeta.chunks = chunkPaths.length;
-        fileMeta.chunk_dir = chunksDir;
-        fileMeta.chunk_files = chunkPaths;
-      }
+    if (result.todoCount > 0) {
+      const chunks = splitIntoChunks(result.skeleton, maxChunkChars) || [result.skeleton];
+      const chunkPaths = await writeChunks(chunks, relPath, fileDir, {
+        overwrite: overwriteChunks,
+        todoEntries: result.todoEntries,
+        srcLang,
+        tgtLang,
+        taskMetaPath: path.join(fileDir, 'task-meta.json'),
+      });
+      const chunkDetails = await listTranslatableChunks(chunkPaths);
+      fileMeta.chunks = chunkPaths.length;
+      fileMeta.chunk_dir = fileDir;
+      fileMeta.chunk_files = chunkPaths;
+      fileMeta.chunks_to_translate = chunkDetails
+        .filter(chunk => chunk.needsTranslation)
+        .map(chunk => ({ path: chunk.path, todo: chunk.todoCount }));
     }
 
-    taskMeta.files.push(fileMeta);
+    await saveTaskMeta(fileDir, {
+      created: summary.created,
+      source_locale: srcLang,
+      target_locale: tgtLang,
+      source_dir: sourceDir || (isDir ? source : undefined),
+      source: srcFile,
+      target: tgtFile,
+      rel_path: relPath,
+      placeholders: result.placeholders,
+      consistency: consistencyConfig,
+      file: fileMeta,
+    });
+
+    summary.files.push(fileMeta);
     const status = result.todoCount === 0 ? '✓' : '●';
     const chunkNote = fileMeta.chunks > 0 ? ` → ${fileMeta.chunks} chunk(s)` : '';
     console.log(`  ${status} ${relPath}: ${result.todoCount} to translate, ${result.cachedCount} cached (${result.totalSegments} total)${chunkNote}`);
+    console.log(`    work dir: ${fileDir}`);
   }
 
   if (isDir) {
@@ -222,37 +255,39 @@ Options:
       await processFile(srcFile, tgtFile, relPath);
     }
   } else {
-    const relPath = fileRelPath(source, sourceDir);
+    const relPath = fileRelPath(source, sourceDir, projectDir);
     console.log('');
     await processFile(source, target, relPath);
   }
 
-  const taskMetaPath = path.join(effectiveI18nDir, 'task-meta.json');
-  await fs.mkdir(path.dirname(taskMetaPath), { recursive: true });
-  await fs.writeFile(taskMetaPath, JSON.stringify(taskMeta, null, 2), 'utf-8');
+  const totalTodo = summary.files.reduce((s, f) => s + f.todo, 0);
+  const totalCached = summary.files.reduce((s, f) => s + f.cached, 0);
+  const totalSegs = summary.files.reduce((s, f) => s + f.total, 0);
+  const pendingChunks = summary.files.flatMap(file =>
+    (file.chunks_to_translate || []).map(chunk => ({
+      relPath: file.rel_path,
+      path: chunk.path,
+      todo: chunk.todo,
+    })),
+  );
 
-  const totalTodo = taskMeta.files.reduce((s, f) => s + f.todo, 0);
-  const totalCached = taskMeta.files.reduce((s, f) => s + f.cached, 0);
-  const totalSegs = taskMeta.files.reduce((s, f) => s + f.total, 0);
-
-  console.log(`\n✓ Prepared ${taskMeta.files.length} file(s)`);
+  console.log(`\n✓ Prepared ${summary.files.length} file(s)`);
   console.log(`  Segments: ${totalTodo} to translate, ${totalCached} cached (${totalSegs} total)`);
-  console.log(`  Task metadata: ${taskMetaPath}`);
+  console.log(`  Run directory: ${runDir}`);
 
-  const chunkedFiles = taskMeta.files.filter(f => f.chunks > 0);
   if (totalTodo === 0) {
     console.log('\n  All segments cached — no translation needed.');
-  } else if (chunkedFiles.length > 0) {
-    console.log(`\n  Large file(s) split into chunks in: ${chunksDir}`);
-    for (const f of chunkedFiles) console.log(`    ${f.rel_path}: ${f.chunks} chunk(s)`);
+    console.log(`  Next: node translate-cli.js apply ${source} ${target}`);
+  } else if (pendingChunks.length > 0) {
+    console.log(`\n  Chunks to translate:`);
+    for (const chunk of pendingChunks) {
+      console.log(`    ${chunk.relPath}: ${chunk.path} (${chunk.todo} TODO)`);
+    }
     console.log(`\nNext:`);
-    console.log(`  1. Translate a chunk file in ${chunksDir}`);
+    console.log(`  1. Translate only the chunk files listed above`);
     console.log(`  2. node translate-cli.js checkpoint <chunk-file>`);
     console.log(`  3. Repeat for remaining chunks, then node translate-cli.js merge ${target}`);
     console.log(`  4. node translate-cli.js apply ${source} ${target}`);
-  } else {
-    console.log(`\nNext: translate <!-- i18n:todo --> sections, then run:`);
-    console.log(`  node translate-cli.js apply ${source} ${target}`);
   }
 }
 
@@ -334,18 +369,17 @@ Options:
   const i18nDir = await findI18nDir(projectDir);
   const effectiveI18nDir = i18nDir || path.join(projectDir, '.i18n');
   const noTranslateConfig = await readNoTranslateConfig(effectiveI18nDir);
-  const taskMetaPath = path.join(effectiveI18nDir, 'task-meta.json');
-  let taskMeta = null;
+  const currentRunDir = await resolveCurrentRunDir(projectDir, effectiveI18nDir);
 
-  try {
-    taskMeta = JSON.parse(await fs.readFile(taskMetaPath, 'utf-8'));
-  } catch {
-    console.log('Warning: task-meta.json not found. Running without placeholder info.');
-  }
+  const sourceStat = await fs.stat(source);
+  const isDir = sourceStat.isDirectory();
+  const singleTaskMeta = !isDir
+    ? await loadTaskMetaForTarget(effectiveI18nDir, target, { runDir: currentRunDir })
+    : null;
 
-  if (taskMeta) {
-    tgtLang = tgtLang || taskMeta.target_locale;
-    srcLang = srcLang || taskMeta.source_locale;
+  if (singleTaskMeta) {
+    tgtLang = tgtLang || singleTaskMeta.target_locale;
+    srcLang = srcLang || singleTaskMeta.source_locale;
   }
   if (!tgtLang) tgtLang = detectLocaleFromPath(target);
   if (!srcLang) srcLang = detectLocaleFromPath(source) || 'en';
@@ -355,13 +389,10 @@ Options:
     process.exit(1);
   }
 
-  const placeholders = taskMeta?.placeholders || {};
   const tmFile = tmPath(effectiveI18nDir, tgtLang);
   const tm = await TranslationMemory.load(tmFile);
 
-  const sourceStat = await fs.stat(source);
-  const isDir = sourceStat.isDirectory();
-  const sourceDir = isDir ? source : await resolveSourceDir(explicitSourceDir, projectDir, taskMeta);
+  const sourceDir = isDir ? source : await resolveSourceDir(explicitSourceDir, projectDir, singleTaskMeta);
   let allPassed = true, totalNew = 0, totalUpdated = 0, totalCached = 0;
 
   function printResult(relPath, result) {
@@ -383,13 +414,21 @@ Options:
       const relPath = path.relative(source, srcFile);
       const tgtFile = path.join(target, relPath);
       try { await fs.access(tgtFile); } catch { console.log(`  SKIP ${relPath}: target not found`); continue; }
-      const result = await applyFile(srcFile, tgtFile, tm, placeholders, srcLang, tgtLang, relPath, noTranslateConfig);
+      const fileTaskMeta = await loadTaskMetaForTarget(effectiveI18nDir, tgtFile, {
+        relPath,
+        runDir: currentRunDir,
+      });
+      const fileSrcLang = srcLang || fileTaskMeta?.source_locale || 'en';
+      const fileTgtLang = tgtLang || fileTaskMeta?.target_locale;
+      const filePlaceholders = fileTaskMeta?.placeholders || {};
+      const result = await applyFile(srcFile, tgtFile, tm, filePlaceholders, fileSrcLang, fileTgtLang, relPath, noTranslateConfig);
       totalNew += result.newEntries; totalUpdated += result.updatedEntries; totalCached += result.cachedEntries;
       printResult(relPath, result);
       if (!result.passed) allPassed = false;
     }
   } else {
-    const relPath = fileRelPath(source, sourceDir);
+    const relPath = fileRelPath(source, sourceDir, projectDir);
+    const placeholders = singleTaskMeta?.placeholders || {};
     const result = await applyFile(source, target, tm, placeholders, srcLang, tgtLang, relPath, noTranslateConfig);
     totalNew += result.newEntries; totalUpdated += result.updatedEntries; totalCached += result.cachedEntries;
     printResult(relPath, result);
@@ -475,7 +514,7 @@ Options:
     process.exit(1);
   }
 
-  const planArgs = ['set', target, 'done', '--skip-validation', '--project-dir', projectDir];
+  const planArgs = ['set', target, 'done', '--project-dir', projectDir];
   if (notes) planArgs.push('--notes', notes);
   await runNodeScript(PLAN_CLI_PATH, planArgs, projectDir);
 }
@@ -507,6 +546,52 @@ Options:
   }
 
   await mergeChunks(target, { projectDir, dryRun });
+}
+
+// ---------------------------------------------------------------------------
+// placeholders command
+// ---------------------------------------------------------------------------
+
+async function cmdPlaceholders(args) {
+  let target = null;
+  let jsonOutput = false;
+
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--json') { jsonOutput = true; }
+    else if (args[i] === '--help' || args[i] === '-h') {
+      console.log(`Usage: node translate-cli.js placeholders <target-file-or-dir> [options]
+
+Options:
+  --json          Output as JSON`);
+      process.exit(0);
+    }
+    else if (!target) { target = args[i]; }
+  }
+
+  if (!target) {
+    console.error('Error: target file or directory path required.');
+    process.exit(1);
+  }
+
+  const result = await scanTranslationPathForPlaceholders(target);
+
+  if (jsonOutput) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    for (const file of result.files) {
+      const status = file.passed ? 'PASS' : 'FAIL';
+      console.log(`${status} ${file.relPath}: ${file.count} placeholder(s)`);
+      for (const occurrence of file.occurrences.slice(0, 10)) {
+        console.log(`  ${occurrence.line}:${occurrence.column} ${occurrence.token}`);
+      }
+      if (file.occurrences.length > 10) {
+        console.log(`  ... and ${file.occurrences.length - 10} more`);
+      }
+    }
+    console.log(result.passed ? '\n✓ No placeholders found.' : '\n✗ Placeholder leaks found.');
+  }
+
+  process.exit(result.passed ? 0 : 1);
 }
 
 // ---------------------------------------------------------------------------
@@ -577,7 +662,7 @@ Options:
       } catch { /* target doesn't exist */ }
     }
   } else {
-    const relPath = fileRelPath(source, sourceDir);
+    const relPath = fileRelPath(source, sourceDir, projectDir);
     totalSeeded = await seedTM(source, target, tm, srcLang, tgtLang, relPath, noTranslateConfig);
   }
 
@@ -610,6 +695,7 @@ Subcommands:
   export --lang <locale> [--format jsonl|json]
                                    Export TM entries
   compact --lang <locale>          Remove duplicates, re-sort and compact TM file
+  placeholders --lang <locale>     Check TM translations for leaked placeholders
   prune <source_dir> --lang <locale> [--src-lang en] [--dry-run]
                                    Remove stale entries whose source text no longer exists
 
@@ -631,6 +717,7 @@ Common options:
     case 'delete':  return await tmDelete(subArgs);
     case 'export':  return await tmExport(subArgs);
     case 'compact': return await tmCompact(subArgs);
+    case 'placeholders': return await tmPlaceholders(subArgs);
     case 'prune':   return await tmPrune(subArgs);
     default:
       console.error(`Unknown tm subcommand: ${sub}`);
@@ -653,6 +740,7 @@ function parseTmArgs(args) {
     else if (args[i] === '--file') opts.file = args[++i];
     else if (args[i] === '--format') opts.format = args[++i];
     else if (args[i] === '--dry-run') opts.dryRun = true;
+    else if (args[i] === '--json') opts.json = true;
     else if (args[i] === '--limit') opts.limit = parseInt(args[++i], 10);
     else positional.push(args[i]);
   }
@@ -882,6 +970,44 @@ async function tmCompact(args) {
   console.log(`✓ Compacted TM: ${before} entries, saved to ${file}`);
 }
 
+async function tmPlaceholders(args) {
+  const opts = parseTmArgs(args);
+  if (args.includes('--help') || args.includes('-h')) {
+    console.log(`Usage: node translate-cli.js tm placeholders --lang <locale> [options]
+
+Options:
+  --lang          Target locale (required)
+  --limit N       Max entries to print (default: 20)
+  --json          Output as JSON
+  --project-dir   Project root for .i18n/ config lookup`);
+    process.exit(0);
+  }
+  const { tm, file } = await loadTmFromOpts(opts);
+  const result = scanTmForPlaceholders(tm);
+  const limit = opts.limit || 20;
+
+  if (opts.json) {
+    console.log(JSON.stringify({ file, ...result }, null, 2));
+    process.exit(result.passed ? 0 : 1);
+  }
+
+  console.log(`TM file: ${file}`);
+  if (result.passed) {
+    console.log('✓ No placeholder leaks found in TM translations.');
+    return;
+  }
+
+  console.log(`✗ Found ${result.entries.length} TM entr${result.entries.length === 1 ? 'y' : 'ies'} with leaked placeholders:`);
+  for (const entry of result.entries.slice(0, limit)) {
+    const tokens = [...new Set(entry.occurrences.map(occurrence => occurrence.token))].join(', ');
+    console.log(`  [${entry.key}] ${entry.sourcePath || entry.segmentId || '(unknown)'} -> ${tokens}`);
+  }
+  if (result.entries.length > limit) {
+    console.log(`  ... and ${result.entries.length - limit} more`);
+  }
+  process.exit(1);
+}
+
 async function tmPrune(args) {
   const opts = parseTmArgs(args);
   const sourceDir = opts.positional[0];
@@ -970,6 +1096,7 @@ Commands:
   apply       Validate, unmask placeholders, update TM
   afterTranslate  Run apply + quality + plan set done
   merge       Merge translated chunks into target
+  placeholders Check target file/dir for leaked placeholders
   seed        Seed TM from existing translation pairs
   tm          Translation Memory CRUD operations
 
@@ -984,6 +1111,7 @@ TM subcommands:
   tm delete --match <query> --lang <locale>         Batch delete by text match
   tm export --lang <locale> [--format jsonl|json]   Export entries
   tm compact --lang <locale>                        Compact TM file
+  tm placeholders --lang <locale> [--limit N]       Check translated TM entries for placeholders
   tm prune <source_dir> --lang <locale> [--dry-run] Remove stale entries
 
 Run any command with --help for detailed usage.`);
@@ -1007,6 +1135,7 @@ async function main() {
     case 'afterTranslate':
     case 'after-translate': return await cmdAfterTranslate(commandArgs);
     case 'merge':    return await cmdMerge(commandArgs);
+    case 'placeholders': return await cmdPlaceholders(commandArgs);
     case 'seed':     return await cmdSeed(commandArgs);
     case 'tm':       return await cmdTm(commandArgs);
     default:

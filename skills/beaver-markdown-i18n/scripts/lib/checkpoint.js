@@ -5,20 +5,12 @@ import path from 'path';
 import { cacheKey, tmPath, TranslationMemory } from './tm.js';
 import { fixMangledPlaceholders, unmaskMarkdown } from './masking.js';
 import { findI18nDir } from './read-no-translate.js';
+import { loadTaskMetaForChunk } from './task-meta.js';
 
 const TODO_BLOCK_RE = /<!--\s*i18n:todo\s*-->\n?([\s\S]*?)\n?<!--\s*\/i18n:todo\s*-->/g;
 
 function getChunkMetaPath(chunkFile) {
   return chunkFile.replace(/\.md$/, '.meta.json');
-}
-
-async function loadTaskMeta(effectiveI18nDir) {
-  const taskMetaPath = path.join(effectiveI18nDir, 'task-meta.json');
-  try {
-    return JSON.parse(await fs.readFile(taskMetaPath, 'utf-8'));
-  } catch {
-    return null;
-  }
 }
 
 function extractTodoContents(chunkContent) {
@@ -29,12 +21,12 @@ export async function checkpointChunk(chunkFile, opts = {}) {
   const projectDir = opts.projectDir || process.cwd();
   const i18nDir = await findI18nDir(projectDir);
   const effectiveI18nDir = i18nDir || path.join(projectDir, '.i18n');
-  const taskMeta = await loadTaskMeta(effectiveI18nDir);
-  const srcLang = opts.srcLang || taskMeta?.source_locale || 'en';
-  const tgtLang = opts.tgtLang || taskMeta?.target_locale;
+  const { taskMeta, chunkMeta } = await loadTaskMetaForChunk(chunkFile);
+  const srcLang = opts.srcLang || chunkMeta?.source_locale || taskMeta?.source_locale || 'en';
+  const tgtLang = opts.tgtLang || chunkMeta?.target_locale || taskMeta?.target_locale;
 
   if (!tgtLang) {
-    throw new Error('Target locale not found. Pass --lang or ensure .i18n/task-meta.json exists.');
+    throw new Error(`Target locale not found for ${chunkFile}. Pass --lang or ensure sibling task-meta.json exists.`);
   }
 
   const metaPath = getChunkMetaPath(chunkFile);

@@ -26,7 +26,8 @@ import { TranslationMemory, cacheKey, textHash, tmPath } from './tm.js';
 import { extractSegments, splitFrontmatter, joinFrontmatter } from './segments.js';
 import { maskMarkdown, maskCodeBlocks, PlaceholderState } from './masking.js';
 import { findI18nDir, readNoTranslateConfig, shouldNotTranslate, getFmTranslateKeys } from './read-no-translate.js';
-import { loadPlan, findPlanFile } from './plan.js';
+import { loadPlan, findPlanFile, createRunDir, getRunDir } from './plan.js';
+import { saveTaskMeta, targetKeyFor } from './task-meta.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -41,10 +42,27 @@ async function resolveSourceDir(explicit, projectDir) {
   return undefined;
 }
 
-function fileRelPath(filePath, sourceDir) {
-  if (!sourceDir) return filePath;
-  const rel = path.relative(sourceDir, filePath);
-  if (rel.startsWith('..')) return filePath;
+async function resolveCurrentRunDir(projectDir, i18nDir) {
+  try {
+    const plan = await loadPlan(findPlanFile(projectDir));
+    return getRunDir(plan, i18nDir);
+  } catch {
+    return null;
+  }
+}
+
+async function resolveOrCreateRunDir(projectDir, i18nDir) {
+  const existingRunDir = await resolveCurrentRunDir(projectDir, i18nDir);
+  if (existingRunDir) return existingRunDir;
+  const { runDir } = await createRunDir(i18nDir);
+  return runDir;
+}
+
+function fileRelPath(filePath, sourceDir, fallbackBaseDir) {
+  const baseDir = sourceDir || fallbackBaseDir;
+  if (!baseDir) return path.basename(filePath);
+  const rel = path.relative(baseDir, filePath);
+  if (rel.startsWith('..')) return path.basename(filePath);
   return rel;
 }
 
@@ -72,15 +90,15 @@ function detectLocaleFromPath(p) {
 // ---------------------------------------------------------------------------
 
 function prepareFrontmatter(fmYaml, tm, segments, relPath, srcLang, tgtLang, state, noTranslateConfig) {
-  if (!fmYaml) return { translated: null, todoCount: 0, cachedCount: 0, todoEntries: [] };
+  if (!fmYaml) return { translated: null, todoCount: 0, cachedCount: 0, fieldCount: 0, todoEntries: [] };
 
   let data;
   try {
     data = yaml.load(fmYaml);
   } catch {
-    return { translated: fmYaml, todoCount: 0, cachedCount: 0, todoEntries: [] };
+    return { translated: fmYaml, todoCount: 0, cachedCount: 0, fieldCount: 0, todoEntries: [] };
   }
-  if (!data || typeof data !== 'object') return { translated: fmYaml, todoCount: 0, cachedCount: 0, todoEntries: [] };
+  if (!data || typeof data !== 'object') return { translated: fmYaml, todoCount: 0, cachedCount: 0, fieldCount: 0, todoEntries: [] };
 
   let todoCount = 0;
   let cachedCount = 0;
@@ -297,6 +315,7 @@ export async function findMarkdownFiles(dir) {
 
 const TODO_OPEN_RE = /<!--\s*i18n:todo\s*-->/;
 const TODO_CLOSE_RE = /<!--\s*\/i18n:todo\s*-->/;
+const TODO_MARKER_RE = /<!--\s*i18n:todo\s*-->/g;
 
 const DEFAULT_MAX_CHUNK_CHARS = 3000;
 
@@ -352,17 +371,16 @@ export function splitIntoChunks(skeleton, maxChars = DEFAULT_MAX_CHUNK_CHARS) {
   return chunks.length > 1 ? chunks : null;
 }
 
-export async function writeChunks(chunks, relPath, chunksDir, opts = {}) {
-  const safeName = relPath.replace(/[/\\]/g, '_');
-  await fs.mkdir(chunksDir, { recursive: true });
+export async function writeChunks(chunks, relPath, fileDir, opts = {}) {
+  await fs.mkdir(fileDir, { recursive: true });
 
   const overwrite = opts.overwrite === true;
-  const existing = (await fs.readdir(chunksDir))
-    .filter(name => name.startsWith(`${safeName}.chunk-`) && name.endsWith('.md'))
+  const existing = (await fs.readdir(fileDir))
+    .filter(name => /^chunk-\d{3}\.md$/.test(name))
     .sort();
 
   if (existing.length > 0) {
-    const existingPaths = existing.map(name => path.join(chunksDir, name));
+    const existingPaths = existing.map(name => path.join(fileDir, name));
     const existingContents = await Promise.all(existingPaths.map(file => fs.readFile(file, 'utf-8')));
     const matchesFresh =
       existingContents.length === chunks.length &&
@@ -374,7 +392,7 @@ export async function writeChunks(chunks, relPath, chunksDir, opts = {}) {
 
     if (!overwrite) {
       throw new Error(
-        `Existing chunk files found for ${relPath} in ${chunksDir}. ` +
+        `Existing chunk files found for ${relPath} in ${fileDir}. ` +
         `Refusing to overwrite possible translation progress. ` +
         `Merge/apply the existing chunks first, or rerun prepare with --overwrite-chunks.`,
       );
@@ -385,7 +403,7 @@ export async function writeChunks(chunks, relPath, chunksDir, opts = {}) {
   let todoCursor = 0;
   const paths = [];
   for (let i = 0; i < chunks.length; i++) {
-    const chunkFile = path.join(chunksDir, `${safeName}.chunk-${String(i + 1).padStart(3, '0')}.md`);
+    const chunkFile = path.join(fileDir, `chunk-${String(i + 1).padStart(3, '0')}.md`);
     await fs.writeFile(chunkFile, chunks[i], 'utf-8');
     const todoCount = (chunks[i].match(/<!--\s*i18n:todo\s*-->/g) || []).length;
     const entriesForChunk = todoEntries.slice(todoCursor, todoCursor + todoCount);
@@ -400,6 +418,8 @@ export async function writeChunks(chunks, relPath, chunksDir, opts = {}) {
       rel_path: relPath,
       source_locale: opts.srcLang || '',
       target_locale: opts.tgtLang || '',
+      task_meta_path: opts.taskMetaPath || '',
+      todo_count: todoCount,
       entries: entriesForChunk,
     }, null, 2), 'utf-8');
     paths.push(chunkFile);
@@ -409,6 +429,20 @@ export async function writeChunks(chunks, relPath, chunksDir, opts = {}) {
     throw new Error(`Chunk metadata mismatch for ${relPath}: ${todoEntries.length - todoCursor} TODO entr${todoEntries.length - todoCursor === 1 ? 'y was' : 'ies were'} not assigned to any chunk.`);
   }
   return paths;
+}
+
+export async function listTranslatableChunks(chunkPaths) {
+  const chunks = [];
+  for (const chunkPath of chunkPaths) {
+    const content = await fs.readFile(chunkPath, 'utf-8');
+    const todoCount = (content.match(TODO_MARKER_RE) || []).length;
+    chunks.push({
+      path: chunkPath,
+      todoCount,
+      needsTranslation: todoCount > 0,
+    });
+  }
+  return chunks;
 }
 
 // ---------------------------------------------------------------------------
@@ -528,21 +562,17 @@ async function main() {
     return await runSeedMode(source, target, tm, tmFile, srcLang, tgtLang, isDir, sourceDir, noTranslateConfig);
   }
 
-  // Prepare task metadata
-  const taskMeta = {
+  const runDir = await resolveOrCreateRunDir(projectDir, effectiveI18nDir);
+  const summary = {
     created: new Date().toISOString(),
     source_locale: srcLang,
     target_locale: tgtLang,
     source_dir: sourceDir || (isDir ? source : undefined),
     files: [],
-    placeholders: {},
-    consistency: consistencyConfig,
   };
 
   // Shared placeholder state across all files to avoid ID collisions
   const sharedState = new PlaceholderState('');
-
-  const chunksDir = path.join(effectiveI18nDir, 'chunks');
 
   async function processFile(srcFile, tgtFile, relPath) {
     const result = await prepareFile(srcFile, tgtFile, tm, noTranslateConfig, srcLang, tgtLang, relPath, sharedState);
@@ -550,6 +580,7 @@ async function main() {
     await fs.mkdir(path.dirname(tgtFile), { recursive: true });
     await fs.writeFile(tgtFile, result.skeleton, 'utf-8');
 
+    const fileDir = path.join(runDir, targetKeyFor(relPath, tgtFile));
     const fileMeta = {
       source: srcFile,
       target: tgtFile,
@@ -558,30 +589,47 @@ async function main() {
       cached: result.cachedCount,
       total: result.totalSegments,
       chunks: 0,
+      work_dir: fileDir,
+      chunks_to_translate: [],
     };
-    Object.assign(taskMeta.placeholders, result.placeholders);
 
-    // Generate chunks for large files
-    if (result.skeleton.length > maxChunkChars && result.todoCount > 0) {
-      const chunks = splitIntoChunks(result.skeleton, maxChunkChars);
-      if (chunks) {
-        const chunkPaths = await writeChunks(chunks, relPath, chunksDir, {
-          overwrite: overwriteChunks,
-          todoEntries: result.todoEntries,
-          srcLang,
-          tgtLang,
-        });
-        fileMeta.chunks = chunkPaths.length;
-        fileMeta.chunk_dir = chunksDir;
-        fileMeta.chunk_files = chunkPaths;
-      }
+    if (result.todoCount > 0) {
+      const chunks = splitIntoChunks(result.skeleton, maxChunkChars) || [result.skeleton];
+      const chunkPaths = await writeChunks(chunks, relPath, fileDir, {
+        overwrite: overwriteChunks,
+        todoEntries: result.todoEntries,
+        srcLang,
+        tgtLang,
+        taskMetaPath: path.join(fileDir, 'task-meta.json'),
+      });
+      const chunkDetails = await listTranslatableChunks(chunkPaths);
+      fileMeta.chunks = chunkPaths.length;
+      fileMeta.chunk_dir = fileDir;
+      fileMeta.chunk_files = chunkPaths;
+      fileMeta.chunks_to_translate = chunkDetails
+        .filter(chunk => chunk.needsTranslation)
+        .map(chunk => ({ path: chunk.path, todo: chunk.todoCount }));
     }
 
-    taskMeta.files.push(fileMeta);
+    await saveTaskMeta(fileDir, {
+      created: summary.created,
+      source_locale: srcLang,
+      target_locale: tgtLang,
+      source_dir: sourceDir || (isDir ? source : undefined),
+      source: srcFile,
+      target: tgtFile,
+      rel_path: relPath,
+      placeholders: result.placeholders,
+      consistency: consistencyConfig,
+      file: fileMeta,
+    });
+
+    summary.files.push(fileMeta);
 
     const status = result.todoCount === 0 ? '✓' : '●';
     const chunkNote = fileMeta.chunks > 0 ? ` → ${fileMeta.chunks} chunk(s)` : '';
     console.log(`  ${status} ${relPath}: ${result.todoCount} to translate, ${result.cachedCount} cached (${result.totalSegments} total)${chunkNote}`);
+    console.log(`    work dir: ${fileDir}`);
   }
 
   if (isDir) {
@@ -594,43 +642,41 @@ async function main() {
       await processFile(srcFile, tgtFile, relPath);
     }
   } else {
-    const relPath = fileRelPath(source, sourceDir);
+    const relPath = fileRelPath(source, sourceDir, projectDir);
     console.log('');
     await processFile(source, target, relPath);
   }
 
-  // Write task metadata
-  const taskMetaPath = path.join(effectiveI18nDir, 'task-meta.json');
-  await fs.mkdir(path.dirname(taskMetaPath), { recursive: true });
-  await fs.writeFile(taskMetaPath, JSON.stringify(taskMeta, null, 2), 'utf-8');
-
   // Summary
-  const totalTodo = taskMeta.files.reduce((sum, f) => sum + f.todo, 0);
-  const totalCached = taskMeta.files.reduce((sum, f) => sum + f.cached, 0);
-  const totalSegs = taskMeta.files.reduce((sum, f) => sum + f.total, 0);
+  const totalTodo = summary.files.reduce((sum, f) => sum + f.todo, 0);
+  const totalCached = summary.files.reduce((sum, f) => sum + f.cached, 0);
+  const totalSegs = summary.files.reduce((sum, f) => sum + f.total, 0);
+  const pendingChunks = summary.files.flatMap(file =>
+    (file.chunks_to_translate || []).map(chunk => ({
+      relPath: file.rel_path,
+      path: chunk.path,
+      todo: chunk.todo,
+    })),
+  );
 
-  console.log(`\n✓ Prepared ${taskMeta.files.length} file(s)`);
+  console.log(`\n✓ Prepared ${summary.files.length} file(s)`);
   console.log(`  Segments: ${totalTodo} to translate, ${totalCached} cached (${totalSegs} total)`);
-  console.log(`  Task metadata: ${taskMetaPath}`);
-
-  const chunkedFiles = taskMeta.files.filter(f => f.chunks > 0);
+  console.log(`  Run directory: ${runDir}`);
 
   if (totalTodo === 0) {
     console.log('\n  All segments cached — no translation needed.');
-  } else if (chunkedFiles.length > 0) {
-    console.log(`\n  Large file(s) split into chunks in: ${chunksDir}`);
-    console.log('  Workflow: translate each chunk → merge → apply');
-    for (const f of chunkedFiles) {
-      console.log(`    ${f.rel_path}: ${f.chunks} chunk(s)`);
+    console.log(`  Next: node scripts/apply.js ${source} ${target}${tgtLang ? ' --lang ' + tgtLang : ''}`);
+  } else if (pendingChunks.length > 0) {
+    console.log(`\n  Chunks to translate:`);
+    for (const chunk of pendingChunks) {
+      console.log(`    ${chunk.relPath}: ${chunk.path} (${chunk.todo} TODO)`);
     }
+    console.log('  Workflow: translate each chunk → merge → apply');
     console.log(`\nNext:`);
-    console.log(`  1. Translate a chunk file in ${chunksDir}`);
+    console.log(`  1. Translate only the chunk files listed above`);
     console.log(`  2. node scripts/translate-cli.js checkpoint <chunk-file>${tgtLang ? ' --lang ' + tgtLang : ''}`);
     console.log(`  3. Repeat for remaining chunks, then node scripts/merge-chunks.js ${target}${tgtLang ? ' --lang ' + tgtLang : ''}`);
     console.log(`  4. node scripts/apply.js ${source} ${target}${tgtLang ? ' --lang ' + tgtLang : ''}`);
-  } else {
-    console.log(`\nNext: translate <!-- i18n:todo --> sections, then run:`);
-    console.log(`  node scripts/apply.js ${source} ${target}${tgtLang ? ' --lang ' + tgtLang : ''}`);
   }
 }
 
@@ -654,7 +700,7 @@ async function runSeedMode(source, target, tm, tmFile, srcLang, tgtLang, isDir, 
       }
     }
   } else {
-    const relPath = fileRelPath(source, sourceDir);
+    const relPath = fileRelPath(source, sourceDir, projectDir);
     totalSeeded = await seedTM(source, target, tm, srcLang, tgtLang, relPath, noTranslateConfig);
   }
 

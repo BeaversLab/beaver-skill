@@ -12,6 +12,7 @@ import { getFmTranslateKeys } from './read-no-translate.js';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
+import { checkTextForPlaceholders } from './placeholders.js';
 
 // ---------------------------------------------------------------------------
 // Content extraction helpers
@@ -213,6 +214,23 @@ export function checkVariables(srcContent, tgtContent) {
   errors.push(...diffCounts(src.format, tgt.format, 'Format specifier'));
 
   return { id: 'variables', errors, warnings: [], details };
+}
+
+export function checkPlaceholderLeaks(tgtContent) {
+  const check = checkTextForPlaceholders(tgtContent);
+  const errors = check.occurrences.map(occurrence =>
+    `Placeholder leak at line ${occurrence.line}:${occurrence.column}: "${occurrence.token}"`,
+  );
+
+  return {
+    id: 'placeholders',
+    errors,
+    warnings: [],
+    details: {
+      count: check.count,
+      tokens: [...new Set(check.occurrences.map(occurrence => occurrence.token))],
+    },
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -461,7 +479,7 @@ export function checkFrontmatterTranslated(srcContent, tgtContent, targetLocale,
 // ---------------------------------------------------------------------------
 
 const ALL_CHECK_IDS = [
-  'structure', 'codeBlocks', 'variables', 'links',
+  'structure', 'codeBlocks', 'variables', 'placeholders', 'links',
   'terminology', 'untranslated', 'sections', 'frontmatterTranslated',
 ];
 
@@ -507,6 +525,7 @@ export function runAllChecks(srcContent, tgtContent, opts = {}) {
   if (active.has('structure'))             collect(checkStructure(srcContent, tgtContent));
   if (active.has('codeBlocks'))            collect(checkCodeBlocks(srcContent, tgtContent));
   if (active.has('variables'))             collect(checkVariables(srcContent, tgtContent));
+  if (active.has('placeholders'))          collect(checkPlaceholderLeaks(tgtContent));
   if (active.has('links'))                 collect(checkLinks(srcContent, tgtContent));
   if (active.has('terminology'))           collect(checkTerminology(tgtContent, targetLocale, noTranslateConfig, consistencyConfig));
   if (active.has('untranslated'))          collect(checkUntranslated(tgtContent, targetLocale));
