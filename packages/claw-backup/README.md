@@ -1,11 +1,11 @@
-# @beaverlabs/claw-backup
+# @beaverslab/claw-backup
 
 Rule-based backup and restore CLI for claw-style local app data.
 
 ## Install
 
 ```bash
-npm install -g @beaverlabs/claw-backup
+npm install -g @beaverslab/claw-backup
 ```
 
 ## Commands

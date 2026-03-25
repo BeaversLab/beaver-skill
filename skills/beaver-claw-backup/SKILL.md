@@ -17,9 +17,9 @@ Manage rule-based backup and restore workflows for claw-style local app data.
 ## Commands
 
 ```bash
-npx @beaverlabs/claw-backup init-rule
-npx @beaverlabs/claw-backup backup
-npx @beaverlabs/claw-backup restore
+npx @beaverslab/claw-backup init-rule
+npx @beaverslab/claw-backup backup
+npx @beaverslab/claw-backup restore
 ```
 
 ## Workflow

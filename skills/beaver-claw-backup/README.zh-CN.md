@@ -42,7 +42,7 @@ packages/claw-backup/
 安装 CLI：
 
 ```bash
-npm install -g @beaverlabs/claw-backup
+npm install -g @beaverslab/claw-backup
 ```
 
 常用命令：
@@ -56,9 +56,9 @@ claw-backup restore
 也可以直接临时执行：
 
 ```bash
-npx @beaverlabs/claw-backup init-rule
-npx @beaverlabs/claw-backup backup
-npx @beaverlabs/claw-backup restore
+npx @beaverslab/claw-backup init-rule
+npx @beaverslab/claw-backup backup
+npx @beaverslab/claw-backup restore
 ```
 
 ## 预设规则扩展
