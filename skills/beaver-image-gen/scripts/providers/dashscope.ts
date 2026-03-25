@@ -1,7 +1,7 @@
-import type { CliArgs } from "../types";
+import type { CliArgs } from '../types';
 
 export function getDefaultModel(): string {
-  return process.env.DASHSCOPE_IMAGE_MODEL || "z-image-turbo";
+  return process.env.DASHSCOPE_IMAGE_MODEL || 'z-image-turbo';
 }
 
 function getApiKey(): string | null {
@@ -9,8 +9,8 @@ function getApiKey(): string | null {
 }
 
 function getBaseUrl(): string {
-  const base = process.env.DASHSCOPE_BASE_URL || "https://dashscope.aliyuncs.com";
-  return base.replace(/\/+$/g, "");
+  const base = process.env.DASHSCOPE_BASE_URL || 'https://dashscope.aliyuncs.com';
+  return base.replace(/\/+$/g, '');
 }
 
 function parseAspectRatio(ar: string): { width: number; height: number } | null {
@@ -45,9 +45,9 @@ const STANDARD_SIZES_2K: [number, number][] = [
   [2048, 2048],
 ];
 
-function getSizeFromAspectRatio(ar: string | null, quality: CliArgs["quality"]): string {
-  const is2k = quality === "2k";
-  const defaultSize = is2k ? "1536*1536" : "1024*1024";
+function getSizeFromAspectRatio(ar: string | null, quality: CliArgs['quality']): string {
+  const is2k = quality === '2k';
+  const defaultSize = is2k ? '1536*1536' : '1024*1024';
 
   if (!ar) return defaultSize;
 
@@ -72,7 +72,7 @@ function getSizeFromAspectRatio(ar: string | null, quality: CliArgs["quality"]):
 }
 
 function normalizeSize(size: string): string {
-  return size.replace("x", "*");
+  return size.replace('x', '*');
 }
 
 export async function generateImage(
@@ -81,15 +81,17 @@ export async function generateImage(
   args: CliArgs
 ): Promise<Uint8Array> {
   const apiKey = getApiKey();
-  if (!apiKey) throw new Error("DASHSCOPE_API_KEY is required");
+  if (!apiKey) throw new Error('DASHSCOPE_API_KEY is required');
 
   if (args.referenceImages.length > 0) {
     throw new Error(
-      "Reference images are not supported with DashScope provider. Use --provider google (Gemini multimodal), --provider openai (GPT Image edits), or --provider replicate."
+      'Reference images are not supported with DashScope provider. Use --provider google (Gemini multimodal), --provider openai (GPT Image edits), or --provider replicate.'
     );
   }
 
-  const size = args.size ? normalizeSize(args.size) : getSizeFromAspectRatio(args.aspectRatio, args.quality);
+  const size = args.size
+    ? normalizeSize(args.size)
+    : getSizeFromAspectRatio(args.aspectRatio, args.quality);
   const url = `${getBaseUrl()}/api/v1/services/aigc/multimodal-generation/generation`;
 
   const body = {
@@ -97,7 +99,7 @@ export async function generateImage(
     input: {
       messages: [
         {
-          role: "user",
+          role: 'user',
           content: [{ text: prompt }],
         },
       ],
@@ -111,9 +113,9 @@ export async function generateImage(
   console.log(`Generating image with DashScope (${model})...`, { size });
 
   const res = await fetch(url, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify(body),
@@ -125,7 +127,7 @@ export async function generateImage(
     throw new Error(`DashScope API error (${res.status}): ${err}`);
   }
 
-  const result = await res.json() as {
+  const result = (await res.json()) as {
     output?: {
       result_image?: string;
       choices?: Array<{
@@ -151,16 +153,16 @@ export async function generateImage(
   }
 
   if (!imageData) {
-    console.error("Response:", JSON.stringify(result, null, 2));
-    throw new Error("No image in response");
+    console.error('Response:', JSON.stringify(result, null, 2));
+    throw new Error('No image in response');
   }
 
-  if (imageData.startsWith("http://") || imageData.startsWith("https://")) {
+  if (imageData.startsWith('http://') || imageData.startsWith('https://')) {
     const imgRes = await fetch(imageData, { signal: AbortSignal.timeout(120_000) });
-    if (!imgRes.ok) throw new Error("Failed to download image");
+    if (!imgRes.ok) throw new Error('Failed to download image');
     const buf = await imgRes.arrayBuffer();
     return new Uint8Array(buf);
   }
 
-  return Uint8Array.from(Buffer.from(imageData, "base64"));
+  return Uint8Array.from(Buffer.from(imageData, 'base64'));
 }

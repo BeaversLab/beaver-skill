@@ -28,9 +28,12 @@
   "scripts": {
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "changeset publish"
+    "release": "changeset publish",
+    "format": "prettier --write \"packages/**/*.ts\" \"skills/**/*.ts\"",
+    "format:check": "prettier --check \"packages/**/*.ts\" \"skills/**/*.ts\""
   },
   "devDependencies": {
-    "@changesets/cli": "^2.29.7"
+    "@changesets/cli": "^2.29.7",
+    "prettier": "^3.8.1"
   }
 }

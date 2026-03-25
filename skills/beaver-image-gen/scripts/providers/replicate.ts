@@ -1,8 +1,8 @@
-import path from "node:path";
-import { readFile } from "node:fs/promises";
-import type { CliArgs } from "../types";
+import path from 'node:path';
+import { readFile } from 'node:fs/promises';
+import type { CliArgs } from '../types';
 
-const DEFAULT_MODEL = "google/nano-banana-pro";
+const DEFAULT_MODEL = 'google/nano-banana-pro';
 const SYNC_WAIT_SECONDS = 60;
 const POLL_INITIAL_MS = 500;
 const POLL_MAX_INTERVAL_MS = 8000;
@@ -17,13 +17,13 @@ function getApiToken(): string | null {
 }
 
 function getBaseUrl(): string {
-  const base = process.env.REPLICATE_BASE_URL || "https://api.replicate.com";
-  return base.replace(/\/+$/g, "");
+  const base = process.env.REPLICATE_BASE_URL || 'https://api.replicate.com';
+  return base.replace(/\/+$/g, '');
 }
 
 function parseModelId(model: string): { owner: string; name: string; version: string | null } {
-  const [ownerName, version] = model.split(":");
-  const parts = ownerName!.split("/");
+  const [ownerName, version] = model.split(':');
+  const parts = ownerName!.split('/');
   if (parts.length !== 2 || !parts[0] || !parts[1]) {
     throw new Error(
       `Invalid Replicate model format: "${model}". Expected "owner/name" or "owner/name:version".`
@@ -32,7 +32,11 @@ function parseModelId(model: string): { owner: string; name: string; version: st
   return { owner: parts[0], name: parts[1], version: version || null };
 }
 
-function buildInput(prompt: string, args: CliArgs, referenceImages: string[]): Record<string, unknown> {
+function buildInput(
+  prompt: string,
+  args: CliArgs,
+  referenceImages: string[]
+): Record<string, unknown> {
   const input: Record<string, unknown> = { prompt };
 
   if (args.aspectRatio) {
@@ -43,14 +47,14 @@ function buildInput(prompt: string, args: CliArgs, referenceImages: string[]): R
     input.number_of_images = args.n;
   }
 
-  input.output_format = "png";
+  input.output_format = 'png';
 
   if (referenceImages.length > 0) {
     if (referenceImages.length === 1) {
       input.image = referenceImages[0];
     } else {
       for (let i = 0; i < referenceImages.length; i++) {
-        input[`image${i > 0 ? i + 1 : ""}`] = referenceImages[i];
+        input[`image${i > 0 ? i + 1 : ''}`] = referenceImages[i];
       }
     }
   }
@@ -61,11 +65,11 @@ function buildInput(prompt: string, args: CliArgs, referenceImages: string[]): R
 async function readImageAsDataUrl(p: string): Promise<string> {
   const buf = await readFile(p);
   const ext = path.extname(p).toLowerCase();
-  let mimeType = "image/png";
-  if (ext === ".jpg" || ext === ".jpeg") mimeType = "image/jpeg";
-  else if (ext === ".gif") mimeType = "image/gif";
-  else if (ext === ".webp") mimeType = "image/webp";
-  return `data:${mimeType};base64,${buf.toString("base64")}`;
+  let mimeType = 'image/png';
+  if (ext === '.jpg' || ext === '.jpeg') mimeType = 'image/jpeg';
+  else if (ext === '.gif') mimeType = 'image/gif';
+  else if (ext === '.webp') mimeType = 'image/webp';
+  return `data:${mimeType};base64,${buf.toString('base64')}`;
 }
 
 type PredictionResponse = {
@@ -96,15 +100,15 @@ async function createPrediction(
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${apiToken}`,
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   };
 
   if (sync) {
-    headers["Prefer"] = `wait=${SYNC_WAIT_SECONDS}`;
+    headers['Prefer'] = `wait=${SYNC_WAIT_SECONDS}`;
   }
 
   const res = await fetch(url, {
-    method: "POST",
+    method: 'POST',
     headers,
     body: JSON.stringify(body),
   });
@@ -134,9 +138,11 @@ async function pollPrediction(apiToken: string, getUrl: string): Promise<Predict
 
     const prediction = (await res.json()) as PredictionResponse;
 
-    if (prediction.status === "succeeded") return prediction;
-    if (prediction.status === "failed" || prediction.status === "canceled") {
-      throw new Error(`Replicate prediction ${prediction.status}: ${prediction.error || "unknown error"}`);
+    if (prediction.status === 'succeeded') return prediction;
+    if (prediction.status === 'failed' || prediction.status === 'canceled') {
+      throw new Error(
+        `Replicate prediction ${prediction.status}: ${prediction.error || 'unknown error'}`
+      );
     }
 
     await new Promise((r) => setTimeout(r, interval));
@@ -149,16 +155,16 @@ async function pollPrediction(apiToken: string, getUrl: string): Promise<Predict
 function extractOutputUrl(prediction: PredictionResponse): string {
   const output = prediction.output;
 
-  if (typeof output === "string") return output;
+  if (typeof output === 'string') return output;
 
   if (Array.isArray(output)) {
     const first = output[0];
-    if (typeof first === "string") return first;
+    if (typeof first === 'string') return first;
   }
 
-  if (output && typeof output === "object" && "url" in output) {
+  if (output && typeof output === 'object' && 'url' in output) {
     const url = (output as Record<string, unknown>).url;
-    if (typeof url === "string") return url;
+    if (typeof url === 'string') return url;
   }
 
   throw new Error(`Unexpected Replicate output format: ${JSON.stringify(output)}`);
@@ -177,7 +183,10 @@ export async function generateImage(
   args: CliArgs
 ): Promise<Uint8Array> {
   const apiToken = getApiToken();
-  if (!apiToken) throw new Error("REPLICATE_API_TOKEN is required. Get one at https://replicate.com/account/api-tokens");
+  if (!apiToken)
+    throw new Error(
+      'REPLICATE_API_TOKEN is required. Get one at https://replicate.com/account/api-tokens'
+    );
 
   const parsedModel = parseModelId(model);
 
@@ -192,15 +201,15 @@ export async function generateImage(
 
   let prediction = await createPrediction(apiToken, parsedModel, input, true);
 
-  if (prediction.status !== "succeeded") {
+  if (prediction.status !== 'succeeded') {
     if (!prediction.urls?.get) {
-      throw new Error("Replicate prediction did not return a poll URL");
+      throw new Error('Replicate prediction did not return a poll URL');
     }
-    console.log("Waiting for prediction to complete...");
+    console.log('Waiting for prediction to complete...');
     prediction = await pollPrediction(apiToken, prediction.urls.get);
   }
 
-  console.log("Generation completed.");
+  console.log('Generation completed.');
 
   const outputUrl = extractOutputUrl(prediction);
   return downloadImage(outputUrl);

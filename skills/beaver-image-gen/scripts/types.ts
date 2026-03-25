@@ -1,5 +1,5 @@
-export type Provider = "google" | "openai" | "dashscope" | "replicate";
-export type Quality = "normal" | "2k";
+export type Provider = 'google' | 'openai' | 'dashscope' | 'replicate';
+export type Quality = 'normal' | '2k';
 
 export type CliArgs = {
   prompt: string | null;
@@ -22,7 +22,7 @@ export type ExtendConfig = {
   default_provider: Provider | null;
   default_quality: Quality | null;
   default_aspect_ratio: string | null;
-  default_image_size: "1K" | "2K" | "4K" | null;
+  default_image_size: '1K' | '2K' | '4K' | null;
   default_model: {
     google: string | null;
     openai: string | null;

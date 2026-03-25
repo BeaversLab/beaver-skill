@@ -1,27 +1,24 @@
-import path from "node:path";
-import { readFile, writeFile, unlink } from "node:fs/promises";
-import { writeFileSync, unlinkSync } from "node:fs";
-import { execSync } from "node:child_process";
-import { tmpdir } from "node:os";
-import { randomBytes } from "node:crypto";
-import type { CliArgs } from "../types";
+import path from 'node:path';
+import { readFile, writeFile, unlink } from 'node:fs/promises';
+import { writeFileSync, unlinkSync } from 'node:fs';
+import { execSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import { randomBytes } from 'node:crypto';
+import type { CliArgs } from '../types';
 
 const GOOGLE_MULTIMODAL_MODELS = [
-  "gemini-3-pro-image-preview",
-  "gemini-3-flash-preview",
-  "gemini-3.1-flash-image-preview",
+  'gemini-3-pro-image-preview',
+  'gemini-3-flash-preview',
+  'gemini-3.1-flash-image-preview',
 ];
-const GOOGLE_IMAGEN_MODELS = [
-  "imagen-3.0-generate-002",
-  "imagen-3.0-generate-001",
-];
+const GOOGLE_IMAGEN_MODELS = ['imagen-3.0-generate-002', 'imagen-3.0-generate-001'];
 
 export function getDefaultModel(): string {
-  return process.env.GOOGLE_IMAGE_MODEL || "gemini-3-pro-image-preview";
+  return process.env.GOOGLE_IMAGE_MODEL || 'gemini-3-pro-image-preview';
 }
 
 function normalizeGoogleModelId(model: string): string {
-  return model.startsWith("models/") ? model.slice("models/".length) : model;
+  return model.startsWith('models/') ? model.slice('models/'.length) : model;
 }
 
 function isGoogleMultimodal(model: string): boolean {
@@ -38,21 +35,20 @@ function getGoogleApiKey(): string | null {
   return process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || null;
 }
 
-function getGoogleImageSize(args: CliArgs): "1K" | "2K" | "4K" {
-  if (args.imageSize) return args.imageSize as "1K" | "2K" | "4K";
-  return args.quality === "2k" ? "2K" : "1K";
+function getGoogleImageSize(args: CliArgs): '1K' | '2K' | '4K' {
+  if (args.imageSize) return args.imageSize as '1K' | '2K' | '4K';
+  return args.quality === '2k' ? '2K' : '1K';
 }
 
 function getGoogleBaseUrl(): string {
-  const base =
-    process.env.GOOGLE_BASE_URL || "https://generativelanguage.googleapis.com";
-  return base.replace(/\/+$/g, "");
+  const base = process.env.GOOGLE_BASE_URL || 'https://generativelanguage.googleapis.com';
+  return base.replace(/\/+$/g, '');
 }
 
 function buildGoogleUrl(pathname: string): string {
   const base = getGoogleBaseUrl();
-  const cleanedPath = pathname.replace(/^\/+/g, "");
-  if (base.endsWith("/v1beta")) return `${base}/${cleanedPath}`;
+  const cleanedPath = pathname.replace(/^\/+/g, '');
+  if (base.endsWith('/v1beta')) return `${base}/${cleanedPath}`;
   return `${base}/v1beta/${cleanedPath}`;
 }
 
@@ -72,46 +68,38 @@ function getHttpProxy(): string | null {
   );
 }
 
-async function postGoogleJsonViaCurl<T>(
-  url: string,
-  apiKey: string,
-  body: unknown,
-): Promise<T> {
+async function postGoogleJsonViaCurl<T>(url: string, apiKey: string, body: unknown): Promise<T> {
   const proxy = getHttpProxy();
   const bodyStr = JSON.stringify(body);
-  const proxyArgs = proxy ? `-x "${proxy}"` : "";
+  const proxyArgs = proxy ? `-x "${proxy}"` : '';
 
-  const configPath = path.join(tmpdir(), `.beaver-curl-${randomBytes(8).toString("hex")}`);
+  const configPath = path.join(tmpdir(), `.beaver-curl-${randomBytes(8).toString('hex')}`);
   writeFileSync(configPath, `header = "x-goog-api-key: ${apiKey}"`, { mode: 0o600 });
 
   try {
     const result = execSync(
       `curl -s --connect-timeout 30 --max-time 300 ${proxyArgs} "${url}" -K "${configPath}" -H "Content-Type: application/json" -d @-`,
-      { input: bodyStr, maxBuffer: 100 * 1024 * 1024, timeout: 310000 },
+      { input: bodyStr, maxBuffer: 100 * 1024 * 1024, timeout: 310000 }
     );
 
     const parsed = JSON.parse(result.toString()) as any;
     if (parsed.error) {
-      throw new Error(
-        `Google API error (${parsed.error.code}): ${parsed.error.message}`,
-      );
+      throw new Error(`Google API error (${parsed.error.code}): ${parsed.error.message}`);
     }
     return parsed as T;
   } finally {
-    try { unlinkSync(configPath); } catch {}
+    try {
+      unlinkSync(configPath);
+    } catch {}
   }
 }
 
-async function postGoogleJsonViaFetch<T>(
-  url: string,
-  apiKey: string,
-  body: unknown,
-): Promise<T> {
+async function postGoogleJsonViaFetch<T>(url: string, apiKey: string, body: unknown): Promise<T> {
   const res = await fetch(url, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
-      "x-goog-api-key": apiKey,
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey,
     },
     body: JSON.stringify(body),
   });
@@ -126,7 +114,7 @@ async function postGoogleJsonViaFetch<T>(
 
 async function postGoogleJson<T>(pathname: string, body: unknown): Promise<T> {
   const apiKey = getGoogleApiKey();
-  if (!apiKey) throw new Error("GOOGLE_API_KEY or GEMINI_API_KEY is required");
+  if (!apiKey) throw new Error('GOOGLE_API_KEY or GEMINI_API_KEY is required');
 
   const url = buildGoogleUrl(pathname);
   const proxy = getHttpProxy();
@@ -146,14 +134,14 @@ async function postGoogleJson<T>(pathname: string, body: unknown): Promise<T> {
 function buildPromptWithAspect(
   prompt: string,
   ar: string | null,
-  quality: CliArgs["quality"],
+  quality: CliArgs['quality']
 ): string {
   let result = prompt;
   if (ar) {
     result += ` Aspect ratio: ${ar}.`;
   }
-  if (quality === "2k") {
-    result += " High resolution 2048px.";
+  if (quality === '2k') {
+    result += ' High resolution 2048px.';
   }
   return result;
 }
@@ -163,16 +151,14 @@ function addAspectRatioToPrompt(prompt: string, ar: string | null): string {
   return `${prompt} Aspect ratio: ${ar}.`;
 }
 
-async function readImageAsBase64(
-  p: string,
-): Promise<{ data: string; mimeType: string }> {
+async function readImageAsBase64(p: string): Promise<{ data: string; mimeType: string }> {
   const buf = await readFile(p);
   const ext = path.extname(p).toLowerCase();
-  let mimeType = "image/png";
-  if (ext === ".jpg" || ext === ".jpeg") mimeType = "image/jpeg";
-  else if (ext === ".gif") mimeType = "image/gif";
-  else if (ext === ".webp") mimeType = "image/webp";
-  return { data: buf.toString("base64"), mimeType };
+  let mimeType = 'image/png';
+  if (ext === '.jpg' || ext === '.jpeg') mimeType = 'image/jpeg';
+  else if (ext === '.gif') mimeType = 'image/gif';
+  else if (ext === '.webp') mimeType = 'image/webp';
+  return { data: buf.toString('base64'), mimeType };
 }
 
 function extractInlineImageData(response: {
@@ -183,7 +169,7 @@ function extractInlineImageData(response: {
   for (const candidate of response.candidates || []) {
     for (const part of candidate.content?.parts || []) {
       const data = part.inlineData?.data;
-      if (typeof data === "string" && data.length > 0) return data;
+      if (typeof data === 'string' && data.length > 0) return data;
     }
   }
   return null;
@@ -193,22 +179,17 @@ function extractPredictedImageData(response: {
   predictions?: Array<any>;
   generatedImages?: Array<any>;
 }): string | null {
-  const candidates = [
-    ...(response.predictions || []),
-    ...(response.generatedImages || []),
-  ];
+  const candidates = [...(response.predictions || []), ...(response.generatedImages || [])];
   for (const candidate of candidates) {
-    if (!candidate || typeof candidate !== "object") continue;
-    if (typeof candidate.imageBytes === "string") return candidate.imageBytes;
-    if (typeof candidate.bytesBase64Encoded === "string")
-      return candidate.bytesBase64Encoded;
-    if (typeof candidate.data === "string") return candidate.data;
+    if (!candidate || typeof candidate !== 'object') continue;
+    if (typeof candidate.imageBytes === 'string') return candidate.imageBytes;
+    if (typeof candidate.bytesBase64Encoded === 'string') return candidate.bytesBase64Encoded;
+    if (typeof candidate.data === 'string') return candidate.data;
     const image = candidate.image;
-    if (image && typeof image === "object") {
-      if (typeof image.imageBytes === "string") return image.imageBytes;
-      if (typeof image.bytesBase64Encoded === "string")
-        return image.bytesBase64Encoded;
-      if (typeof image.data === "string") return image.data;
+    if (image && typeof image === 'object') {
+      if (typeof image.imageBytes === 'string') return image.imageBytes;
+      if (typeof image.bytesBase64Encoded === 'string') return image.bytesBase64Encoded;
+      if (typeof image.data === 'string') return image.data;
     }
   }
   return null;
@@ -217,7 +198,7 @@ function extractPredictedImageData(response: {
 async function generateWithGemini(
   prompt: string,
   model: string,
-  args: CliArgs,
+  args: CliArgs
 ): Promise<Uint8Array> {
   const promptWithAspect = addAspectRatioToPrompt(prompt, args.aspectRatio);
   const parts: Array<{
@@ -230,15 +211,17 @@ async function generateWithGemini(
   }
   parts.push({ text: promptWithAspect });
 
-  const imageConfig: { imageSize: "1K" | "2K" | "4K" } = {
+  const imageConfig: { imageSize: '1K' | '2K' | '4K' } = {
     imageSize: getGoogleImageSize(args),
   };
 
   if (args.n > 1) {
-    console.error("Warning: --n > 1 is not supported by Gemini multimodal models. Only 1 image will be generated.");
+    console.error(
+      'Warning: --n > 1 is not supported by Gemini multimodal models. Only 1 image will be generated.'
+    );
   }
 
-  console.log("Generating image with Gemini...", imageConfig);
+  console.log('Generating image with Gemini...', imageConfig);
   const response = await postGoogleJson<{
     candidates?: Array<{
       content?: { parts?: Array<{ inlineData?: { data?: string } }> };
@@ -246,38 +229,32 @@ async function generateWithGemini(
   }>(`${toModelPath(model)}:generateContent`, {
     contents: [
       {
-        role: "user",
+        role: 'user',
         parts,
       },
     ],
     generationConfig: {
-      responseModalities: ["IMAGE"],
+      responseModalities: ['IMAGE'],
       imageConfig,
     },
   });
-  console.log("Generation completed.");
+  console.log('Generation completed.');
 
   const imageData = extractInlineImageData(response);
-  if (imageData) return Uint8Array.from(Buffer.from(imageData, "base64"));
+  if (imageData) return Uint8Array.from(Buffer.from(imageData, 'base64'));
 
-  throw new Error("No image in response");
+  throw new Error('No image in response');
 }
 
 async function generateWithImagen(
   prompt: string,
   model: string,
-  args: CliArgs,
+  args: CliArgs
 ): Promise<Uint8Array> {
-  const fullPrompt = buildPromptWithAspect(
-    prompt,
-    args.aspectRatio,
-    args.quality,
-  );
+  const fullPrompt = buildPromptWithAspect(prompt, args.aspectRatio, args.quality);
   const imageSize = getGoogleImageSize(args);
-  if (imageSize === "4K") {
-    console.error(
-      "Warning: Imagen models do not support 4K imageSize, using 2K instead.",
-    );
+  if (imageSize === '4K') {
+    console.error('Warning: Imagen models do not support 4K imageSize, using 2K instead.');
   }
 
   const parameters: Record<string, unknown> = {
@@ -286,10 +263,10 @@ async function generateWithImagen(
   if (args.aspectRatio) {
     parameters.aspectRatio = args.aspectRatio;
   }
-  if (imageSize === "1K" || imageSize === "2K") {
+  if (imageSize === '1K' || imageSize === '2K') {
     parameters.imageSize = imageSize;
   } else {
-    parameters.imageSize = "2K";
+    parameters.imageSize = '2K';
   }
 
   const response = await postGoogleJson<{
@@ -305,20 +282,20 @@ async function generateWithImagen(
   });
 
   const imageData = extractPredictedImageData(response);
-  if (imageData) return Uint8Array.from(Buffer.from(imageData, "base64"));
+  if (imageData) return Uint8Array.from(Buffer.from(imageData, 'base64'));
 
-  throw new Error("No image in response");
+  throw new Error('No image in response');
 }
 
 export async function generateImage(
   prompt: string,
   model: string,
-  args: CliArgs,
+  args: CliArgs
 ): Promise<Uint8Array> {
   if (isGoogleImagen(model)) {
     if (args.referenceImages.length > 0) {
       throw new Error(
-        "Reference images are not supported with Imagen models. Use gemini-3-pro-image-preview, gemini-3-flash-preview, or gemini-3.1-flash-image-preview.",
+        'Reference images are not supported with Imagen models. Use gemini-3-pro-image-preview, gemini-3-flash-preview, or gemini-3.1-flash-image-preview.'
       );
     }
     return generateWithImagen(prompt, model, args);
@@ -326,7 +303,7 @@ export async function generateImage(
 
   if (!isGoogleMultimodal(model) && args.referenceImages.length > 0) {
     throw new Error(
-      "Reference images are only supported with Gemini multimodal models. Use gemini-3-pro-image-preview, gemini-3-flash-preview, or gemini-3.1-flash-image-preview.",
+      'Reference images are only supported with Gemini multimodal models. Use gemini-3-pro-image-preview, gemini-3-flash-preview, or gemini-3.1-flash-image-preview.'
     );
   }
 

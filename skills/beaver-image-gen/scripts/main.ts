@@ -1,8 +1,8 @@
-import path from "node:path";
-import process from "node:process";
-import { homedir } from "node:os";
-import { access, mkdir, readFile, writeFile } from "node:fs/promises";
-import type { CliArgs, Provider, ExtendConfig } from "./types";
+import path from 'node:path';
+import process from 'node:process';
+import { homedir } from 'node:os';
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
+import type { CliArgs, Provider, ExtendConfig } from './types';
 
 function printUsage(): void {
   console.log(`Usage:
@@ -68,7 +68,7 @@ function parseArgs(argv: string[]): CliArgs {
     let j = i + 1;
     while (j < argv.length) {
       const v = argv[j]!;
-      if (v.startsWith("-")) break;
+      if (v.startsWith('-')) break;
       items.push(v);
       j++;
     }
@@ -78,81 +78,82 @@ function parseArgs(argv: string[]): CliArgs {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
 
-    if (a === "--help" || a === "-h") {
+    if (a === '--help' || a === '-h') {
       out.help = true;
       continue;
     }
 
-    if (a === "--json") {
+    if (a === '--json') {
       out.json = true;
       continue;
     }
 
-    if (a === "--prompt" || a === "-p") {
+    if (a === '--prompt' || a === '-p') {
       const v = argv[++i];
       if (!v) throw new Error(`Missing value for ${a}`);
       out.prompt = v;
       continue;
     }
 
-    if (a === "--promptfiles") {
+    if (a === '--promptfiles') {
       const { items, next } = takeMany(i);
-      if (items.length === 0) throw new Error("Missing files for --promptfiles");
+      if (items.length === 0) throw new Error('Missing files for --promptfiles');
       out.promptFiles.push(...items);
       i = next;
       continue;
     }
 
-    if (a === "--image") {
+    if (a === '--image') {
       const v = argv[++i];
-      if (!v) throw new Error("Missing value for --image");
+      if (!v) throw new Error('Missing value for --image');
       out.imagePath = v;
       continue;
     }
 
-    if (a === "--provider") {
+    if (a === '--provider') {
       const v = argv[++i];
-      if (v !== "google" && v !== "openai" && v !== "dashscope" && v !== "replicate") throw new Error(`Invalid provider: ${v}`);
+      if (v !== 'google' && v !== 'openai' && v !== 'dashscope' && v !== 'replicate')
+        throw new Error(`Invalid provider: ${v}`);
       out.provider = v;
       continue;
     }
 
-    if (a === "--model" || a === "-m") {
+    if (a === '--model' || a === '-m') {
       const v = argv[++i];
       if (!v) throw new Error(`Missing value for ${a}`);
       out.model = v;
       continue;
     }
 
-    if (a === "--ar") {
+    if (a === '--ar') {
       const v = argv[++i];
-      if (!v) throw new Error("Missing value for --ar");
+      if (!v) throw new Error('Missing value for --ar');
       out.aspectRatio = v;
       continue;
     }
 
-    if (a === "--size") {
+    if (a === '--size') {
       const v = argv[++i];
-      if (!v) throw new Error("Missing value for --size");
+      if (!v) throw new Error('Missing value for --size');
       out.size = v;
       continue;
     }
 
-    if (a === "--quality") {
+    if (a === '--quality') {
       const v = argv[++i];
-      if (v !== "normal" && v !== "2k") throw new Error(`Invalid quality: ${v}`);
+      if (v !== 'normal' && v !== '2k') throw new Error(`Invalid quality: ${v}`);
       out.quality = v;
       continue;
     }
 
-    if (a === "--imageSize") {
+    if (a === '--imageSize') {
       const v = argv[++i]?.toUpperCase();
-      if (v !== "1K" && v !== "2K" && v !== "4K") throw new Error(`Invalid imageSize: ${v}`);
+      if (v !== '1K' && v !== '2K' && v !== '4K') throw new Error(`Invalid imageSize: ${v}`);
       out.imageSize = v;
       continue;
     }
 
-    if (a === "--ref" || a === "--reference") {
+    if (a === '--ref' || a === '--reference') {
       const { items, next } = takeMany(i);
       if (items.length === 0) throw new Error(`Missing files for ${a}`);
       out.referenceImages.push(...items);
@@ -160,15 +161,15 @@ function parseArgs(argv: string[]): CliArgs {
       continue;
     }
 
-    if (a === "--n") {
+    if (a === '--n') {
       const v = argv[++i];
-      if (!v) throw new Error("Missing value for --n");
+      if (!v) throw new Error('Missing value for --n');
       out.n = parseInt(v, 10);
       if (isNaN(out.n) || out.n < 1) throw new Error(`Invalid count: ${v}`);
       continue;
     }
 
-    if (a.startsWith("-")) {
+    if (a.startsWith('-')) {
       throw new Error(`Unknown option: ${a}`);
     }
 
@@ -176,7 +177,7 @@ function parseArgs(argv: string[]): CliArgs {
   }
 
   if (!out.prompt && out.promptFiles.length === 0 && positional.length > 0) {
-    out.prompt = positional.join(" ");
+    out.prompt = positional.join(' ');
   }
 
   return out;
@@ -184,16 +185,19 @@ function parseArgs(argv: string[]): CliArgs {
 
 async function loadEnvFile(p: string): Promise<Record<string, string>> {
   try {
-    const content = await readFile(p, "utf8");
+    const content = await readFile(p, 'utf8');
     const env: Record<string, string> = {};
-    for (const line of content.split("\n")) {
+    for (const line of content.split('\n')) {
       const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#")) continue;
-      const idx = trimmed.indexOf("=");
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const idx = trimmed.indexOf('=');
       if (idx === -1) continue;
       const key = trimmed.slice(0, idx).trim();
       let val = trimmed.slice(idx + 1).trim();
-      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      if (
+        (val.startsWith('"') && val.endsWith('"')) ||
+        (val.startsWith("'") && val.endsWith("'"))
+      ) {
         val = val.slice(1, -1);
       }
       env[key] = val;
@@ -208,8 +212,8 @@ async function loadEnv(): Promise<void> {
   const home = homedir();
   const cwd = process.cwd();
 
-  const homeEnv = await loadEnvFile(path.join(home, ".beaver-skill", ".env"));
-  const cwdEnv = await loadEnvFile(path.join(cwd, ".beaver-skill", ".env"));
+  const homeEnv = await loadEnvFile(path.join(home, '.beaver-skill', '.env'));
+  const cwdEnv = await loadEnvFile(path.join(cwd, '.beaver-skill', '.env'));
 
   for (const [k, v] of Object.entries(cwdEnv)) {
     if (!process.env[k]) process.env[k] = v;
@@ -226,39 +230,42 @@ function extractYamlFrontMatter(content: string): string | null {
 
 function parseSimpleYaml(yaml: string): Partial<ExtendConfig> {
   const config: Partial<ExtendConfig> = {};
-  const lines = yaml.split("\n");
+  const lines = yaml.split('\n');
   let currentKey: string | null = null;
 
   for (const line of lines) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
+    if (!trimmed || trimmed.startsWith('#')) continue;
 
-    if (trimmed.includes(":") && !trimmed.startsWith("-")) {
-      const colonIdx = trimmed.indexOf(":");
+    if (trimmed.includes(':') && !trimmed.startsWith('-')) {
+      const colonIdx = trimmed.indexOf(':');
       const key = trimmed.slice(0, colonIdx).trim();
       let value = trimmed.slice(colonIdx + 1).trim();
 
-      if (value === "null" || value === "") {
-        value = "null";
+      if (value === 'null' || value === '') {
+        value = 'null';
       }
 
-      if (key === "version") {
-        config.version = value === "null" ? 1 : parseInt(value, 10);
-      } else if (key === "default_provider") {
-        config.default_provider = value === "null" ? null : (value as Provider);
-      } else if (key === "default_quality") {
-        config.default_quality = value === "null" ? null : (value as "normal" | "2k");
-      } else if (key === "default_aspect_ratio") {
-        const cleaned = value.replace(/['"]/g, "");
-        config.default_aspect_ratio = cleaned === "null" ? null : cleaned;
-      } else if (key === "default_image_size") {
-        config.default_image_size = value === "null" ? null : (value as "1K" | "2K" | "4K");
-      } else if (key === "default_model") {
+      if (key === 'version') {
+        config.version = value === 'null' ? 1 : parseInt(value, 10);
+      } else if (key === 'default_provider') {
+        config.default_provider = value === 'null' ? null : (value as Provider);
+      } else if (key === 'default_quality') {
+        config.default_quality = value === 'null' ? null : (value as 'normal' | '2k');
+      } else if (key === 'default_aspect_ratio') {
+        const cleaned = value.replace(/['"]/g, '');
+        config.default_aspect_ratio = cleaned === 'null' ? null : cleaned;
+      } else if (key === 'default_image_size') {
+        config.default_image_size = value === 'null' ? null : (value as '1K' | '2K' | '4K');
+      } else if (key === 'default_model') {
         config.default_model = { google: null, openai: null, dashscope: null, replicate: null };
-        currentKey = "default_model";
-      } else if (currentKey === "default_model" && (key === "google" || key === "openai" || key === "dashscope" || key === "replicate")) {
-        const cleaned = value.replace(/['"]/g, "");
-        config.default_model![key] = cleaned === "null" ? null : cleaned;
+        currentKey = 'default_model';
+      } else if (
+        currentKey === 'default_model' &&
+        (key === 'google' || key === 'openai' || key === 'dashscope' || key === 'replicate')
+      ) {
+        const cleaned = value.replace(/['"]/g, '');
+        config.default_model![key] = cleaned === 'null' ? null : cleaned;
       }
     }
   }
@@ -271,13 +278,13 @@ async function loadExtendConfig(): Promise<Partial<ExtendConfig>> {
   const cwd = process.cwd();
 
   const paths = [
-    path.join(cwd, ".beaver-skill", "beaver-image-gen", "EXTEND.md"),
-    path.join(home, ".beaver-skill", "beaver-image-gen", "EXTEND.md"),
+    path.join(cwd, '.beaver-skill', 'beaver-image-gen', 'EXTEND.md'),
+    path.join(home, '.beaver-skill', 'beaver-image-gen', 'EXTEND.md'),
   ];
 
   for (const p of paths) {
     try {
-      const content = await readFile(p, "utf8");
+      const content = await readFile(p, 'utf8');
       const yaml = extractYamlFrontMatter(content);
       if (!yaml) continue;
 
@@ -303,9 +310,9 @@ function mergeConfig(args: CliArgs, extend: Partial<ExtendConfig>): CliArgs {
 async function readPromptFromFiles(files: string[]): Promise<string> {
   const parts: string[] = [];
   for (const f of files) {
-    parts.push(await readFile(f, "utf8"));
+    parts.push(await readFile(f, 'utf8'));
   }
-  return parts.join("\n\n");
+  return parts.join('\n\n');
 }
 
 async function readPromptFromStdin(): Promise<string | null> {
@@ -327,9 +334,15 @@ function normalizeOutputImagePath(p: string): string {
 }
 
 function detectProvider(args: CliArgs): Provider {
-  if (args.referenceImages.length > 0 && args.provider && args.provider !== "google" && args.provider !== "openai" && args.provider !== "replicate") {
+  if (
+    args.referenceImages.length > 0 &&
+    args.provider &&
+    args.provider !== 'google' &&
+    args.provider !== 'openai' &&
+    args.provider !== 'replicate'
+  ) {
     throw new Error(
-      "Reference images require a ref-capable provider. Use --provider google (Gemini multimodal), --provider openai (GPT Image edits), or --provider replicate."
+      'Reference images require a ref-capable provider. Use --provider google (Gemini multimodal), --provider openai (GPT Image edits), or --provider replicate.'
     );
   }
 
@@ -341,22 +354,27 @@ function detectProvider(args: CliArgs): Provider {
   const hasReplicate = !!process.env.REPLICATE_API_TOKEN;
 
   if (args.referenceImages.length > 0) {
-    if (hasGoogle) return "google";
-    if (hasOpenai) return "openai";
-    if (hasReplicate) return "replicate";
+    if (hasGoogle) return 'google';
+    if (hasOpenai) return 'openai';
+    if (hasReplicate) return 'replicate';
     throw new Error(
-      "Reference images require Google, OpenAI or Replicate. Set GOOGLE_API_KEY/GEMINI_API_KEY, OPENAI_API_KEY, or REPLICATE_API_TOKEN, or remove --ref."
+      'Reference images require Google, OpenAI or Replicate. Set GOOGLE_API_KEY/GEMINI_API_KEY, OPENAI_API_KEY, or REPLICATE_API_TOKEN, or remove --ref.'
     );
   }
 
-  const available = [hasGoogle && "google", hasOpenai && "openai", hasDashscope && "dashscope", hasReplicate && "replicate"].filter(Boolean) as Provider[];
+  const available = [
+    hasGoogle && 'google',
+    hasOpenai && 'openai',
+    hasDashscope && 'dashscope',
+    hasReplicate && 'replicate',
+  ].filter(Boolean) as Provider[];
 
   if (available.length === 1) return available[0]!;
   if (available.length > 1) return available[0]!;
 
   throw new Error(
-    "No API key found. Set GOOGLE_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, DASHSCOPE_API_KEY, or REPLICATE_API_TOKEN.\n" +
-      "Create ~/.beaver-skill/.env or <cwd>/.beaver-skill/.env with your keys."
+    'No API key found. Set GOOGLE_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, DASHSCOPE_API_KEY, or REPLICATE_API_TOKEN.\n' +
+      'Create ~/.beaver-skill/.env or <cwd>/.beaver-skill/.env with your keys.'
   );
 }
 
@@ -379,26 +397,26 @@ type ProviderModule = {
 function isRetryableGenerationError(error: unknown): boolean {
   const msg = error instanceof Error ? error.message : String(error);
   const nonRetryableMarkers = [
-    "Reference image",
-    "not supported",
-    "only supported",
-    "No API key found",
-    "is required",
+    'Reference image',
+    'not supported',
+    'only supported',
+    'No API key found',
+    'is required',
   ];
   return !nonRetryableMarkers.some((marker) => msg.includes(marker));
 }
 
 async function loadProviderModule(provider: Provider): Promise<ProviderModule> {
-  if (provider === "google") {
-    return (await import("./providers/google")) as ProviderModule;
+  if (provider === 'google') {
+    return (await import('./providers/google')) as ProviderModule;
   }
-  if (provider === "dashscope") {
-    return (await import("./providers/dashscope")) as ProviderModule;
+  if (provider === 'dashscope') {
+    return (await import('./providers/dashscope')) as ProviderModule;
   }
-  if (provider === "replicate") {
-    return (await import("./providers/replicate")) as ProviderModule;
+  if (provider === 'replicate') {
+    return (await import('./providers/replicate')) as ProviderModule;
   }
-  return (await import("./providers/openai")) as ProviderModule;
+  return (await import('./providers/openai')) as ProviderModule;
 }
 
 async function main(): Promise<void> {
@@ -413,21 +431,22 @@ async function main(): Promise<void> {
   const extendConfig = await loadExtendConfig();
   const mergedArgs = mergeConfig(args, extendConfig);
 
-  if (!mergedArgs.quality) mergedArgs.quality = "2k";
+  if (!mergedArgs.quality) mergedArgs.quality = '2k';
 
   let prompt: string | null = mergedArgs.prompt;
-  if (!prompt && mergedArgs.promptFiles.length > 0) prompt = await readPromptFromFiles(mergedArgs.promptFiles);
+  if (!prompt && mergedArgs.promptFiles.length > 0)
+    prompt = await readPromptFromFiles(mergedArgs.promptFiles);
   if (!prompt) prompt = await readPromptFromStdin();
 
   if (!prompt) {
-    console.error("Error: Prompt is required");
+    console.error('Error: Prompt is required');
     printUsage();
     process.exitCode = 1;
     return;
   }
 
   if (!mergedArgs.imagePath) {
-    console.error("Error: --image is required");
+    console.error('Error: --image is required');
     printUsage();
     process.exitCode = 1;
     return;
@@ -442,10 +461,10 @@ async function main(): Promise<void> {
 
   let model = mergedArgs.model;
   if (!model && extendConfig.default_model) {
-    if (provider === "google") model = extendConfig.default_model.google ?? null;
-    if (provider === "openai") model = extendConfig.default_model.openai ?? null;
-    if (provider === "dashscope") model = extendConfig.default_model.dashscope ?? null;
-    if (provider === "replicate") model = extendConfig.default_model.replicate ?? null;
+    if (provider === 'google') model = extendConfig.default_model.google ?? null;
+    if (provider === 'openai') model = extendConfig.default_model.openai ?? null;
+    if (provider === 'dashscope') model = extendConfig.default_model.dashscope ?? null;
+    if (provider === 'replicate') model = extendConfig.default_model.replicate ?? null;
   }
   model = model || providerModule.getDefaultModel();
 
@@ -461,7 +480,7 @@ async function main(): Promise<void> {
     } catch (e) {
       if (!retried && isRetryableGenerationError(e)) {
         retried = true;
-        console.error("Generation failed, retrying...");
+        console.error('Generation failed, retrying...');
         continue;
       }
       throw e;

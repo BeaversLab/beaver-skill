@@ -1,9 +1,9 @@
-import path from "node:path";
-import { readFile } from "node:fs/promises";
-import type { CliArgs } from "../types";
+import path from 'node:path';
+import { readFile } from 'node:fs/promises';
+import type { CliArgs } from '../types';
 
 export function getDefaultModel(): string {
-  return process.env.OPENAI_IMAGE_MODEL || "gpt-image-1.5";
+  return process.env.OPENAI_IMAGE_MODEL || 'gpt-image-1.5';
 }
 
 type OpenAIImageResponse = { data: Array<{ url?: string; b64_json?: string }> };
@@ -23,28 +23,24 @@ type SizeMapping = {
   portrait: string;
 };
 
-function getOpenAISize(
-  model: string,
-  ar: string | null,
-  quality: CliArgs["quality"]
-): string {
-  const isDalle3 = model.includes("dall-e-3");
-  const isDalle2 = model.includes("dall-e-2");
+function getOpenAISize(model: string, ar: string | null, quality: CliArgs['quality']): string {
+  const isDalle3 = model.includes('dall-e-3');
+  const isDalle2 = model.includes('dall-e-2');
 
   if (isDalle2) {
-    return "1024x1024";
+    return '1024x1024';
   }
 
   const sizes: SizeMapping = isDalle3
     ? {
-        square: "1024x1024",
-        landscape: "1792x1024",
-        portrait: "1024x1792",
+        square: '1024x1024',
+        landscape: '1792x1024',
+        portrait: '1024x1792',
       }
     : {
-        square: "1024x1024",
-        landscape: "1536x1024",
-        portrait: "1024x1536",
+        square: '1024x1024',
+        landscape: '1536x1024',
+        portrait: '1024x1536',
       };
 
   if (!ar) return sizes.square;
@@ -65,14 +61,16 @@ export async function generateImage(
   model: string,
   args: CliArgs
 ): Promise<Uint8Array> {
-  const baseURL = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
+  const baseURL = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
   const apiKey = process.env.OPENAI_API_KEY;
 
-  if (!apiKey) throw new Error("OPENAI_API_KEY is required");
+  if (!apiKey) throw new Error('OPENAI_API_KEY is required');
 
-  if (process.env.OPENAI_IMAGE_USE_CHAT === "true") {
+  if (process.env.OPENAI_IMAGE_USE_CHAT === 'true') {
     if (args.n > 1) {
-      console.error("Warning: --n > 1 is not supported with OPENAI_IMAGE_USE_CHAT. Only 1 image will be generated.");
+      console.error(
+        'Warning: --n > 1 is not supported with OPENAI_IMAGE_USE_CHAT. Only 1 image will be generated.'
+      );
     }
     return generateWithChatCompletions(baseURL, apiKey, prompt, model);
   }
@@ -80,12 +78,20 @@ export async function generateImage(
   const size = args.size || getOpenAISize(model, args.aspectRatio, args.quality);
 
   if (args.referenceImages.length > 0) {
-    if (model.includes("dall-e-2") || model.includes("dall-e-3")) {
+    if (model.includes('dall-e-2') || model.includes('dall-e-3')) {
       throw new Error(
-        "Reference images with OpenAI in this skill require GPT Image models. Use --model gpt-image-1.5 (or another gpt-image model)."
+        'Reference images with OpenAI in this skill require GPT Image models. Use --model gpt-image-1.5 (or another gpt-image model).'
       );
     }
-    return generateWithOpenAIEdits(baseURL, apiKey, prompt, model, size, args.referenceImages, args.quality);
+    return generateWithOpenAIEdits(
+      baseURL,
+      apiKey,
+      prompt,
+      model,
+      size,
+      args.referenceImages,
+      args.quality
+    );
   }
 
   return generateWithOpenAIGenerations(baseURL, apiKey, prompt, model, size, args.quality, args.n);
@@ -98,14 +104,14 @@ async function generateWithChatCompletions(
   model: string
 ): Promise<Uint8Array> {
   const res = await fetch(`${baseURL}/chat/completions`, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model,
-      messages: [{ role: "user", content: prompt }],
+      messages: [{ role: 'user', content: prompt }],
     }),
     signal: AbortSignal.timeout(300_000),
   });
@@ -116,14 +122,14 @@ async function generateWithChatCompletions(
   }
 
   const result = (await res.json()) as { choices: Array<{ message: { content: string } }> };
-  const content = result.choices[0]?.message?.content ?? "";
+  const content = result.choices[0]?.message?.content ?? '';
 
   const match = content.match(/data:image\/[^;]+;base64,([A-Za-z0-9+/=]+)/);
   if (match) {
-    return Uint8Array.from(Buffer.from(match[1]!, "base64"));
+    return Uint8Array.from(Buffer.from(match[1]!, 'base64'));
   }
 
-  throw new Error("No image found in chat completions response");
+  throw new Error('No image found in chat completions response');
 }
 
 async function generateWithOpenAIGenerations(
@@ -132,23 +138,23 @@ async function generateWithOpenAIGenerations(
   prompt: string,
   model: string,
   size: string,
-  quality: CliArgs["quality"],
+  quality: CliArgs['quality'],
   n: number
 ): Promise<Uint8Array> {
   const body: Record<string, any> = { model, prompt, size, n };
 
-  if (model.includes("dall-e-3")) {
-    body.quality = quality === "2k" ? "hd" : "standard";
+  if (model.includes('dall-e-3')) {
+    body.quality = quality === '2k' ? 'hd' : 'standard';
     if (n > 1) {
-      console.error("Warning: dall-e-3 only supports n=1. Only 1 image will be generated.");
+      console.error('Warning: dall-e-3 only supports n=1. Only 1 image will be generated.');
       body.n = 1;
     }
   }
 
   const res = await fetch(`${baseURL}/images/generations`, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify(body),
@@ -171,15 +177,15 @@ async function generateWithOpenAIEdits(
   model: string,
   size: string,
   referenceImages: string[],
-  quality: CliArgs["quality"]
+  quality: CliArgs['quality']
 ): Promise<Uint8Array> {
   const form = new FormData();
-  form.append("model", model);
-  form.append("prompt", prompt);
-  form.append("size", size);
+  form.append('model', model);
+  form.append('prompt', prompt);
+  form.append('size', size);
 
-  if (model.includes("gpt-image")) {
-    form.append("quality", quality === "2k" ? "high" : "medium");
+  if (model.includes('gpt-image')) {
+    form.append('quality', quality === '2k' ? 'high' : 'medium');
   }
 
   for (const refPath of referenceImages) {
@@ -187,11 +193,11 @@ async function generateWithOpenAIEdits(
     const filename = path.basename(refPath);
     const mimeType = getMimeType(filename);
     const blob = new Blob([bytes], { type: mimeType });
-    form.append("image[]", blob, filename);
+    form.append('image[]', blob, filename);
   }
 
   const res = await fetch(`${baseURL}/images/edits`, {
-    method: "POST",
+    method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
     },
@@ -210,25 +216,25 @@ async function generateWithOpenAIEdits(
 
 function getMimeType(filename: string): string {
   const ext = path.extname(filename).toLowerCase();
-  if (ext === ".jpg" || ext === ".jpeg") return "image/jpeg";
-  if (ext === ".webp") return "image/webp";
-  if (ext === ".gif") return "image/gif";
-  return "image/png";
+  if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';
+  if (ext === '.webp') return 'image/webp';
+  if (ext === '.gif') return 'image/gif';
+  return 'image/png';
 }
 
 async function extractImageFromResponse(result: OpenAIImageResponse): Promise<Uint8Array> {
   const img = result.data[0];
 
   if (img?.b64_json) {
-    return Uint8Array.from(Buffer.from(img.b64_json, "base64"));
+    return Uint8Array.from(Buffer.from(img.b64_json, 'base64'));
   }
 
   if (img?.url) {
     const imgRes = await fetch(img.url);
-    if (!imgRes.ok) throw new Error("Failed to download image");
+    if (!imgRes.ok) throw new Error('Failed to download image');
     const buf = await imgRes.arrayBuffer();
     return new Uint8Array(buf);
   }
 
-  throw new Error("No image in response");
+  throw new Error('No image in response');
 }
