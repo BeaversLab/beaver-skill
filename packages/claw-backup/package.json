@@ -34,7 +34,7 @@
     "build": "tsc -p tsconfig.build.json",
     "cli": "node dist/scripts/cli.js",
     "prepack": "npm run build",
-    "test": "npm run build && node --test dist/tests/**/*.test.js"
+    "test": "npm run build && node --test dist/tests/*.js"
   },
   "dependencies": {
     "@clack/prompts": "^0.10.1",
