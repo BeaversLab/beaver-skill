@@ -10,7 +10,6 @@ interface RuleDocument {
   restore_dir?: string;
   include?: string[];
   exclude?: string[];
-  archive_prefix?: string;
 }
 
 export function serializeRule(rule: BackupRule, options?: { includeComment?: string }): string {
@@ -46,7 +45,6 @@ export function serializeRule(rule: BackupRule, options?: { includeComment?: str
     `restore_dir: ${formatScalar(rule.restoreDir)}`,
     `include: ${formatList(rule.include)}`,
     `exclude: ${formatList(rule.exclude)}`,
-    `archive_prefix: ${formatScalar(rule.archivePrefix)}`,
   ];
 
   return `${lines.join('\n')}\n`;
@@ -67,7 +65,6 @@ export function parseRuleYaml(raw: string): BackupRule {
     'restore_dir',
     'include',
     'exclude',
-    'archive_prefix',
   ];
   for (const key of requiredKeys) {
     if (parsed[key] === undefined) {
@@ -97,6 +94,5 @@ export function parseRuleYaml(raw: string): BackupRule {
     restoreDir: String(parsed.restore_dir),
     include: parsed.include,
     exclude: parsed.exclude,
-    archivePrefix: String(parsed.archive_prefix),
   };
 }

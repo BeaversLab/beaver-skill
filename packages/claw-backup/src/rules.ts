@@ -22,7 +22,6 @@ export function createRuleFromPreset(preset: ClawPreset): BackupRule {
     restoreDir: expandHome(preset.defaultRestoreDir),
     include: preset.include.slice(),
     exclude: preset.exclude.slice(),
-    archivePrefix: preset.archivePrefix,
   };
 }
 
@@ -41,7 +40,6 @@ export function createCustomRule(
     restoreDir: expandHome(sourceDir),
     include: [],
     exclude: [],
-    archivePrefix: normalizedType,
   };
 }
 

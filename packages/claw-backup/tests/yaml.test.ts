@@ -16,7 +16,6 @@ const sampleRule: BackupRule = {
   restoreDir: '/Users/test/.openclaw',
   include: ['openclaw.json', 'workspace'],
   exclude: ['completions/', '*.log'],
-  archivePrefix: 'openclaw',
 };
 
 test('serializeRule and parseRuleYaml round-trip rule data', () => {
@@ -47,10 +46,9 @@ test('exclude rules override included directories for matching files', async () 
       restoreDir,
       include: ['a/'],
       exclude: ['a/*.log'],
-      archivePrefix: 'openclaw',
     };
 
-    const backup = await createBackup(path.join(baseDir, 'rule.yaml'), rule);
+    const backup = await createBackup(path.join(baseDir, 'rule.yaml'), rule, 'test-rule');
     await restoreArchive(backup.archivePath, restoreDir);
 
     const kept = await readFile(path.join(restoreDir, 'a', 'keep.txt'), 'utf8');

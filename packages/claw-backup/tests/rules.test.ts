@@ -1,8 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import path from 'node:path';
-import os from 'node:os';
-import { mkdtemp, mkdir, rm, readFile } from 'node:fs/promises';
+import { rm, readFile } from 'node:fs/promises';
 import { saveRule, createRuleFile, loadRule } from '../src/rules.js';
 import type { BackupRule, CreateRuleResult } from '../src/types.js';
 
@@ -15,7 +13,6 @@ const testRule: BackupRule = {
   restoreDir: '/tmp/test-source',
   include: ['data/', 'config.json'],
   exclude: ['*.log'],
-  archivePrefix: 'testclaw',
 };
 
 test('saveRule creates file with custom name', async () => {

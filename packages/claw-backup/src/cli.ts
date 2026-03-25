@@ -69,7 +69,8 @@ async function promptForArchive(
   if (initialPath) {
     return path.resolve(expandHome(initialPath));
   }
-  const archives = await listArchives(backupDir);
+  const ruleName = path.basename(ruleFile, '.yaml');
+  const archives = await listArchives(backupDir, ruleName);
   if (archives.length === 0) {
     const input = await text({
       message: 'No archive found in backup_dir. Enter archive path manually',
@@ -213,9 +214,10 @@ async function handleBackup(ruleArg?: string): Promise<void> {
     process.exit(1);
   }
 
+  const ruleName = path.basename(rulePath, '.yaml');
   const progress = spinner();
   progress.start('Creating tar.gz archive');
-  const result = await createBackup(rulePath, rule);
+  const result = await createBackup(rulePath, rule, ruleName);
   progress.stop(`Archive created with ${result.fileCount} entries`);
   note(result.archivePath, 'Archive path');
   outro('Backup completed.');

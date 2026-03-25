@@ -4,7 +4,6 @@ export interface ClawPreset {
   defaultSourceDir: string;
   defaultBackupDir: string;
   defaultRestoreDir: string;
-  archivePrefix: string;
   include: string[];
   exclude: string[];
 }
@@ -18,7 +17,6 @@ export interface BackupRule {
   restoreDir: string;
   include: string[];
   exclude: string[];
-  archivePrefix: string;
 }
 
 export interface CreateRuleResult {

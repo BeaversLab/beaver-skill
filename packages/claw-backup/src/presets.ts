@@ -30,7 +30,6 @@ function assertPreset(value: unknown, filePath: string): ClawPreset {
     'defaultSourceDir',
     'defaultBackupDir',
     'defaultRestoreDir',
-    'archivePrefix',
   ];
   for (const field of requiredStringFields) {
     if (typeof preset[field] !== 'string' || !preset[field]?.trim()) {

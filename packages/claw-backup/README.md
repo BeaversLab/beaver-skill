@@ -1,5 +1,7 @@
 # @beaverslab/claw-backup
 
+[简体中文](./README.zh.md) | English
+
 Rule-based backup and restore CLI for claw-style local app data.
 
 ## Install
@@ -83,8 +85,32 @@ include:
 exclude:
   - '*.tmp'
   - cache/
-archivePrefix: openclaw
 ```
+
+## Backup Storage Structure
+
+Backups are organized by rule name in subdirectories:
+
+```
+~/claw-backups/
+├── openclaw/
+│   ├── 202603261200.tar.gz
+│   └── 202603261800.tar.gz
+├── myproject/
+│   └── 202603261500.tar.gz
+└── formatcheck/
+    └── 202603251353.tar.gz
+```
+
+Each rule's archives are stored in `{backupDir}/{ruleName}/` with timestamp-based filenames.
+
+## Changelog
+
+### 0.3.0
+
+- **Breaking**: Removed `archivePrefix` field from rule files
+- Backup archives now organized by rule name: `{backupDir}/{ruleName}/{timestamp}.tar.gz`
+- Archive filenames simplified to just `{timestamp}.tar.gz`
 
 ## Related
 

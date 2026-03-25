@@ -95,7 +95,11 @@ async function createManifest(
   };
 }
 
-export async function createBackup(rulePath: string, rule: BackupRule): Promise<BackupResult> {
+export async function createBackup(
+  rulePath: string,
+  rule: BackupRule,
+  ruleName: string
+): Promise<BackupResult> {
   const matcher = ignore().add(rule.exclude);
   const files = new Set<string>();
   for (const includeEntry of rule.include) {
@@ -109,9 +113,10 @@ export async function createBackup(rulePath: string, rule: BackupRule): Promise<
     throw new Error('No files matched the current include/exclude rules.');
   }
 
-  await mkdir(rule.backupDir, { recursive: true });
-  const archiveName = `${rule.archivePrefix}_${currentTimestamp()}.tar.gz`;
-  const archivePath = path.join(rule.backupDir, archiveName);
+  const ruleBackupDir = path.join(rule.backupDir, ruleName);
+  await mkdir(ruleBackupDir, { recursive: true });
+  const archiveName = `${currentTimestamp()}.tar.gz`;
+  const archivePath = path.join(ruleBackupDir, archiveName);
   const manifest = await createManifest(Array.from(files).sort());
   try {
     await runTar(['-czf', archivePath, '-C', rule.sourceDir, '-T', manifest.filePath]);
@@ -126,11 +131,12 @@ export async function createBackup(rulePath: string, rule: BackupRule): Promise<
   };
 }
 
-export async function listArchives(backupDir: string): Promise<string[]> {
-  const entries = await readdir(backupDir, { withFileTypes: true }).catch(() => []);
+export async function listArchives(backupDir: string, ruleName: string): Promise<string[]> {
+  const ruleBackupDir = path.join(backupDir, ruleName);
+  const entries = await readdir(ruleBackupDir, { withFileTypes: true }).catch(() => []);
   const files = entries
     .filter((entry) => entry.isFile() && entry.name.endsWith('.tar.gz'))
-    .map((entry) => path.join(backupDir, entry.name));
+    .map((entry) => path.join(ruleBackupDir, entry.name));
   files.sort((left, right) => right.localeCompare(left));
   return files;
 }
