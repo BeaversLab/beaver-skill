@@ -66,6 +66,7 @@ Load from `presets/{style}.md` and extract key elements:
 ## Style: {style_name}
 
 **Color Palette**:
+
 - Primary: {colors}
 - Background: {colors}
 - Accents: {colors}
@@ -117,7 +118,7 @@ From outline entry:
 ## Watermark
 
 Include a subtle watermark "{content}" positioned at {position}
-with approximately {opacity*100}% visibility. The watermark should
+with approximately {opacity\*100}% visibility. The watermark should
 be legible but not distracting from the main content.
 ```
 
@@ -126,6 +127,7 @@ be legible but not distracting from the main content.
 ### Step 1: Load Preset
 
 Read `presets/{style_name}.md` (e.g., `presets/notion.md`) and extract:
+
 - Color palette
 - Visual elements
 - Typography style
@@ -134,6 +136,7 @@ Read `presets/{style_name}.md` (e.g., `presets/notion.md`) and extract:
 ### Step 2: Load Layout
 
 Read `elements/canvas.md` and locate the section for `{layout_name}` (e.g., "dense"). Extract:
+
 - Information density guidelines
 - Whitespace percentage
 - Structure description
@@ -142,6 +145,7 @@ Read `elements/canvas.md` and locate the section for `{layout_name}` (e.g., "den
 ### Step 3: Format Content
 
 From outline entry, format:
+
 - Position context (Cover/Content/Ending)
 - Text content with hierarchy
 - Visual concept description
@@ -150,6 +154,7 @@ From outline entry, format:
 ### Step 4: Add Watermark (if applicable)
 
 If preferences include watermark:
+
 - Add watermark section with content, position, opacity
 
 ### Step 5: Visual Consistency — Reference Image Chain
@@ -163,7 +168,7 @@ When generating multiple images in a series:
    - Output: `02-content-xxx.png`
    - Aspect ratio: 3:4
    - The exact command syntax depends on the image generation skill in use (see `references/config/image-gen-interface.md`)
-   
+
    This ensures the AI maintains the same character design, illustration style, and color rendering across the series.
 
 ### Step 6: Combine

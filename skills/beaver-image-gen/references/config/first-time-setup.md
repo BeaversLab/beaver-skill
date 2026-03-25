@@ -8,6 +8,7 @@ description: First-time setup and default model selection flow for beaver-image-
 ## Overview
 
 Triggered when:
+
 1. No EXTEND.md found → full setup (provider + model + preferences)
 2. EXTEND.md found but `default_model.[provider]` is null → model selection only
 
@@ -40,17 +41,17 @@ Use AskUserQuestion with ALL questions in ONE call:
 ### Question 1: Default Provider
 
 ```yaml
-header: "Provider"
-question: "Default image generation provider?"
+header: 'Provider'
+question: 'Default image generation provider?'
 options:
-  - label: "Google (Recommended)"
-    description: "Gemini multimodal - high quality, reference images, flexible sizes"
-  - label: "OpenAI"
-    description: "GPT Image - consistent quality, reliable output"
-  - label: "DashScope"
-    description: "Alibaba Cloud - z-image-turbo, good for Chinese content"
-  - label: "Replicate"
-    description: "Community models - nano-banana-pro, flexible model selection"
+  - label: 'Google (Recommended)'
+    description: 'Gemini multimodal - high quality, reference images, flexible sizes'
+  - label: 'OpenAI'
+    description: 'GPT Image - consistent quality, reliable output'
+  - label: 'DashScope'
+    description: 'Alibaba Cloud - z-image-turbo, good for Chinese content'
+  - label: 'Replicate'
+    description: 'Community models - nano-banana-pro, flexible model selection'
 ```
 
 ### Question 2: Default Google Model
@@ -58,47 +59,47 @@ options:
 Only show if user selected Google or auto-detect (no explicit provider).
 
 ```yaml
-header: "Google Model"
-question: "Default Google image generation model?"
+header: 'Google Model'
+question: 'Default Google image generation model?'
 options:
-  - label: "gemini-3-pro-image-preview (Recommended)"
-    description: "Highest quality, best for production use"
-  - label: "gemini-3.1-flash-image-preview"
-    description: "Fast generation, good quality, lower cost"
-  - label: "gemini-3-flash-preview"
-    description: "Fast generation, balanced quality and speed"
+  - label: 'gemini-3-pro-image-preview (Recommended)'
+    description: 'Highest quality, best for production use'
+  - label: 'gemini-3.1-flash-image-preview'
+    description: 'Fast generation, good quality, lower cost'
+  - label: 'gemini-3-flash-preview'
+    description: 'Fast generation, balanced quality and speed'
 ```
 
 ### Question 3: Default Quality
 
 ```yaml
-header: "Quality"
-question: "Default image quality?"
+header: 'Quality'
+question: 'Default image quality?'
 options:
-  - label: "2k (Recommended)"
-    description: "2048px - covers, illustrations, infographics"
-  - label: "normal"
-    description: "1024px - quick previews, drafts"
+  - label: '2k (Recommended)'
+    description: '2048px - covers, illustrations, infographics'
+  - label: 'normal'
+    description: '1024px - quick previews, drafts'
 ```
 
 ### Question 4: Save Location
 
 ```yaml
-header: "Save"
-question: "Where to save preferences?"
+header: 'Save'
+question: 'Where to save preferences?'
 options:
-  - label: "Project (Recommended)"
-    description: ".beaver-skill/ (this project only)"
-  - label: "User"
-    description: "~/.beaver-skill/ (all projects)"
+  - label: 'Project (Recommended)'
+    description: '.beaver-skill/ (this project only)'
+  - label: 'User'
+    description: '~/.beaver-skill/ (all projects)'
 ```
 
 ### Save Locations
 
-| Choice | Path | Scope |
-|--------|------|-------|
-| Project | `.beaver-skill/beaver-image-gen/EXTEND.md` | Current project |
-| User | `$HOME/.beaver-skill/beaver-image-gen/EXTEND.md` | All projects |
+| Choice  | Path                                             | Scope           |
+| ------- | ------------------------------------------------ | --------------- |
+| Project | `.beaver-skill/beaver-image-gen/EXTEND.md`       | Current project |
+| User    | `$HOME/.beaver-skill/beaver-image-gen/EXTEND.md` | All projects    |
 
 ### EXTEND.md Template
 
@@ -124,50 +125,50 @@ When EXTEND.md exists but `default_model.[current_provider]` is null, ask ONLY t
 ### Google Model Selection
 
 ```yaml
-header: "Google Model"
-question: "Choose a default Google image generation model?"
+header: 'Google Model'
+question: 'Choose a default Google image generation model?'
 options:
-  - label: "gemini-3-pro-image-preview (Recommended)"
-    description: "Highest quality, best for production use"
-  - label: "gemini-3.1-flash-image-preview"
-    description: "Fast generation, good quality, lower cost"
-  - label: "gemini-3-flash-preview"
-    description: "Fast generation, balanced quality and speed"
+  - label: 'gemini-3-pro-image-preview (Recommended)'
+    description: 'Highest quality, best for production use'
+  - label: 'gemini-3.1-flash-image-preview'
+    description: 'Fast generation, good quality, lower cost'
+  - label: 'gemini-3-flash-preview'
+    description: 'Fast generation, balanced quality and speed'
 ```
 
 ### OpenAI Model Selection
 
 ```yaml
-header: "OpenAI Model"
-question: "Choose a default OpenAI image generation model?"
+header: 'OpenAI Model'
+question: 'Choose a default OpenAI image generation model?'
 options:
-  - label: "gpt-image-1.5 (Recommended)"
-    description: "Latest GPT Image model, high quality"
-  - label: "gpt-image-1"
-    description: "Previous generation GPT Image model"
+  - label: 'gpt-image-1.5 (Recommended)'
+    description: 'Latest GPT Image model, high quality'
+  - label: 'gpt-image-1'
+    description: 'Previous generation GPT Image model'
 ```
 
 ### DashScope Model Selection
 
 ```yaml
-header: "DashScope Model"
-question: "Choose a default DashScope image generation model?"
+header: 'DashScope Model'
+question: 'Choose a default DashScope image generation model?'
 options:
-  - label: "z-image-turbo (Recommended)"
-    description: "Fast generation, good quality"
-  - label: "z-image-ultra"
-    description: "Higher quality, slower generation"
+  - label: 'z-image-turbo (Recommended)'
+    description: 'Fast generation, good quality'
+  - label: 'z-image-ultra'
+    description: 'Higher quality, slower generation'
 ```
 
 ### Replicate Model Selection
 
 ```yaml
-header: "Replicate Model"
-question: "Choose a default Replicate image generation model?"
+header: 'Replicate Model'
+question: 'Choose a default Replicate image generation model?'
 options:
-  - label: "google/nano-banana-pro (Recommended)"
+  - label: 'google/nano-banana-pro (Recommended)'
     description: "Google's fast image model on Replicate"
-  - label: "google/nano-banana"
+  - label: 'google/nano-banana'
     description: "Google's base image model on Replicate"
 ```
 

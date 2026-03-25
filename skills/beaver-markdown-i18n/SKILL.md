@@ -26,14 +26,16 @@ Token-efficient translation pipeline. Scripts handle parsing, caching, masking, 
 This skill has one correct execution order. Follow it strictly.
 
 **Normal file flow**
+
 1. `prepare`
 2. manually translate the target file
 3. `afterTranslate`
-5. if `ERROR`: stop and fix manually
-6. if `WARN`: stop and get explicit user confirmation
-7. rerun `afterTranslate --allow-warnings` only after explicit user confirmation
+4. if `ERROR`: stop and fix manually
+5. if `WARN`: stop and get explicit user confirmation
+6. rerun `afterTranslate --allow-warnings` only after explicit user confirmation
 
 **Chunked file flow**
+
 1. `prepare`
 2. read exactly one chunk
 3. manually translate exactly that chunk
@@ -41,9 +43,9 @@ This skill has one correct execution order. Follow it strictly.
 5. repeat Steps 2-4 until all chunks are finished
 6. `merge`
 7. `afterTranslate`
-9. if `ERROR`: stop and fix manually
-10. if `WARN`: stop and get explicit user confirmation
-11. rerun `afterTranslate --allow-warnings` only after explicit user confirmation
+8. if `ERROR`: stop and fix manually
+9. if `WARN`: stop and get explicit user confirmation
+10. rerun `afterTranslate --allow-warnings` only after explicit user confirmation
 
 MUST NOT change this order.
 MUST NOT skip `afterTranslate`.
@@ -71,6 +73,7 @@ node $SKILL_DIR/scripts/translate-cli.js seed <source_dir/> <target_dir/> --lang
 ```
 
 **What prepare does internally (you do NOT need to do these):**
+
 - Loads `.i18n/no-translate.yaml`, `.i18n/translation-consistency.yaml`, and glossary
 - Loads Translation Memory (`.i18n/<lang>.tm.jsonl`)
 - Parses source markdown into segments via AST
@@ -90,6 +93,7 @@ This step always happens after `prepare` and before `apply`.
 Open the skeleton file (or chunk files for large documents). For each `<!-- i18n:todo -->` section, translate the content between the markers to the target language.
 
 **Rules:**
+
 1. Translate ONLY the text between `<!-- i18n:todo -->` and `<!-- /i18n:todo -->` markers
 2. Keep `%%Pn%%` and `%%CB_<hash>%%` placeholders **exactly as-is** — do NOT modify, delete, or reformat them
 3. Do NOT touch segments without markers (they are cached translations)
@@ -97,16 +101,22 @@ Open the skeleton file (or chunk files for large documents). For each `<!-- i18n
 5. MUST NOT use any script/tool to batch-generate translations for files or chunks
 
 **Example — before:**
+
 ```markdown
 <!-- i18n:todo -->
+
 See [configuration]%%P2%% for %%P1%% flag details.
+
 <!-- /i18n:todo -->
 ```
 
 **Example — after:**
+
 ```markdown
 <!-- i18n:todo -->
+
 参阅[配置]%%P2%%了解 %%P1%% 标志详情。
+
 <!-- /i18n:todo -->
 ```
 
@@ -115,6 +125,7 @@ See [configuration]%%P2%% for %%P1%% flag details.
 **Large files (chunked):** If prepare generated chunks in `.i18n/chunks/`, translate **one chunk file at a time** in order (chunk-001, chunk-002, …).
 
 **CRITICAL RULE — exactly one chunk per turn/request:**
+
 - Read **only one chunk file**
 - Translate **only that chunk**
 - Save it, run `checkpoint`, then move to the next chunk
@@ -124,11 +135,13 @@ See [configuration]%%P2%% for %%P1%% flag details.
 This rule is mandatory. Chunk translation is designed to be strictly sequential, not batched.
 
 Read only the current chunk, translate all its `<!-- i18n:todo -->` sections, save, then checkpoint that chunk into TM before moving to the next one:
+
 ```bash
 node $SKILL_DIR/scripts/translate-cli.js checkpoint <chunk-file>
 ```
 
 After all chunks are translated, merge them back:
+
 ```bash
 node $SKILL_DIR/scripts/translate-cli.js merge <target>
 ```
@@ -149,6 +162,7 @@ node $SKILL_DIR/scripts/translate-cli.js afterTranslate <source> <target> [--lan
 ```
 
 **What afterTranslate does internally:**
+
 - Runs `apply`
 - Runs `quality`
 - If quality is clean, runs `plan set ... done`
@@ -156,6 +170,7 @@ node $SKILL_DIR/scripts/translate-cli.js afterTranslate <source> <target> [--lan
 - If quality has `WARN`, stops unless you rerun with explicit user confirmation and `--allow-warnings`
 
 **What apply does internally when called by afterTranslate:**
+
 - Auto-strips remaining `<!-- i18n:todo -->` markers
 - Auto-fixes common placeholder mangling (spacing, casing)
 - Restores `%%Pn%%` → original inline code/URLs, `%%CB_<hash>%%` → original code blocks
@@ -272,16 +287,16 @@ frontmatter_translate_keys:
   - read_when
 
 headings:
-  - text: "API Reference"
-    reason: "Industry standard term"
+  - text: 'API Reference'
+    reason: 'Industry standard term'
 
 terms:
-  - text: "Gateway"
-    reason: "Product name"
+  - text: 'Gateway'
+    reason: 'Product name'
 
 sections:
-  - title: "Changelog"
-    reason: "Historical record"
+  - title: 'Changelog'
+    reason: 'Historical record'
 ```
 
 ### `.i18n/translation-consistency.yaml`
@@ -304,6 +319,7 @@ Location: `.i18n/<lang>.tm.jsonl`
 Segment-level cache. On subsequent runs, `prepare.js` skips segments whose source text hash matches a TM entry and pre-fills the cached translation — only changed or new segments get `<!-- i18n:todo -->` markers.
 
 To seed TM from existing translations:
+
 ```bash
 node $SKILL_DIR/scripts/translate-cli.js seed <source_dir> <target_dir> --lang <locale>
 ```
@@ -344,16 +360,16 @@ $PLAN clean
 
 ### Commands
 
-| Command | Purpose |
-|---|---|
-| `init` | Create run dir, sync source changes, scan targets |
-| `scan` | Scan target files, compute translation completeness |
-| `sync` | Detect source file changes (git diff or hash mode) |
-| `add` | Add files to the plan (single, glob, or file list) |
-| `status` | Show overall progress with completeness metrics |
-| `list` | Filter/sort files by status, size, name |
-| `set` | Update file status (single or batch) |
-| `clean` | Remove temp files (run directories) |
+| Command  | Purpose                                             |
+| -------- | --------------------------------------------------- |
+| `init`   | Create run dir, sync source changes, scan targets   |
+| `scan`   | Scan target files, compute translation completeness |
+| `sync`   | Detect source file changes (git diff or hash mode)  |
+| `add`    | Add files to the plan (single, glob, or file list)  |
+| `status` | Show overall progress with completeness metrics     |
+| `list`   | Filter/sort files by status, size, name             |
+| `set`    | Update file status (single or batch)                |
+| `clean`  | Remove temp files (run directories)                 |
 
 ### Sync modes
 

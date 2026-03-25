@@ -43,6 +43,7 @@ Apply the 5 confirmed dimensions (Type, Palette, Rendering, Text, Mood) and Font
 ### Character Handling
 
 When people are needed:
+
 - Use simplified silhouettes or abstract stick figures
 - Symbolic representations (head + shoulders outline)
 - NO realistic faces, detailed anatomy, or photographic representations

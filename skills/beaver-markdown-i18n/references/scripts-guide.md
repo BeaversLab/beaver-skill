@@ -3,6 +3,7 @@
 Utility scripts for the translation pipeline. All scripts run with Node.js >= 18.
 
 Install dependencies first:
+
 ```bash
 cd <skill-path> && pnpm install
 ```
@@ -17,14 +18,14 @@ node $SKILL_DIR/scripts/translate-cli.js <command> [options]
 
 ### Commands
 
-| Command | Purpose | Example |
-|---|---|---|
-| `prepare` | Generate skeleton target with TM caching & masking | `translate-cli.js prepare <src> <tgt> --lang zh` |
-| `checkpoint` | Persist one translated chunk into TM | `translate-cli.js checkpoint <chunk-file>` |
-| `apply` | Validate, unmask placeholders, update TM | `translate-cli.js apply <src> <tgt>` |
-| `afterTranslate` | Run apply + quality + plan set done | `translate-cli.js afterTranslate <src> <tgt>` |
-| `merge` | Merge translated chunks into target | `translate-cli.js merge <target>` |
-| `seed` | Seed TM from existing translation pairs | `translate-cli.js seed <src> <tgt> --lang zh` |
+| Command          | Purpose                                            | Example                                          |
+| ---------------- | -------------------------------------------------- | ------------------------------------------------ |
+| `prepare`        | Generate skeleton target with TM caching & masking | `translate-cli.js prepare <src> <tgt> --lang zh` |
+| `checkpoint`     | Persist one translated chunk into TM               | `translate-cli.js checkpoint <chunk-file>`       |
+| `apply`          | Validate, unmask placeholders, update TM           | `translate-cli.js apply <src> <tgt>`             |
+| `afterTranslate` | Run apply + quality + plan set done                | `translate-cli.js afterTranslate <src> <tgt>`    |
+| `merge`          | Merge translated chunks into target                | `translate-cli.js merge <target>`                |
+| `seed`           | Seed TM from existing translation pairs            | `translate-cli.js seed <src> <tgt> --lang zh`    |
 
 ### prepare
 
@@ -32,14 +33,15 @@ node $SKILL_DIR/scripts/translate-cli.js <command> [options]
 translate-cli.js prepare <source> <target> --lang <locale> [options]
 ```
 
-| Option | Description |
-|---|---|
-| `--lang` | Target locale (e.g. zh-CN, ja, ko) |
-| `--src-lang` | Source locale (default: auto-detect or "en") |
-| `--max-chunk-chars N` | Max characters per chunk (default: 3000) |
-| `--project-dir` | Project root for .i18n/ config lookup |
+| Option                | Description                                  |
+| --------------------- | -------------------------------------------- |
+| `--lang`              | Target locale (e.g. zh-CN, ja, ko)           |
+| `--src-lang`          | Source locale (default: auto-detect or "en") |
+| `--max-chunk-chars N` | Max characters per chunk (default: 3000)     |
+| `--project-dir`       | Project root for .i18n/ config lookup        |
 
 **Output:**
+
 - Skeleton file(s) at target path with `<!-- i18n:todo -->` markers
 - Task metadata at `.i18n/task-meta.json`
 - Console summary: segments to translate vs cached
@@ -60,13 +62,14 @@ Checkpoint one translated chunk into Translation Memory before moving to the nex
 translate-cli.js apply <source> <target> [options]
 ```
 
-| Option | Description |
-|---|---|
-| `--lang` | Target locale (auto-detected from task-meta or path) |
-| `--src-lang` | Source locale (default: auto-detect or "en") |
-| `--project-dir` | Project root for .i18n/ config lookup |
+| Option          | Description                                          |
+| --------------- | ---------------------------------------------------- |
+| `--lang`        | Target locale (auto-detected from task-meta or path) |
+| `--src-lang`    | Source locale (default: auto-detect or "en")         |
+| `--project-dir` | Project root for .i18n/ config lookup                |
 
 **Checks performed (via lib/quality.js):**
+
 - No remaining `<!-- i18n:todo -->` markers
 - All `%%Pn%%` placeholders intact (restored to original)
 - Code block count, content, and language tags preserved
@@ -83,11 +86,13 @@ translate-cli.js afterTranslate <source> <target> [--lang <locale>] [--project-d
 ```
 
 Runs the post-translation sequence in one command:
+
 - `apply`
 - `quality`
 - `plan set ... done`
 
 Default behavior:
+
 - stops on any quality `ERROR`
 - stops on any quality `WARN`
 - only continues past warnings when `--allow-warnings` is explicitly passed
@@ -121,26 +126,26 @@ node $SKILL_DIR/scripts/quality-cli.js --dir <source_dir> <target_dir> [options]
 
 ### Options
 
-| Option | Description |
-|---|---|
+| Option                   | Description                             |
+| ------------------------ | --------------------------------------- |
 | `--source-locale <code>` | Source locale (auto-detected from path) |
 | `--target-locale <code>` | Target locale (auto-detected from path) |
-| `--check <ids>` | Only run these checks (comma-separated) |
-| `--skip <ids>` | Skip these checks (comma-separated) |
-| `--json` | JSON output |
+| `--check <ids>`          | Only run these checks (comma-separated) |
+| `--skip <ids>`           | Skip these checks (comma-separated)     |
+| `--json`                 | JSON output                             |
 
 ### Check IDs
 
-| ID | What it checks |
-|---|---|
-| `structure` | Headings, code block count, list items, frontmatter keys, link count |
-| `codeBlocks` | Code block content identical, language tags match |
-| `variables` | `{{var}}`, `$ENV`/`${var}`, `%s`/`%d` preserved |
-| `links` | External URLs, relative links, anchor links preserved |
-| `terminology` | no-translate terms, consistency terms, industry terms |
-| `untranslated` | Detect untranslated source-language paragraphs |
-| `sections` | Heading hierarchy sequence match (section omission) |
-| `frontmatterTranslated` | Frontmatter text fields translated (CJK targets) |
+| ID                      | What it checks                                                       |
+| ----------------------- | -------------------------------------------------------------------- |
+| `structure`             | Headings, code block count, list items, frontmatter keys, link count |
+| `codeBlocks`            | Code block content identical, language tags match                    |
+| `variables`             | `{{var}}`, `$ENV`/`${var}`, `%s`/`%d` preserved                      |
+| `links`                 | External URLs, relative links, anchor links preserved                |
+| `terminology`           | no-translate terms, consistency terms, industry terms                |
+| `untranslated`          | Detect untranslated source-language paragraphs                       |
+| `sections`              | Heading hierarchy sequence match (section omission)                  |
+| `frontmatterTranslated` | Frontmatter text fields translated (CJK targets)                     |
 
 See `references/quality-checklist.md` for the full checklist with severity levels.
 
@@ -156,16 +161,16 @@ node $SKILL_DIR/scripts/plan-cli.js <command> [options]
 
 ### Commands
 
-| Command | Purpose | Example |
-|---|---|---|
-| `init` | Initialize translation session | `plan-cli.js init docs/en --lang zh` |
-| `scan` | Scan target files, build manifest | `plan-cli.js scan` |
-| `sync` | Detect source file changes | `plan-cli.js sync --mode git --from abc --to HEAD` |
-| `add` | Add files to plan | `plan-cli.js add guide.md` |
-| `status` | Show progress overview | `plan-cli.js status` |
-| `list` | Filter/sort files | `plan-cli.js list --status pending --sort lines` |
-| `set` | Update file status | `plan-cli.js set guide.md done` |
-| `clean` | Remove temp files | `plan-cli.js clean` |
+| Command  | Purpose                           | Example                                            |
+| -------- | --------------------------------- | -------------------------------------------------- |
+| `init`   | Initialize translation session    | `plan-cli.js init docs/en --lang zh`               |
+| `scan`   | Scan target files, build manifest | `plan-cli.js scan`                                 |
+| `sync`   | Detect source file changes        | `plan-cli.js sync --mode git --from abc --to HEAD` |
+| `add`    | Add files to plan                 | `plan-cli.js add guide.md`                         |
+| `status` | Show progress overview            | `plan-cli.js status`                               |
+| `list`   | Filter/sort files                 | `plan-cli.js list --status pending --sort lines`   |
+| `set`    | Update file status                | `plan-cli.js set guide.md done`                    |
+| `clean`  | Remove temp files                 | `plan-cli.js clean`                                |
 
 ### init
 
@@ -239,15 +244,15 @@ Never removes: `.i18n/no-translate.yaml`, `.i18n/translation-consistency.yaml`, 
 
 All non-CLI modules live under `scripts/lib/`.
 
-| Module | Purpose |
-|---|---|
-| `prepare.js` | Core preparation pipeline: TM lookup, masking, skeleton generation |
-| `apply.js` | Post-processing pipeline: validation, unmasking, TM update |
-| `merge-chunks.js` | Merge translated chunk files back into a single target |
-| `read-no-translate.js` | Load `.i18n/no-translate.yaml` config, `findI18nDir()` utility |
-| `quality.js` | All quality check functions, `runAllChecks()` orchestrator |
-| `plan.js` | Plan file I/O, filtering, status updates, run dir management, sync logic |
-| `scan.js` | Target file scanning, target_ratio computation, manifest I/O |
-| `tm.js` | Translation Memory — JSONL load/save, cache key generation |
-| `segments.js` | Markdown AST parsing (remark/unified), segment extraction |
-| `masking.js` | Placeholder masking/unmasking for inline code, URLs, variables, code blocks |
+| Module                 | Purpose                                                                     |
+| ---------------------- | --------------------------------------------------------------------------- |
+| `prepare.js`           | Core preparation pipeline: TM lookup, masking, skeleton generation          |
+| `apply.js`             | Post-processing pipeline: validation, unmasking, TM update                  |
+| `merge-chunks.js`      | Merge translated chunk files back into a single target                      |
+| `read-no-translate.js` | Load `.i18n/no-translate.yaml` config, `findI18nDir()` utility              |
+| `quality.js`           | All quality check functions, `runAllChecks()` orchestrator                  |
+| `plan.js`              | Plan file I/O, filtering, status updates, run dir management, sync logic    |
+| `scan.js`              | Target file scanning, target_ratio computation, manifest I/O                |
+| `tm.js`                | Translation Memory — JSONL load/save, cache key generation                  |
+| `segments.js`          | Markdown AST parsing (remark/unified), segment extraction                   |
+| `masking.js`           | Placeholder masking/unmasking for inline code, URLs, variables, code blocks |

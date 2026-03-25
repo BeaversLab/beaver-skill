@@ -49,7 +49,8 @@ Each skill follows this structure:
 
 **Preference Persistence**: Uses `EXTEND.md` (via `.beaver-skill/` directory) to save user preferences like default providers, models, and quality settings.
 
-**Safety & Reliability**: 
+**Safety & Reliability**:
+
 - API keys are handled securely (e.g., via temporary config files for curl).
 - Network requests include explicit timeouts (300s).
 - Long-polling operations (like Replicate) use exponential backoff.
@@ -57,31 +58,37 @@ Each skill follows this structure:
 ## Skills Inventory
 
 ### beaver-image-gen
+
 - **Purpose**: Unified AI image generation CLI.
 - **Trigger**: User asks to "generate image", "draw", or "create a picture".
 - **Backends**: Google Gemini, OpenAI DALL-E/GPT Image, DashScope (Alibaba), Replicate.
 - **Features**: Reference image support, quality presets (2K/4K), aspect ratio control, automatic provider detection.
 
 ### beaver-xhs-images
+
 - **Purpose**: Generate Xiaohongshu (Little Red Book) infographic series.
 - **Trigger**: User mentions "小红书图片", "XHS images", "RedNote infographics".
-- **Features**: 
+- **Features**:
   - 10 visual styles x 8 layouts.
   - Smart content analysis and outline generation.
   - Multi-image consistency via session-based reference chains.
 
 ### beaver-skill-analysis
+
 - **Purpose**: Analyze and improve skills.
 - **Trigger**: User asks how a skill works or how to optimize it.
 
 ## Conventions
 
 ### File Naming
+
 - Use kebab-case for directories and files.
 - Use descriptive prefixes for generated assets (e.g., `01-cover-`, `02-content-`).
 
 ### Frontmatter Format
+
 All SKILL.md files must include:
+
 ```yaml
 ---
 name: skill-name
@@ -90,6 +97,7 @@ description: Trigger description that explains when to use this skill
 ```
 
 ### Documentation Style
+
 - **Blocking Operations**: Marked with ⛔.
 - **Confirmations**: Marked with ⚠️.
 - **Updates**: Document functional changes and bug fixes in the skill's README.md under "更新日志".

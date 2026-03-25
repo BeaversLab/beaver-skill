@@ -5,6 +5,7 @@ Template for generating infographic series outlines with layout specifications.
 ## File Naming
 
 Outline files use strategy identifier in the name:
+
 - `outline-strategy-a.md` - Story-driven variant
 - `outline-strategy-b.md` - Information-dense variant
 - `outline-strategy-c.md` - Visual-first variant
@@ -13,18 +14,20 @@ Outline files use strategy identifier in the name:
 ## Image File Naming
 
 Images use meaningful slugs for readability:
+
 ```
 NN-{type}-[slug].png
 NN-{type}-[slug].md (in prompts/)
 ```
 
-| Type | Usage |
-|------|-------|
-| `cover` | First image (cover) |
+| Type      | Usage                 |
+| --------- | --------------------- |
+| `cover`   | First image (cover)   |
 | `content` | Middle content images |
-| `ending` | Last image |
+| `ending`  | Last image            |
 
 **Examples**:
+
 - `01-cover-ai-tools.png`
 - `02-content-why-ai.png`
 - `03-content-chatgpt.png`
@@ -33,6 +36,7 @@ NN-{type}-[slug].md (in prompts/)
 - `06-ending-summary.png`
 
 **Slug rules**:
+
 - Derived from image content (kebab-case)
 - Must be unique within the series
 - Keep short but descriptive (2-4 words)
@@ -41,29 +45,29 @@ NN-{type}-[slug].md (in prompts/)
 
 ### Density-Based Layouts
 
-| Layout | When to Use | Info Points | Whitespace |
-|--------|-------------|-------------|------------|
-| sparse | Covers, quotes, impact statements | 1-2 | 60-70% |
-| balanced | Standard content, tutorials | 3-4 | 40-50% |
-| dense | Knowledge cards, cheat sheets | 5-8 | 20-30% |
+| Layout   | When to Use                       | Info Points | Whitespace |
+| -------- | --------------------------------- | ----------- | ---------- |
+| sparse   | Covers, quotes, impact statements | 1-2         | 60-70%     |
+| balanced | Standard content, tutorials       | 3-4         | 40-50%     |
+| dense    | Knowledge cards, cheat sheets     | 5-8         | 20-30%     |
 
 ### Structure-Based Layouts
 
-| Layout | When to Use | Structure |
-|--------|-------------|-----------|
-| list | Rankings, checklists, steps | Numbered/bulleted vertical |
-| comparison | Before/after, pros/cons | Left vs right split |
-| flow | Processes, timelines | Connected nodes with arrows |
+| Layout     | When to Use                 | Structure                   |
+| ---------- | --------------------------- | --------------------------- |
+| list       | Rankings, checklists, steps | Numbered/bulleted vertical  |
+| comparison | Before/after, pros/cons     | Left vs right split         |
+| flow       | Processes, timelines        | Connected nodes with arrows |
 
 ### Position-Based Recommendations
 
-| Position | Recommended | Reasoning |
-|----------|-------------|-----------|
-| Cover | sparse | Maximum impact, clear title |
-| Setup | balanced | Context without overwhelming |
-| Core | balanced/dense/list | Match content density |
-| Payoff | balanced/list | Clear takeaways |
-| Ending | sparse | Clean CTA, memorable |
+| Position | Recommended         | Reasoning                    |
+| -------- | ------------------- | ---------------------------- |
+| Cover    | sparse              | Maximum impact, clear title  |
+| Setup    | balanced            | Context without overwhelming |
+| Core     | balanced/dense/list | Match content density        |
+| Payoff   | balanced/list       | Clear takeaways              |
+| Ending   | sparse              | Clean CTA, memorable         |
 
 ## Outline Format
 
@@ -71,12 +75,14 @@ NN-{type}-[slug].md (in prompts/)
 # Xiaohongshu Infographic Series Outline
 
 ---
-strategy: a  # a, b, or c
+
+strategy: a # a, b, or c
 name: Story-Driven
 style: notion
 default_layout: dense
 image_count: 6
 generated: YYYY-MM-DD HH:mm
+
 ---
 
 ## Image 1 of 6
@@ -88,6 +94,7 @@ generated: YYYY-MM-DD HH:mm
 **Filename**: 01-cover-ai-tools.png
 
 **Text Content**:
+
 - Title: 「5个AI神器让你效率翻倍」
 - Subtitle: 亲测好用，建议收藏
 
@@ -108,6 +115,7 @@ generated: YYYY-MM-DD HH:mm
 **Filename**: 02-content-why-ai.png
 
 **Text Content**:
+
 - Title: 「为什么要用AI？」
 - Points:
   - 重复工作自动化
@@ -131,6 +139,7 @@ generated: YYYY-MM-DD HH:mm
 **Filename**: 03-content-chatgpt.png
 
 **Text Content**:
+
 - Title: 「ChatGPT」
 - Subtitle: 最强AI助手
 - Points:
@@ -156,6 +165,7 @@ ChatGPT logo居中，四周放射状展示功能点
 **Filename**: 04-content-midjourney.png
 
 **Text Content**:
+
 - Title: 「Midjourney」
 - Subtitle: AI绘画神器
 - Points:
@@ -181,6 +191,7 @@ ChatGPT logo居中，四周放射状展示功能点
 **Filename**: 05-content-notion-ai.png
 
 **Text Content**:
+
 - Title: 「Notion AI」
 - Subtitle: 智能笔记助手
 - Points:
@@ -205,6 +216,7 @@ Notion界面风格，简洁黑白配色
 **Filename**: 06-ending-summary.png
 
 **Text Content**:
+
 - Title: 「工具只是工具」
 - Subtitle: 关键是用起来！
 - CTA: 收藏备用 | 转发给需要的朋友
@@ -222,26 +234,27 @@ Notion界面风格，简洁黑白配色
 
 Each image should end with a hook for the next:
 
-| Strategy | Example |
-|----------|---------|
-| Teaser | "第一个就很强大👇" |
-| Numbering | "接下来是第2个👇" |
-| Superlative | "下一个更厉害👇" |
-| Question | "猜猜下一个是什么？👇" |
-| Promise | "最后一个最实用👇" |
-| Urgency | "最重要的来了👇" |
+| Strategy    | Example                |
+| ----------- | ---------------------- |
+| Teaser      | "第一个就很强大👇"     |
+| Numbering   | "接下来是第2个👇"      |
+| Superlative | "下一个更厉害👇"       |
+| Question    | "猜猜下一个是什么？👇" |
+| Promise     | "最后一个最实用👇"     |
+| Urgency     | "最重要的来了👇"       |
 
 ## Strategy Differentiation
 
 Three strategies should differ meaningfully:
 
-| Strategy | Focus | Structure | Page Count |
-|----------|-------|-----------|------------|
-| A: Story-Driven | Emotional, personal | Hook→Problem→Discovery→Experience→Conclusion | 4-6 |
-| B: Information-Dense | Factual, structured | Core→Info Cards→Comparison→Recommendation | 3-5 |
-| C: Visual-First | Atmospheric, minimal text | Hero→Details→Lifestyle→CTA | 3-4 |
+| Strategy             | Focus                     | Structure                                    | Page Count |
+| -------------------- | ------------------------- | -------------------------------------------- | ---------- |
+| A: Story-Driven      | Emotional, personal       | Hook→Problem→Discovery→Experience→Conclusion | 4-6        |
+| B: Information-Dense | Factual, structured       | Core→Info Cards→Comparison→Recommendation    | 3-5        |
+| C: Visual-First      | Atmospheric, minimal text | Hero→Details→Lifestyle→CTA                   | 3-4        |
 
 **Example for "AI工具推荐"**:
+
 - `outline-strategy-a.md`: Warm + Balanced - Personal journey with AI
 - `outline-strategy-b.md`: Notion + Dense - Knowledge card style
 - `outline-strategy-c.md`: Minimal + Sparse - Sleek tech aesthetic

@@ -80,6 +80,7 @@
 >
 > **技能**：
 > 已分析内容，推荐配置：
+>
 > - 类型：conceptual（概念可视化）
 > - 色板：cool（技术蓝调）
 > - 渲染：digital（精致数字风）
@@ -95,29 +96,29 @@
 
 ## 参数说明
 
-| 参数 | 是否必填 | 默认值 | 说明 |
-|---|---|---|---|
-| 内容源 | 是 | — | 文件路径或直接粘贴的文本内容 |
-| `--type <name>` | 否 | 自动推荐 | 封面类型：`hero` / `conceptual` / `typography` / `metaphor` / `scene` / `minimal` |
-| `--palette <name>` | 否 | 自动推荐 | 色板：`warm` / `elegant` / `cool` / `dark` / `earth` / `vivid` / `pastel` / `mono` / `retro` |
-| `--rendering <name>` | 否 | 自动推荐 | 渲染风格：`flat-vector` / `hand-drawn` / `painterly` / `digital` / `pixel` / `chalk` |
-| `--style <name>` | 否 | — | 风格预设（色板+渲染的快捷组合），共 19 种 |
-| `--text <level>` | 否 | title-only | 文字密度：`none` / `title-only` / `title-subtitle` / `text-rich` |
-| `--mood <level>` | 否 | balanced | 氛围：`subtle` / `balanced` / `bold` |
-| `--font <name>` | 否 | clean | 字体：`clean` / `handwritten` / `serif` / `display` |
-| `--aspect <ratio>` | 否 | 16:9 | 宽高比：`16:9` / `2.35:1` / `4:3` / `3:2` / `1:1` / `3:4` |
-| `--lang <code>` | 否 | 自动检测 | 标题语言（en, zh, ja 等） |
-| `--no-title` | 否 | — | 等同于 `--text none` |
-| `--quick` | 否 | — | 跳过 6 维度确认，使用自动选择 |
-| `--ref <files...>` | 否 | — | 参考图文件，用于风格/构图引导 |
+| 参数                 | 是否必填 | 默认值     | 说明                                                                                         |
+| -------------------- | -------- | ---------- | -------------------------------------------------------------------------------------------- |
+| 内容源               | 是       | —          | 文件路径或直接粘贴的文本内容                                                                 |
+| `--type <name>`      | 否       | 自动推荐   | 封面类型：`hero` / `conceptual` / `typography` / `metaphor` / `scene` / `minimal`            |
+| `--palette <name>`   | 否       | 自动推荐   | 色板：`warm` / `elegant` / `cool` / `dark` / `earth` / `vivid` / `pastel` / `mono` / `retro` |
+| `--rendering <name>` | 否       | 自动推荐   | 渲染风格：`flat-vector` / `hand-drawn` / `painterly` / `digital` / `pixel` / `chalk`         |
+| `--style <name>`     | 否       | —          | 风格预设（色板+渲染的快捷组合），共 19 种                                                    |
+| `--text <level>`     | 否       | title-only | 文字密度：`none` / `title-only` / `title-subtitle` / `text-rich`                             |
+| `--mood <level>`     | 否       | balanced   | 氛围：`subtle` / `balanced` / `bold`                                                         |
+| `--font <name>`      | 否       | clean      | 字体：`clean` / `handwritten` / `serif` / `display`                                          |
+| `--aspect <ratio>`   | 否       | 16:9       | 宽高比：`16:9` / `2.35:1` / `4:3` / `3:2` / `1:1` / `3:4`                                    |
+| `--lang <code>`      | 否       | 自动检测   | 标题语言（en, zh, ja 等）                                                                    |
+| `--no-title`         | 否       | —          | 等同于 `--text none`                                                                         |
+| `--quick`            | 否       | —          | 跳过 6 维度确认，使用自动选择                                                                |
+| `--ref <files...>`   | 否       | —          | 参考图文件，用于风格/构图引导                                                                |
 
 ## 依赖
 
-| 依赖项 | 类型 | 是否必须 | 说明 |
-|---|---|---|---|
-| 图片生成能力 | 工具/技能 | 是 | 需要运行环境具备 AI 图片生成能力（如 beaver-image-gen 或同类技能） |
-| 文件系统访问 | 运行时权限 | 是 | 用于保存源文件、prompt 文件、参考图和生成的封面图 |
-| Bash 命令执行 | 运行时权限 | 是 | 用于检查 EXTEND.md 配置文件是否存在 |
+| 依赖项        | 类型       | 是否必须 | 说明                                                               |
+| ------------- | ---------- | -------- | ------------------------------------------------------------------ |
+| 图片生成能力  | 工具/技能  | 是       | 需要运行环境具备 AI 图片生成能力（如 beaver-image-gen 或同类技能） |
+| 文件系统访问  | 运行时权限 | 是       | 用于保存源文件、prompt 文件、参考图和生成的封面图                  |
+| Bash 命令执行 | 运行时权限 | 是       | 用于检查 EXTEND.md 配置文件是否存在                                |
 
 ## 注意事项
 

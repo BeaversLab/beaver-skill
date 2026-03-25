@@ -33,65 +33,65 @@ Break down complex content into eye-catching infographic series for Xiaohongshu 
 
 ## Options
 
-| Option | Description |
-|--------|-------------|
-| `--style <name>` | Visual style (see Style Gallery) |
+| Option            | Description                             |
+| ----------------- | --------------------------------------- |
+| `--style <name>`  | Visual style (see Style Gallery)        |
 | `--layout <name>` | Information layout (see Layout Gallery) |
 
 ## Two Dimensions
 
-| Dimension | Controls | Options |
-|-----------|----------|---------|
-| **Style** | Visual aesthetics: colors, lines, decorations | cute, fresh, warm, bold, minimal, retro, pop, notion, chalkboard, study-notes |
-| **Layout** | Information structure: density, arrangement | sparse, balanced, dense, list, comparison, flow, mindmap, quadrant |
+| Dimension  | Controls                                      | Options                                                                       |
+| ---------- | --------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Style**  | Visual aesthetics: colors, lines, decorations | cute, fresh, warm, bold, minimal, retro, pop, notion, chalkboard, study-notes |
+| **Layout** | Information structure: density, arrangement   | sparse, balanced, dense, list, comparison, flow, mindmap, quadrant            |
 
 Style × Layout can be freely combined. Example: `--style notion --layout dense` creates an intellectual-looking knowledge card with high information density.
 
 ## Style Gallery
 
-| Style | Description |
-|-------|-------------|
-| `cute` (Default) | Sweet, adorable, girly - classic Xiaohongshu aesthetic |
-| `fresh` | Clean, refreshing, natural |
-| `warm` | Cozy, friendly, approachable |
-| `bold` | High impact, attention-grabbing |
-| `minimal` | Ultra-clean, sophisticated |
-| `retro` | Vintage, nostalgic, trendy |
-| `pop` | Vibrant, energetic, eye-catching |
-| `notion` | Minimalist hand-drawn line art, intellectual |
-| `chalkboard` | Colorful chalk on black board, educational |
-| `study-notes` | Realistic handwritten photo style, blue pen + red annotations + yellow highlighter |
+| Style            | Description                                                                        |
+| ---------------- | ---------------------------------------------------------------------------------- |
+| `cute` (Default) | Sweet, adorable, girly - classic Xiaohongshu aesthetic                             |
+| `fresh`          | Clean, refreshing, natural                                                         |
+| `warm`           | Cozy, friendly, approachable                                                       |
+| `bold`           | High impact, attention-grabbing                                                    |
+| `minimal`        | Ultra-clean, sophisticated                                                         |
+| `retro`          | Vintage, nostalgic, trendy                                                         |
+| `pop`            | Vibrant, energetic, eye-catching                                                   |
+| `notion`         | Minimalist hand-drawn line art, intellectual                                       |
+| `chalkboard`     | Colorful chalk on black board, educational                                         |
+| `study-notes`    | Realistic handwritten photo style, blue pen + red annotations + yellow highlighter |
 
 Detailed style definitions: `references/presets/<style>.md`
 
 ## Layout Gallery
 
-| Layout | Description |
-|--------|-------------|
-| `sparse` (Default) | Minimal information, maximum impact (1-2 points) |
-| `balanced` | Standard content layout (3-4 points) |
-| `dense` | High information density, knowledge card style (5-8 points) |
-| `list` | Enumeration and ranking format (4-7 items) |
-| `comparison` | Side-by-side contrast layout |
-| `flow` | Process and timeline layout (3-6 steps) |
-| `mindmap` | Center radial mind map layout (4-8 branches) |
-| `quadrant` | Four-quadrant / circular section layout |
+| Layout             | Description                                                 |
+| ------------------ | ----------------------------------------------------------- |
+| `sparse` (Default) | Minimal information, maximum impact (1-2 points)            |
+| `balanced`         | Standard content layout (3-4 points)                        |
+| `dense`            | High information density, knowledge card style (5-8 points) |
+| `list`             | Enumeration and ranking format (4-7 items)                  |
+| `comparison`       | Side-by-side contrast layout                                |
+| `flow`             | Process and timeline layout (3-6 steps)                     |
+| `mindmap`          | Center radial mind map layout (4-8 branches)                |
+| `quadrant`         | Four-quadrant / circular section layout                     |
 
 Detailed layout definitions: `references/elements/canvas.md`
 
 ## Auto Selection
 
-| Content Signals | Style | Layout |
-|-----------------|-------|--------|
-| Beauty, fashion, cute, girl, pink / 美妆、护肤、可爱、少女、粉色 | `cute` | sparse/balanced |
-| Health, nature, clean, fresh, organic / 健康、自然、清爽、有机、养生 | `fresh` | balanced/flow |
-| Life, story, emotion, feeling, warm / 生活、故事、情感、温暖、治愈 | `warm` | balanced |
-| Warning, important, must, critical / 避坑、必看、注意、重要、踩雷 | `bold` | list/comparison |
-| Professional, business, elegant, simple / 职场、商务、极简、高级感 | `minimal` | sparse/balanced |
-| Classic, vintage, old, traditional / 复古、怀旧、经典、老派 | `retro` | balanced |
-| Fun, exciting, wow, amazing / 好玩、惊喜、绝了、太强了 | `pop` | sparse/list |
-| Knowledge, concept, productivity, SaaS / 知识、概念、效率、工具、干货 | `notion` | dense/list |
-| Education, tutorial, learning, teaching, classroom / 教程、教学、学习、课堂 | `chalkboard` | balanced/dense |
+| Content Signals                                                                      | Style         | Layout             |
+| ------------------------------------------------------------------------------------ | ------------- | ------------------ |
+| Beauty, fashion, cute, girl, pink / 美妆、护肤、可爱、少女、粉色                     | `cute`        | sparse/balanced    |
+| Health, nature, clean, fresh, organic / 健康、自然、清爽、有机、养生                 | `fresh`       | balanced/flow      |
+| Life, story, emotion, feeling, warm / 生活、故事、情感、温暖、治愈                   | `warm`        | balanced           |
+| Warning, important, must, critical / 避坑、必看、注意、重要、踩雷                    | `bold`        | list/comparison    |
+| Professional, business, elegant, simple / 职场、商务、极简、高级感                   | `minimal`     | sparse/balanced    |
+| Classic, vintage, old, traditional / 复古、怀旧、经典、老派                          | `retro`       | balanced           |
+| Fun, exciting, wow, amazing / 好玩、惊喜、绝了、太强了                               | `pop`         | sparse/list        |
+| Knowledge, concept, productivity, SaaS / 知识、概念、效率、工具、干货                | `notion`      | dense/list         |
+| Education, tutorial, learning, teaching, classroom / 教程、教学、学习、课堂          | `chalkboard`  | balanced/dense     |
 | Notes, handwritten, study guide, realistic, photo / 笔记、手写、学霸、学习笔记、考研 | `study-notes` | dense/list/mindmap |
 
 ## Outline Strategies
@@ -100,30 +100,30 @@ Three differentiated outline strategies for different content goals:
 
 ### Strategy A: Story-Driven (故事驱动型)
 
-| Aspect | Description |
-|--------|-------------|
-| **Concept** | Personal experience as main thread, emotional resonance first |
-| **Features** | Start from pain point, show before/after change, strong authenticity |
-| **Best for** | Reviews, personal shares, transformation stories |
-| **Structure** | Hook → Problem → Discovery → Experience → Conclusion |
+| Aspect        | Description                                                          |
+| ------------- | -------------------------------------------------------------------- |
+| **Concept**   | Personal experience as main thread, emotional resonance first        |
+| **Features**  | Start from pain point, show before/after change, strong authenticity |
+| **Best for**  | Reviews, personal shares, transformation stories                     |
+| **Structure** | Hook → Problem → Discovery → Experience → Conclusion                 |
 
 ### Strategy B: Information-Dense (信息密集型)
 
-| Aspect | Description |
-|--------|-------------|
-| **Concept** | Value-first, efficient information delivery |
-| **Features** | Clear structure, explicit points, professional credibility |
-| **Best for** | Tutorials, comparisons, product reviews, checklists |
-| **Structure** | Core conclusion → Info card → Pros/Cons → Recommendation |
+| Aspect        | Description                                                |
+| ------------- | ---------------------------------------------------------- |
+| **Concept**   | Value-first, efficient information delivery                |
+| **Features**  | Clear structure, explicit points, professional credibility |
+| **Best for**  | Tutorials, comparisons, product reviews, checklists        |
+| **Structure** | Core conclusion → Info card → Pros/Cons → Recommendation   |
 
 ### Strategy C: Visual-First (视觉优先型)
 
-| Aspect | Description |
-|--------|-------------|
-| **Concept** | Visual impact as core, minimal text |
-| **Features** | Large images, atmospheric, instant appeal |
-| **Best for** | High-aesthetic products, lifestyle, mood-based content |
-| **Structure** | Hero image → Detail shots → Lifestyle scene → CTA |
+| Aspect        | Description                                            |
+| ------------- | ------------------------------------------------------ |
+| **Concept**   | Visual impact as core, minimal text                    |
+| **Features**  | Large images, atmospheric, instant appeal              |
+| **Best for**  | High-aesthetic products, lifestyle, mood-based content |
+| **Structure** | Hero image → Detail shots → Lifestyle scene → CTA      |
 
 ## File Structure
 
@@ -147,16 +147,19 @@ xhs-images/{topic-slug}/
 ```
 
 **Slug Generation**:
+
 1. Extract main topic from content (2-4 words, kebab-case)
 2. Example: "AI工具推荐" → `ai-tools-recommend`
 
 **Conflict Resolution**:
 If `xhs-images/{topic-slug}/` already exists:
+
 - Append timestamp: `{topic-slug}-YYYYMMDD-HHMMSS`
 - Example: `ai-tools` exists → `ai-tools-20260118-143052`
 
 **Source Files**:
 Copy all sources with naming `source-{slug}.{ext}`:
+
 - `source-article.md`, `source-photo.jpg`, etc.
 - Multiple sources supported: text, images, files from conversation
 
@@ -210,19 +213,19 @@ test -f "$HOME/.beaver-skill/beaver-xhs-images/EXTEND.md" && echo "user"
 ```
 
 ┌────────────────────────────────────────────────────┬───────────────────┐
-│                        Path                        │     Location      │
+│ Path │ Location │
 ├────────────────────────────────────────────────────┼───────────────────┤
-│ .beaver-skill/beaver-xhs-images/EXTEND.md           │ Project directory │
+│ .beaver-skill/beaver-xhs-images/EXTEND.md │ Project directory │
 ├────────────────────────────────────────────────────┼───────────────────┤
-│ $HOME/.beaver-skill/beaver-xhs-images/EXTEND.md     │ User home         │
+│ $HOME/.beaver-skill/beaver-xhs-images/EXTEND.md │ User home │
 └────────────────────────────────────────────────────┴───────────────────┘
 
 ┌───────────┬─────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│  Result   │                                              Action                                              │
+│ Result │ Action │
 ├───────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ Found     │ Read, parse, display summary → Continue to Step 1                                                 │
+│ Found │ Read, parse, display summary → Continue to Step 1 │
 ├───────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ Not found │ ⛔ BLOCKING: Run first-time setup ONLY (see below) → Complete and save EXTEND.md → Then Step 1    │
+│ Not found │ ⛔ BLOCKING: Run first-time setup ONLY (see below) → Complete and save EXTEND.md → Then Step 1 │
 └───────────┴─────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 **First-Time Setup** (when EXTEND.md not found):
@@ -240,6 +243,7 @@ Schema: `references/config/preferences-schema.md`
 Read source content, save it if needed, and perform deep analysis.
 
 **Actions**:
+
 1. **Save source content** (if not already a file):
    - If user provides a file path: use as-is
    - If user pastes content: save to `source.md` in target directory
@@ -262,12 +266,14 @@ Read source content, save it if needed, and perform deep analysis.
 **Purpose**: Validate understanding + collect missing info. **Do NOT skip.**
 
 **Display summary**:
+
 - Content type + topic identified
 - Key points extracted
 - Tone detected
 - Source images count
 
 **Use AskUserQuestion** for:
+
 1. Core selling point (multiSelect: true)
 2. Target audience
 3. Style preference: Authentic sharing / Professional review / Aesthetic mood / Auto
@@ -281,13 +287,14 @@ Based on analysis + user context, create three distinct strategy variants. Each 
 
 **For each strategy**:
 
-| Strategy | Filename | Outline | Recommended Style |
-|----------|----------|---------|-------------------|
-| A | `outline-strategy-a.md` | Story-driven: emotional, before/after | warm, cute, fresh |
-| B | `outline-strategy-b.md` | Information-dense: structured, factual | notion, minimal, chalkboard |
-| C | `outline-strategy-c.md` | Visual-first: atmospheric, minimal text | bold, pop, retro |
+| Strategy | Filename                | Outline                                 | Recommended Style           |
+| -------- | ----------------------- | --------------------------------------- | --------------------------- |
+| A        | `outline-strategy-a.md` | Story-driven: emotional, before/after   | warm, cute, fresh           |
+| B        | `outline-strategy-b.md` | Information-dense: structured, factual  | notion, minimal, chalkboard |
+| C        | `outline-strategy-c.md` | Visual-first: atmospheric, minimal text | bold, pop, retro            |
 
 **Outline format** (YAML front matter + content):
+
 ```yaml
 ---
 strategy: a  # a, b, or c
@@ -319,6 +326,7 @@ image_count: 5
 ```
 
 **Differentiation requirements**:
+
 - Each strategy MUST have different outline structure AND different recommended style
 - Adapt page count: A typically 4-6, B typically 3-5, C typically 3-4
 - Include `style_reason` explaining why this style fits the strategy
@@ -331,30 +339,35 @@ Reference: `references/workflows/outline-template.md`
 **Purpose**: User chooses outline strategy, confirms visual style, and customizes elements. **Do NOT skip.**
 
 **Display each strategy**:
+
 - Strategy name + page count + recommended style
 - Page-by-page summary (P1 → P2 → P3...)
 
 **Use AskUserQuestion** with three questions:
 
 **Question 1: Outline Strategy**
+
 - Strategy A (Recommended if "authentic sharing")
 - Strategy B (Recommended if "professional review")
 - Strategy C (Recommended if "aesthetic mood")
 - Combine: specify pages from each
 
 **Question 2: Visual Style**
+
 - Use strategy's recommended style (show which style)
 - Or select from: cute / fresh / warm / bold / minimal / retro / pop / notion / chalkboard
 - Or type custom style description
 
 **Question 3: Visual Elements** (show after style selection)
 Display the selected style's default elements from preset, then ask:
+
 - Use style defaults (Recommended) - show preview: background, decorations, emphasis
 - Adjust background - options: solid-pastel / solid-saturated / gradient-linear / gradient-radial / paper-texture / grid
 - Adjust decorations - options: hearts / stars-sparkles / flowers / clouds / leaves / confetti
 - Type custom element preferences
 
 **After response**:
+
 - Single strategy → copy to `outline.md` with confirmed style
 - Combination → merge specified pages with confirmed style
 - Custom request → regenerate based on feedback
@@ -370,6 +383,7 @@ With confirmed outline + style + layout:
 
 **Visual Consistency — Reference Image Chain**:
 To ensure character/style consistency across all images in a series:
+
 1. **Generate image 1 (cover) FIRST** — without `--ref`
 2. **Use image 1 as `--ref` for ALL remaining images** (2, 3, ..., N)
    - This anchors the character design, color rendering, and illustration style
@@ -378,6 +392,7 @@ To ensure character/style consistency across all images in a series:
 This is critical for styles that use recurring characters, mascots, or illustration elements. Image 1 becomes the visual anchor for the entire series.
 
 **For each image (cover + content + ending)**:
+
 1. Save prompt to `prompts/NN-{type}-[slug].md` (in user's preferred language)
    - **Backup rule**: If prompt file exists, rename to `prompts/NN-{type}-[slug]-backup-YYYYMMDD-HHMMSS.md`
 2. Generate image:
@@ -392,23 +407,26 @@ This is critical for styles that use recurring characters, mascots, or illustrat
 
 **Error Recovery**:
 
-| Scenario | Action |
-|----------|--------|
-| Generation fails (API error) | Auto-retry once with the same prompt |
-| Retry also fails | Log the failure, skip this image, continue to the next |
-| Output file missing or empty | Treat as generation failure, trigger retry |
-| Style mismatch (e.g., photorealistic instead of hand-drawn) | Append style reinforcement to the prompt and retry once |
-| All retries exhausted | Report which images failed in the completion report, suggest re-running those individually |
+| Scenario                                                    | Action                                                                                     |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Generation fails (API error)                                | Auto-retry once with the same prompt                                                       |
+| Retry also fails                                            | Log the failure, skip this image, continue to the next                                     |
+| Output file missing or empty                                | Treat as generation failure, trigger retry                                                 |
+| Style mismatch (e.g., photorealistic instead of hand-drawn) | Append style reinforcement to the prompt and retry once                                    |
+| All retries exhausted                                       | Report which images failed in the completion report, suggest re-running those individually |
 
 **Watermark Application** (if enabled in preferences):
 Add to each image generation prompt:
+
 ```
 Include a subtle watermark "[content]" positioned at [position].
 The watermark should be legible but not distracting from the main content.
 ```
+
 Reference: `references/config/watermark-guide.md`
 
 **Image Generation Skill Selection**:
+
 - Check available image generation skills (see `references/config/image-gen-interface.md` for required capabilities)
 - If only one skill is available, use it automatically
 - If multiple skills available, ask user preference
@@ -416,6 +434,7 @@ Reference: `references/config/watermark-guide.md`
 
 **Session Management**:
 If image generation skill supports `--sessionId`:
+
 1. Generate unique session ID: `xhs-{topic-slug}-{timestamp}`
 2. Use same session ID for all images
 3. Combined with reference image chain, ensures maximum visual consistency
@@ -447,11 +466,11 @@ Files:
 
 ## Image Modification
 
-| Action | Steps |
-|--------|-------|
-| **Edit** | **Update prompt file FIRST** → Regenerate with same session ID |
-| **Add** | Specify position → Create prompt → Generate → Renumber subsequent files (NN+1) → Update outline |
-| **Delete** | Remove files → Renumber subsequent (NN-1) → Update outline |
+| Action     | Steps                                                                                           |
+| ---------- | ----------------------------------------------------------------------------------------------- |
+| **Edit**   | **Update prompt file FIRST** → Regenerate with same session ID                                  |
+| **Add**    | Specify position → Create prompt → Generate → Renumber subsequent files (NN+1) → Update outline |
+| **Delete** | Remove files → Renumber subsequent (NN-1) → Update outline                                      |
 
 **IMPORTANT**: When updating images, ALWAYS update the prompt file (`prompts/NN-{type}-[slug].md`) FIRST before regenerating. This ensures changes are documented and reproducible.
 
@@ -463,38 +482,42 @@ Files:
 
 **Style × Layout Matrix** (✓✓ = highly recommended, ✓ = works well):
 
-| | sparse | balanced | dense | list | comparison | flow | mindmap | quadrant |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| cute | ✓✓ | ✓✓ | ✓ | ✓✓ | ✓ | ✓ | ✓ | ✓ |
-| fresh | ✓✓ | ✓✓ | ✓ | ✓ | ✓ | ✓✓ | ✓ | ✓ |
-| warm | ✓✓ | ✓✓ | ✓ | ✓ | ✓✓ | ✓ | ✓ | ✓ |
-| bold | ✓✓ | ✓ | ✓ | ✓✓ | ✓✓ | ✓ | ✓ | ✓✓ |
-| minimal | ✓✓ | ✓✓ | ✓✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| retro | ✓✓ | ✓✓ | ✓ | ✓✓ | ✓ | ✓ | ✓ | ✓ |
-| pop | ✓✓ | ✓✓ | ✓ | ✓✓ | ✓✓ | ✓ | ✓ | ✓ |
-| notion | ✓✓ | ✓✓ | ✓✓ | ✓✓ | ✓✓ | ✓✓ | ✓✓ | ✓✓ |
-| chalkboard | ✓✓ | ✓✓ | ✓✓ | ✓✓ | ✓ | ✓✓ | ✓✓ | ✓ |
-| study-notes | ✗ | ✓ | ✓✓ | ✓✓ | ✓ | ✓ | ✓✓ | ✓ |
+|             | sparse | balanced | dense | list | comparison | flow | mindmap | quadrant |
+| ----------- | :----: | :------: | :---: | :--: | :--------: | :--: | :-----: | :------: |
+| cute        |   ✓✓   |    ✓✓    |   ✓   |  ✓✓  |     ✓      |  ✓   |    ✓    |    ✓     |
+| fresh       |   ✓✓   |    ✓✓    |   ✓   |  ✓   |     ✓      |  ✓✓  |    ✓    |    ✓     |
+| warm        |   ✓✓   |    ✓✓    |   ✓   |  ✓   |     ✓✓     |  ✓   |    ✓    |    ✓     |
+| bold        |   ✓✓   |    ✓     |   ✓   |  ✓✓  |     ✓✓     |  ✓   |    ✓    |    ✓✓    |
+| minimal     |   ✓✓   |    ✓✓    |  ✓✓   |  ✓   |     ✓      |  ✓   |    ✓    |    ✓     |
+| retro       |   ✓✓   |    ✓✓    |   ✓   |  ✓✓  |     ✓      |  ✓   |    ✓    |    ✓     |
+| pop         |   ✓✓   |    ✓✓    |   ✓   |  ✓✓  |     ✓✓     |  ✓   |    ✓    |    ✓     |
+| notion      |   ✓✓   |    ✓✓    |  ✓✓   |  ✓✓  |     ✓✓     |  ✓✓  |   ✓✓    |    ✓✓    |
+| chalkboard  |   ✓✓   |    ✓✓    |  ✓✓   |  ✓✓  |     ✓      |  ✓✓  |   ✓✓    |    ✓     |
+| study-notes |   ✗    |    ✓     |  ✓✓   |  ✓✓  |     ✓      |  ✓   |   ✓✓    |    ✓     |
 
 ## References
 
 Detailed templates in `references/` directory:
 
 **Elements** (Visual building blocks):
+
 - `elements/canvas.md` - Aspect ratios, safe zones, grid layouts
 - `elements/image-effects.md` - Cutout, stroke, filters
 - `elements/typography.md` - Decorated text (花字), tags, text direction
 - `elements/decorations.md` - Emphasis marks, backgrounds, doodles, frames
 
 **Presets** (Style presets):
+
 - `presets/<name>.md` - Element combination definitions (cute, notion, warm...)
 
 **Workflows** (Process guides):
+
 - `workflows/analysis-framework.md` - Content analysis framework
 - `workflows/outline-template.md` - Outline template with layout guide
 - `workflows/prompt-assembly.md` - Prompt assembly guide
 
 **Config** (Settings):
+
 - `config/preferences-schema.md` - EXTEND.md schema
 - `config/first-time-setup.md` - First-time setup flow
 - `config/watermark-guide.md` - Watermark configuration

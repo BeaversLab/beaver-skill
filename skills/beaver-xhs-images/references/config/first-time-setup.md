@@ -10,6 +10,7 @@ description: First-time setup flow for beaver-xhs-images preferences
 When no EXTEND.md is found, guide user through preference setup.
 
 **⛔ BLOCKING OPERATION**: This setup MUST complete before ANY other workflow steps. Do NOT:
+
 - Ask about content/article
 - Ask about style or layout
 - Ask about target audience
@@ -111,10 +112,10 @@ options:
 
 ## Save Locations
 
-| Choice | Path | Scope |
-|--------|------|-------|
-| Project | `.beaver-skill/beaver-xhs-images/EXTEND.md` | Current project |
-| User | `~/.beaver-skill/beaver-xhs-images/EXTEND.md` | All projects |
+| Choice  | Path                                          | Scope           |
+| ------- | --------------------------------------------- | --------------- |
+| Project | `.beaver-skill/beaver-xhs-images/EXTEND.md`   | Current project |
+| User    | `~/.beaver-skill/beaver-xhs-images/EXTEND.md` | All projects    |
 
 ## After Setup
 
@@ -130,12 +131,12 @@ options:
 version: 1
 watermark:
   enabled: [true/false]
-  content: "[user input or empty]"
+  content: '[user input or empty]'
   position: bottom-right
   opacity: 0.7
 preferred_style:
   name: [selected style or null]
-  description: ""
+  description: ''
 preferred_layout: null
 language: null
 custom_styles: []
@@ -145,6 +146,7 @@ custom_styles: []
 ## Modifying Preferences Later
 
 Users can edit EXTEND.md directly or run setup again:
+
 - Delete EXTEND.md to trigger setup
 - Edit YAML frontmatter for quick changes
 - Full schema: `config/preferences-schema.md`

@@ -29,11 +29,17 @@
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "changeset publish",
-    "format": "prettier --write \"packages/**/*.ts\" \"skills/**/*.ts\"",
-    "format:check": "prettier --check \"packages/**/*.ts\" \"skills/**/*.ts\""
+    "format": "prettier --write \"packages/**/*.ts\" \"packages/**/*.md\" \"skills/**/*.ts\" \"skills/**/*.md\" \"*.md\"",
+    "format:check": "prettier --check \"packages/**/*.ts\" \"packages/**/*.md\" \"skills/**/*.ts\" \"skills/**/*.md\" \"*.md\"",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.7",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "prettier": "^3.8.1"
+  },
+  "lint-staged": {
+    "*.{ts,md}": "prettier --write"
   }
 }

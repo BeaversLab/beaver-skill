@@ -5,6 +5,7 @@ Detailed rules for translating markdown content between languages.
 ## Always Preserve (DO NOT translate)
 
 1. **Code blocks** — Keep exactly as-is:
+
    ```bash
    openclaw status --all  # preserve entire block
    ```
@@ -73,33 +74,34 @@ Follow this decision flow for EVERY heading:
 
 ### Technical Terms Strategy
 
-| Term | Keep in EN | Reason |
-|---|---|---|
-| Gateway | Yes | Product name |
-| CLI | Yes | Industry standard |
-| OAuth | Yes | Protocol name |
-| API | Yes | Industry standard |
-| webhook | Yes | Technical term |
-| allowlist | Yes | Keep in code context |
-| verbose | Yes | Keep in flag context |
+| Term      | Keep in EN | Reason               |
+| --------- | ---------- | -------------------- |
+| Gateway   | Yes        | Product name         |
+| CLI       | Yes        | Industry standard    |
+| OAuth     | Yes        | Protocol name        |
+| API       | Yes        | Industry standard    |
+| webhook   | Yes        | Technical term       |
+| allowlist | Yes        | Keep in code context |
+| verbose   | Yes        | Keep in flag context |
 
 For terms in `.i18n/translation-consistency.yaml`, always use the exact mapping specified.
 
 ## Handling Structural Changes (Sync)
 
-| Change Type | Action |
-|---|---|
+| Change Type       | Action                                |
+| ----------------- | ------------------------------------- |
 | New section added | Translate and insert at same position |
-| Section removed | Remove from target |
-| Section reordered | Reorder target to match |
-| Content updated | Re-translate that section only |
+| Section removed   | Remove from target                    |
+| Section reordered | Reorder target to match               |
+| Content updated   | Re-translate that section only        |
 
 ## Full Translation Example
 
 **Source (EN):**
+
 ```markdown
 ---
-summary: "Quick start guide"
+summary: 'Quick start guide'
 ---
 
 # Getting Started
@@ -113,15 +115,17 @@ curl -fsSL https://example.com/install.sh | bash
 See [configuration](/en/config) for options.
 
 For more details:
+
 - [Installation Guide](/en/install)
 - [API Documentation](/api/reference)
 - [External Resource](https://developer.mozilla.org)
 ```
 
 **Target (ZH):**
+
 ```markdown
 ---
-summary: "快速入门指南"
+summary: '快速入门指南'
 ---
 
 # 入门指南
@@ -135,12 +139,14 @@ curl -fsSL https://example.com/install.sh | bash
 参见[配置](/en/config)了解选项。
 
 更多详情：
+
 - [安装指南](/en/install)
 - [API 文档](/api/reference)
 - [外部资源](https://developer.mozilla.org)
 ```
 
 **Key transformations:**
+
 - Link URLs preserved as-is (locale prefix changes are the project's responsibility)
 - `https://developer.mozilla.org` → unchanged (external URL)
 - Code block content → unchanged

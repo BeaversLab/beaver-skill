@@ -45,6 +45,7 @@ English | [简体中文](README.md)
 ### Triggers
 
 Activate the skill by typing phrases like:
+
 - `release`
 - `new version`
 - `bump version`
@@ -66,19 +67,19 @@ Activate the skill by typing phrases like:
 
 ## Parameters
 
-| Parameter | Required | Default | Description |
-|---|---|---|---|
-| `--dry-run` | No | - | Preview mode. Shows what would happen without modifying any files. |
-| `--major` | No | - | Forces a major version bump. |
-| `--minor` | No | - | Forces a minor version bump. |
-| `--patch` | No | - | Forces a patch version bump. |
+| Parameter   | Required | Default | Description                                                        |
+| ----------- | -------- | ------- | ------------------------------------------------------------------ |
+| `--dry-run` | No       | -       | Preview mode. Shows what would happen without modifying any files. |
+| `--major`   | No       | -       | Forces a major version bump.                                       |
+| `--minor`   | No       | -       | Forces a minor version bump.                                       |
+| `--patch`   | No       | -       | Forces a patch version bump.                                       |
 
 ## Dependencies
 
-| Dependency | Type | Required | Description |
-|---|---|---|---|
-| Git | CLI Tool | Yes | Used for history analysis, commits, and tagging. |
-| GitHub CLI (gh) | CLI Tool | No | Used for identifying contributors and checking CI status. |
+| Dependency      | Type     | Required | Description                                               |
+| --------------- | -------- | -------- | --------------------------------------------------------- |
+| Git             | CLI Tool | Yes      | Used for history analysis, commits, and tagging.          |
+| GitHub CLI (gh) | CLI Tool | No       | Used for identifying contributors and checking CI status. |
 
 ## Considerations
 

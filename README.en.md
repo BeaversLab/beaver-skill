@@ -8,14 +8,13 @@ A collection of AI-powered automation workflow skills designed for efficient tas
 
 This project currently includes the following core skills, covering everything from content creation to engineering releases:
 
-| Skill Name | Capabilities | Highlights |
-| :--- | :--- | :--- |
-| [beaver-image-gen](./skills/beaver-image-gen) | **Unified AI Image Gen**: Integrated with Google, OpenAI, DashScope, and Replicate. | Auto-detection, 2K/4K quality presets, reference image consistency. |
-| [beaver-xhs-images](./skills/beaver-xhs-images) | **Xiaohongshu Infographic**: Turns long articles into 1–10 consistent, social-media-ready cards. | 10 visual styles × 8 layout strategies, 3 distinct copywriting strategies. |
-| [beaver-markdown-i18n](./skills/beaver-markdown-i18n) | **Markdown Translation Pipeline**: AST-level masking and sync tool for documentation. | Zero structure destruction (code blocks/variable protection), TM reuse, auto-chunking. |
-| [beaver-cover-image](./skills/beaver-cover-image) | **Article Cover Generator**: 5-dimensional customization for minimal, conceptual, or typography covers. | 9 color palettes × 6 rendering styles, cinematic and widescreen support. |
-| [beaver-release-skills](./skills/beaver-release-skills) | **Universal Release Workflow**: Auto-detects project types, multi-language changelogs, and SemVer bumps. | Zero-config, intelligent SemVer suggestions, native multi-language changelog sync. |
-
+| Skill Name                                              | Capabilities                                                                                             | Highlights                                                                             |
+| :------------------------------------------------------ | :------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------- |
+| [beaver-image-gen](./skills/beaver-image-gen)           | **Unified AI Image Gen**: Integrated with Google, OpenAI, DashScope, and Replicate.                      | Auto-detection, 2K/4K quality presets, reference image consistency.                    |
+| [beaver-xhs-images](./skills/beaver-xhs-images)         | **Xiaohongshu Infographic**: Turns long articles into 1–10 consistent, social-media-ready cards.         | 10 visual styles × 8 layout strategies, 3 distinct copywriting strategies.             |
+| [beaver-markdown-i18n](./skills/beaver-markdown-i18n)   | **Markdown Translation Pipeline**: AST-level masking and sync tool for documentation.                    | Zero structure destruction (code blocks/variable protection), TM reuse, auto-chunking. |
+| [beaver-cover-image](./skills/beaver-cover-image)       | **Article Cover Generator**: 5-dimensional customization for minimal, conceptual, or typography covers.  | 9 color palettes × 6 rendering styles, cinematic and widescreen support.               |
+| [beaver-release-skills](./skills/beaver-release-skills) | **Universal Release Workflow**: Auto-detects project types, multi-language changelogs, and SemVer bumps. | Zero-config, intelligent SemVer suggestions, native multi-language changelog sync.     |
 
 ## 🛠️ Installation
 

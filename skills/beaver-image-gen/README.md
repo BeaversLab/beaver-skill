@@ -52,40 +52,40 @@
 > **技能**：Using google / gemini-3-pro-image-preview
 > Switch model: --model \<id\> | EXTEND.md default_model.google | env GOOGLE_IMAGE_MODEL
 >
-> *(执行命令，生成图片)*
+> _(执行命令，生成图片)_
 >
 > 图片已保存到 cat.png
 
 > **用户**：用这张图作为参考，生成一张蓝色调的版本
 >
-> **技能**：*(使用 --ref 参数传入参考图，生成编辑后的图片)*
+> **技能**：_(使用 --ref 参数传入参考图，生成编辑后的图片)_
 
 ## 参数说明
 
-| 参数 | 是否必填 | 默认值 | 说明 |
-|------|---------|--------|------|
-| `--prompt` / `-p` | 是（三选一） | — | 提示词文本 |
-| `--promptfiles` | 是（三选一） | — | 从文件读取提示词（多文件拼接） |
-| stdin | 是（三选一） | — | 从标准输入读取提示词 |
-| `--image` | 是 | — | 输出图像路径 |
-| `--provider` | 否 | 自动检测 | 指定 provider：google / openai / dashscope / replicate |
-| `--model` / `-m` | 否 | 按 provider 默认 | 模型 ID |
-| `--ar` | 否 | 1:1 | 宽高比，如 16:9、4:3、3:4 |
-| `--size` | 否 | 按质量预设 | 精确尺寸，如 1024x1024 |
-| `--quality` | 否 | 2k | 质量预设：normal (1024px) / 2k (2048px) |
-| `--imageSize` | 否 | 按 quality | Google 专用图像尺寸：1K / 2K / 4K |
-| `--ref` | 否 | — | 参考图路径，支持 Google Gemini 和 OpenAI GPT Image |
-| `--n` | 否 | 1 | 生成数量。支持 OpenAI (非 dall-e-3)、Imagen、Replicate；Gemini 多模态会警告并只生成 1 张 |
-| `--json` | 否 | false | 输出 JSON 格式结果 |
+| 参数              | 是否必填     | 默认值           | 说明                                                                                     |
+| ----------------- | ------------ | ---------------- | ---------------------------------------------------------------------------------------- |
+| `--prompt` / `-p` | 是（三选一） | —                | 提示词文本                                                                               |
+| `--promptfiles`   | 是（三选一） | —                | 从文件读取提示词（多文件拼接）                                                           |
+| stdin             | 是（三选一） | —                | 从标准输入读取提示词                                                                     |
+| `--image`         | 是           | —                | 输出图像路径                                                                             |
+| `--provider`      | 否           | 自动检测         | 指定 provider：google / openai / dashscope / replicate                                   |
+| `--model` / `-m`  | 否           | 按 provider 默认 | 模型 ID                                                                                  |
+| `--ar`            | 否           | 1:1              | 宽高比，如 16:9、4:3、3:4                                                                |
+| `--size`          | 否           | 按质量预设       | 精确尺寸，如 1024x1024                                                                   |
+| `--quality`       | 否           | 2k               | 质量预设：normal (1024px) / 2k (2048px)                                                  |
+| `--imageSize`     | 否           | 按 quality       | Google 专用图像尺寸：1K / 2K / 4K                                                        |
+| `--ref`           | 否           | —                | 参考图路径，支持 Google Gemini 和 OpenAI GPT Image                                       |
+| `--n`             | 否           | 1                | 生成数量。支持 OpenAI (非 dall-e-3)、Imagen、Replicate；Gemini 多模态会警告并只生成 1 张 |
+| `--json`          | 否           | false            | 输出 JSON 格式结果                                                                       |
 
 ## 依赖
 
-| 依赖项 | 类型 | 是否必须 | 说明 |
-|--------|------|---------|------|
-| Node.js >= 18 | 运行时 | 是 | 用于 npx 调用 |
-| Bun | 运行时 | 是 | 通过 `npx -y bun` 自动安装，执行 TypeScript 脚本 |
-| API Key（至少一个） | 凭证 | 是 | GOOGLE_API_KEY / OPENAI_API_KEY / DASHSCOPE_API_KEY / REPLICATE_API_TOKEN |
-| curl | 系统工具 | 否 | 仅在 Google provider 检测到 HTTP 代理时使用 |
+| 依赖项              | 类型     | 是否必须 | 说明                                                                      |
+| ------------------- | -------- | -------- | ------------------------------------------------------------------------- |
+| Node.js >= 18       | 运行时   | 是       | 用于 npx 调用                                                             |
+| Bun                 | 运行时   | 是       | 通过 `npx -y bun` 自动安装，执行 TypeScript 脚本                          |
+| API Key（至少一个） | 凭证     | 是       | GOOGLE_API_KEY / OPENAI_API_KEY / DASHSCOPE_API_KEY / REPLICATE_API_TOKEN |
+| curl                | 系统工具 | 否       | 仅在 Google provider 检测到 HTTP 代理时使用                               |
 
 ## 注意事项
 
@@ -98,7 +98,7 @@
 ## 常见问题
 
 **Q：支持哪些模型？**
-**A：** Google: gemini-3-pro-image-preview、gemini-3.1-flash-image-preview、gemini-3-flash-preview、imagen-3.0-*；OpenAI: gpt-image-1.5、gpt-image-1、dall-e-3、dall-e-2；DashScope: z-image-turbo、z-image-ultra；Replicate: 任何 owner/name 格式的模型。
+**A：** Google: gemini-3-pro-image-preview、gemini-3.1-flash-image-preview、gemini-3-flash-preview、imagen-3.0-\*；OpenAI: gpt-image-1.5、gpt-image-1、dall-e-3、dall-e-2；DashScope: z-image-turbo、z-image-ultra；Replicate: 任何 owner/name 格式的模型。
 
 **Q：如何切换默认 provider？**
 **A：** 三种方式：1) 命令行 `--provider openai`；2) 修改 EXTEND.md 中的 `default_provider`；3) 只保留一个 API key 在环境变量中。
@@ -115,38 +115,39 @@
 
 ### Bug 修复
 
-| 改动 | 文件 | 说明 |
-|------|------|------|
+| 改动                 | 文件              | 说明                                                |
+| -------------------- | ----------------- | --------------------------------------------------- |
 | 修复 .env 加载优先级 | `scripts/main.ts` | 项目级 .env 现在正确覆盖用户级 .env，与文档声明一致 |
 
 ### 安全性
 
-| 改动 | 文件 | 说明 |
-|------|------|------|
+| 改动                         | 文件                          | 说明                                                                           |
+| ---------------------------- | ----------------------------- | ------------------------------------------------------------------------------ |
 | API key 不再出现在进程命令行 | `scripts/providers/google.ts` | Google curl 路径改用 `--config` 临时文件传递 API key header，`ps` 不再可见密钥 |
 
 ### 可靠性
 
-| 改动 | 文件 | 说明 |
-|------|------|------|
-| fetch 请求超时 | `scripts/providers/openai.ts`、`scripts/providers/dashscope.ts` | 所有 fetch 调用添加 300 秒超时（`AbortSignal.timeout`），防止无限等待 |
-| Replicate 指数退避轮询 | `scripts/providers/replicate.ts` | 轮询间隔从固定 2 秒改为 500ms → 1s → 2s → 4s → 8s 指数退避 |
+| 改动                   | 文件                                                            | 说明                                                                  |
+| ---------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------- |
+| fetch 请求超时         | `scripts/providers/openai.ts`、`scripts/providers/dashscope.ts` | 所有 fetch 调用添加 300 秒超时（`AbortSignal.timeout`），防止无限等待 |
+| Replicate 指数退避轮询 | `scripts/providers/replicate.ts`                                | 轮询间隔从固定 2 秒改为 500ms → 1s → 2s → 4s → 8s 指数退避            |
 
 ### 功能完善
 
-| 改动 | 文件 | 说明 |
-|------|------|------|
-| `--n` 参数显式处理 | `scripts/providers/google.ts`、`scripts/providers/openai.ts` | Gemini 多模态和 chat completions 路径在 n > 1 时输出警告；OpenAI generations 正确传递 n 参数 |
-| DashScope 错误消息完善 | `scripts/providers/dashscope.ts` | 参考图不支持的错误提示现在列出所有可用替代方案（Google、OpenAI、Replicate） |
+| 改动                   | 文件                                                         | 说明                                                                                         |
+| ---------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| `--n` 参数显式处理     | `scripts/providers/google.ts`、`scripts/providers/openai.ts` | Gemini 多模态和 chat completions 路径在 n > 1 时输出警告；OpenAI generations 正确传递 n 参数 |
+| DashScope 错误消息完善 | `scripts/providers/dashscope.ts`                             | 参考图不支持的错误提示现在列出所有可用替代方案（Google、OpenAI、Replicate）                  |
 
 ### 文档优化
 
-| 改动 | 文件 | 说明 |
-|------|------|------|
+| 改动             | 文件       | 说明                                                                             |
+| ---------------- | ---------- | -------------------------------------------------------------------------------- |
 | 首次设置流程内联 | `SKILL.md` | 关键设置步骤内联到 SKILL.md，Agent 无需额外读取 first-time-setup.md 即可完成设置 |
-| `--n` 支持说明 | `SKILL.md` | 文档标注了各 provider 对 `--n` 参数的支持情况 |
+| `--n` 支持说明   | `SKILL.md` | 文档标注了各 provider 对 `--n` 参数的支持情况                                    |
 
 ## 致谢
+
 本项目深受以下优秀作品的启发并基于其构建：
 
 - [@Jim Liu 宝玉](https://github.com/JimLiu/)开发的技能[baoyu-image-gen](https://github.com/JimLiu/baoyu-skills/tree/main/skills/baoyu-image-gen)

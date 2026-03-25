@@ -13,22 +13,22 @@ Just run `/beaver-release-skills` - auto-detects your project configuration.
 
 ## Supported Projects
 
-| Project Type | Version File | Auto-Detected |
-|--------------|--------------|---------------|
-| Node.js | package.json | ✓ |
-| Python | pyproject.toml | ✓ |
-| Rust | Cargo.toml | ✓ |
-| Claude Plugin | marketplace.json | ✓ |
-| Generic | VERSION / version.txt | ✓ |
+| Project Type  | Version File          | Auto-Detected |
+| ------------- | --------------------- | ------------- |
+| Node.js       | package.json          | ✓             |
+| Python        | pyproject.toml        | ✓             |
+| Rust          | Cargo.toml            | ✓             |
+| Claude Plugin | marketplace.json      | ✓             |
+| Generic       | VERSION / version.txt | ✓             |
 
 ## Options
 
-| Flag | Description |
-|------|-------------|
+| Flag        | Description                       |
+| ----------- | --------------------------------- |
 | `--dry-run` | Preview changes without executing |
-| `--major` | Force major version bump |
-| `--minor` | Force minor version bump |
-| `--patch` | Force patch version bump |
+| `--major`   | Force major version bump          |
+| `--minor`   | Force minor version bump          |
+| `--patch`   | Force patch version bump          |
 
 ## Workflow
 
@@ -50,18 +50,19 @@ Just run `/beaver-release-skills` - auto-detects your project configuration.
 
 **Language Detection Rules**:
 
-| Filename Pattern | Language |
-|------------------|----------|
-| `CHANGELOG.md` (no suffix) | zh (default) |
-| `CHANGELOG.en.md` / `CHANGELOG_EN.md` | en |
-| `CHANGELOG.ja.md` / `CHANGELOG_JP.md` | ja |
-| `CHANGELOG.ko.md` / `CHANGELOG_KR.md` | ko |
-| `CHANGELOG.de.md` / `CHANGELOG_DE.md` | de |
-| `CHANGELOG.fr.md` / `CHANGELOG_FR.md` | fr |
-| `CHANGELOG.es.md` / `CHANGELOG_ES.md` | es |
-| `CHANGELOG.{lang}.md` | Corresponding language code |
+| Filename Pattern                      | Language                    |
+| ------------------------------------- | --------------------------- |
+| `CHANGELOG.md` (no suffix)            | zh (default)                |
+| `CHANGELOG.en.md` / `CHANGELOG_EN.md` | en                          |
+| `CHANGELOG.ja.md` / `CHANGELOG_JP.md` | ja                          |
+| `CHANGELOG.ko.md` / `CHANGELOG_KR.md` | ko                          |
+| `CHANGELOG.de.md` / `CHANGELOG_DE.md` | de                          |
+| `CHANGELOG.fr.md` / `CHANGELOG_FR.md` | fr                          |
+| `CHANGELOG.es.md` / `CHANGELOG_ES.md` | es                          |
+| `CHANGELOG.{lang}.md`                 | Corresponding language code |
 
 **Output Example**:
+
 ```
 Project detected:
   Version file: package.json (1.2.3)
@@ -88,18 +89,19 @@ If no tags exist, treat all commits on the current branch as unreleased changes.
 
 Categorize by conventional commit types:
 
-| Type | Description |
-|------|-------------|
-| feat | New features |
-| fix | Bug fixes |
-| docs | Documentation |
-| refactor | Code refactoring |
-| perf | Performance improvements |
-| test | Test changes |
-| style | Formatting, styling |
-| chore | Maintenance (skip in changelog) |
+| Type     | Description                     |
+| -------- | ------------------------------- |
+| feat     | New features                    |
+| fix      | Bug fixes                       |
+| docs     | Documentation                   |
+| refactor | Code refactoring                |
+| perf     | Performance improvements        |
+| test     | Test changes                    |
+| style    | Formatting, styling             |
+| chore    | Maintenance (skip in changelog) |
 
 **Breaking Change Detection**:
+
 - Commit message starts with `BREAKING CHANGE`
 - Commit body/footer contains `BREAKING CHANGE:`
 - Removed public APIs, renamed exports, changed interfaces
@@ -109,6 +111,7 @@ If breaking changes detected, warn user: "Breaking changes detected. Consider ma
 ### Step 3: Determine Version Bump
 
 Rules (in priority order):
+
 1. User flag `--major/--minor/--patch` → Use specified
 2. BREAKING CHANGE detected → Major bump (1.x.x → 2.0.0)
 3. `feat:` commits present → Minor bump (1.2.x → 1.3.0)
@@ -150,6 +153,7 @@ Analyze commits since last tag and group by affected skill/module:
 3. **For each group**, identify related README updates needed
 
 **Example Grouping**:
+
 ```
 beaver-image-gen:
   - feat: add new style options
@@ -175,6 +179,7 @@ For each skill/module group (in order of changes):
    - Update feature descriptions if behavior changed
 
 2. **Stage and commit**:
+
    ```bash
    git add skills/<skill-name>/*
    git add README.md README.zh.md  # If updated for this skill
@@ -188,6 +193,7 @@ For each skill/module group (in order of changes):
    - `<description>`: Clear, meaningful description of changes
 
 **Example Commits**:
+
 ```bash
 git commit -m "feat(beaver-image-gen): add new style options"
 git commit -m "fix(beaver-xhs-images): handle transparent backgrounds"
@@ -215,13 +221,13 @@ Step 4 defines the changelog format and language rules. This step executes the a
 
 **Version Paths by File Type**:
 
-| File | Path |
-|------|------|
-| package.json | `$.version` |
-| pyproject.toml | `project.version` |
-| Cargo.toml | `package.version` |
-| marketplace.json | `$.metadata.version` |
-| VERSION / version.txt | Direct content |
+| File                  | Path                 |
+| --------------------- | -------------------- |
+| package.json          | `$.version`          |
+| pyproject.toml        | `project.version`    |
+| Cargo.toml            | `package.version`    |
+| marketplace.json      | `$.metadata.version` |
+| VERSION / version.txt | Direct content       |
 
 ### Step 8: User Confirmation
 
@@ -238,6 +244,7 @@ Before creating the release commit, ask user to confirm:
    - Options: "Yes, push after commit", "No, keep local only"
 
 **Example Output Before Confirmation**:
+
 ```
 Commits created:
   1. feat(beaver-image-gen): add new style options
@@ -259,17 +266,20 @@ Ready to create release commit and tag.
 After user confirmation:
 
 1. **Stage version and changelog files**:
+
    ```bash
    git add <version-file>
    git add CHANGELOG*.md
    ```
 
 2. **Create release commit**:
+
    ```bash
    git commit -m "chore: release v{VERSION}"
    ```
 
 3. **Create tag**:
+
    ```bash
    git tag v{VERSION}
    ```
@@ -283,6 +293,7 @@ After user confirmation:
 **Note**: Do NOT add Co-Authored-By line. This is a release commit, not a code contribution.
 
 **Post-Release Output**:
+
 ```
 Release v1.3.0 created.
 
@@ -312,7 +323,7 @@ Optional config file in project root to override defaults:
 # Version file (auto-detected if not specified)
 version:
   file: package.json
-  path: $.version  # JSONPath for JSON, dotted path for TOML
+  path: $.version # JSONPath for JSON, dotted path for TOML
 
 # Changelog files (auto-detected if not specified)
 changelog:
@@ -337,11 +348,11 @@ changelog:
 
 # Commit message format
 commit:
-  message: "chore: release v{version}"
+  message: 'chore: release v{version}'
 
 # Tag format
 tag:
-  prefix: v  # Results in v1.0.0
+  prefix: v # Results in v1.0.0
   sign: false
 
 # Additional files to include in release commit
@@ -411,6 +422,7 @@ No changes made. Run without --dry-run to execute.
 ## When to Use
 
 Trigger this skill when user requests:
+
 - "release", "发布", "create release", "new version", "新版本"
 - "bump version", "update version", "更新版本"
 - "prepare release"

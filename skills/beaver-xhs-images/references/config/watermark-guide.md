@@ -21,21 +21,21 @@ description: Watermark configuration guide for beaver-xhs-images
 
 ## Position Recommendations
 
-| Position | Best For | Avoid When |
-|----------|----------|------------|
-| `bottom-right` | Default choice, most common | Key info in bottom-right |
-| `bottom-left` | Right-heavy layouts | Key info in bottom-left |
-| `bottom-center` | Centered designs | Text-heavy bottom area |
-| `top-right` | Bottom-heavy content | Title/header in top-right |
+| Position        | Best For                    | Avoid When                |
+| --------------- | --------------------------- | ------------------------- |
+| `bottom-right`  | Default choice, most common | Key info in bottom-right  |
+| `bottom-left`   | Right-heavy layouts         | Key info in bottom-left   |
+| `bottom-center` | Centered designs            | Text-heavy bottom area    |
+| `top-right`     | Bottom-heavy content        | Title/header in top-right |
 
 ## Content Format
 
-| Format | Example | Style |
-|--------|---------|-------|
-| Handle | `@username` | Most common for XHS |
-| Text | `MyBrand` | Simple branding |
-| Chinese | `小红书:用户名` | Platform specific |
-| URL | `myblog.com` | Cross-platform |
+| Format  | Example         | Style               |
+| ------- | --------------- | ------------------- |
+| Handle  | `@username`     | Most common for XHS |
+| Text    | `MyBrand`       | Simple branding     |
+| Chinese | `小红书:用户名` | Platform specific   |
+| URL     | `myblog.com`    | Cross-platform      |
 
 ## Best Practices
 
@@ -54,9 +54,9 @@ The watermark should be legible but not distracting from the main content.
 
 ## Common Issues
 
-| Issue | Solution |
-|-------|----------|
-| Watermark invisible | Adjust position or check contrast |
-| Watermark too prominent | Change position or reduce size |
-| Watermark overlaps content | Change position |
-| Inconsistent across images | Use session ID for consistency |
+| Issue                      | Solution                          |
+| -------------------------- | --------------------------------- |
+| Watermark invisible        | Adjust position or check contrast |
+| Watermark too prominent    | Change position or reduce size    |
+| Watermark overlaps content | Change position                   |
+| Inconsistent across images | Use session ID for consistency    |

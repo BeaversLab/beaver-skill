@@ -4,23 +4,23 @@ Standard interface that any image generation skill must support to work with bea
 
 ## Required Capabilities
 
-| Capability | Description | Required |
-|------------|-------------|----------|
-| Prompt input | Accept a text prompt or prompt file path | Yes |
-| Image output | Save generated image to a specified path | Yes |
-| Aspect ratio | Support 3:4 portrait ratio | Yes |
-| Reference image | Accept a reference image for style consistency (`--ref`) | Recommended |
-| Session ID | Maintain visual consistency across a session (`--sessionId`) | Optional |
+| Capability      | Description                                                  | Required    |
+| --------------- | ------------------------------------------------------------ | ----------- |
+| Prompt input    | Accept a text prompt or prompt file path                     | Yes         |
+| Image output    | Save generated image to a specified path                     | Yes         |
+| Aspect ratio    | Support 3:4 portrait ratio                                   | Yes         |
+| Reference image | Accept a reference image for style consistency (`--ref`)     | Recommended |
+| Session ID      | Maintain visual consistency across a session (`--sessionId`) | Optional    |
 
 ## Expected Input
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| Prompt | text or file path | The assembled prompt from `prompts/NN-{type}-[slug].md` |
-| Output path | file path | Target path for the generated image (e.g., `01-cover-ai-tools.png`) |
-| Aspect ratio | string | `3:4` (portrait, default for XHS) |
-| Reference image | file path | Path to image 1 for visual consistency (images 2+ only) |
-| Session ID | string | Format: `xhs-{topic-slug}-{timestamp}` |
+| Parameter       | Type              | Description                                                         |
+| --------------- | ----------------- | ------------------------------------------------------------------- |
+| Prompt          | text or file path | The assembled prompt from `prompts/NN-{type}-[slug].md`             |
+| Output path     | file path         | Target path for the generated image (e.g., `01-cover-ai-tools.png`) |
+| Aspect ratio    | string            | `3:4` (portrait, default for XHS)                                   |
+| Reference image | file path         | Path to image 1 for visual consistency (images 2+ only)             |
+| Session ID      | string            | Format: `xhs-{topic-slug}-{timestamp}`                              |
 
 ## Expected Output
 

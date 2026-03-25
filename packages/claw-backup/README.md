@@ -49,6 +49,7 @@ claw-backup backup /path/to/rule.yaml
 Restore from backup archive.
 
 **Mode 1: Rule-based restore**
+
 ```bash
 # Interactive selection of rule and archive
 claw-backup restore
@@ -59,6 +60,7 @@ claw-backup restore ./rules/my-project.yaml
 ```
 
 **Mode 2: Direct extraction**
+
 ```bash
 # Extract archive directly to target directory (no rule needed)
 claw-backup restore backup.tar.gz ~/restore-target
@@ -79,7 +81,7 @@ include:
   - data/
   - config.json
 exclude:
-  - "*.tmp"
+  - '*.tmp'
   - cache/
 archivePrefix: openclaw
 ```

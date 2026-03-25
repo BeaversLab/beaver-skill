@@ -34,31 +34,31 @@ Generate elegant cover images for articles with 5-dimensional customization.
 
 ## Options
 
-| Option | Description |
-|--------|-------------|
-| `--type <name>` | hero, conceptual, typography, metaphor, scene, minimal |
-| `--palette <name>` | warm, elegant, cool, dark, earth, vivid, pastel, mono, retro |
-| `--rendering <name>` | flat-vector, hand-drawn, painterly, digital, pixel, chalk |
-| `--style <name>` | Preset shorthand (see [Style Presets](references/style-presets.md)) |
-| `--text <level>` | none, title-only, title-subtitle, text-rich |
-| `--mood <level>` | subtle, balanced, bold |
-| `--font <name>` | clean, handwritten, serif, display |
-| `--aspect <ratio>` | 16:9 (default), 2.35:1, 4:3, 3:2, 1:1, 3:4 |
-| `--lang <code>` | Title language (en, zh, ja, etc.) |
-| `--no-title` | Alias for `--text none` |
-| `--quick` | Skip confirmation, use auto-selection |
-| `--ref <files...>` | Reference images for style/composition guidance |
+| Option               | Description                                                         |
+| -------------------- | ------------------------------------------------------------------- |
+| `--type <name>`      | hero, conceptual, typography, metaphor, scene, minimal              |
+| `--palette <name>`   | warm, elegant, cool, dark, earth, vivid, pastel, mono, retro        |
+| `--rendering <name>` | flat-vector, hand-drawn, painterly, digital, pixel, chalk           |
+| `--style <name>`     | Preset shorthand (see [Style Presets](references/style-presets.md)) |
+| `--text <level>`     | none, title-only, title-subtitle, text-rich                         |
+| `--mood <level>`     | subtle, balanced, bold                                              |
+| `--font <name>`      | clean, handwritten, serif, display                                  |
+| `--aspect <ratio>`   | 16:9 (default), 2.35:1, 4:3, 3:2, 1:1, 3:4                          |
+| `--lang <code>`      | Title language (en, zh, ja, etc.)                                   |
+| `--no-title`         | Alias for `--text none`                                             |
+| `--quick`            | Skip confirmation, use auto-selection                               |
+| `--ref <files...>`   | Reference images for style/composition guidance                     |
 
 ## Five Dimensions
 
-| Dimension | Values | Default |
-|-----------|--------|---------|
-| **Type** | hero, conceptual, typography, metaphor, scene, minimal | auto |
-| **Palette** | warm, elegant, cool, dark, earth, vivid, pastel, mono, retro | auto |
-| **Rendering** | flat-vector, hand-drawn, painterly, digital, pixel, chalk | auto |
-| **Text** | none, title-only, title-subtitle, text-rich | title-only |
-| **Mood** | subtle, balanced, bold | balanced |
-| **Font** | clean, handwritten, serif, display | clean |
+| Dimension     | Values                                                       | Default    |
+| ------------- | ------------------------------------------------------------ | ---------- |
+| **Type**      | hero, conceptual, typography, metaphor, scene, minimal       | auto       |
+| **Palette**   | warm, elegant, cool, dark, earth, vivid, pastel, mono, retro | auto       |
+| **Rendering** | flat-vector, hand-drawn, painterly, digital, pixel, chalk    | auto       |
+| **Text**      | none, title-only, title-subtitle, text-rich                  | title-only |
+| **Mood**      | subtle, balanced, bold                                       | balanced   |
+| **Font**      | clean, handwritten, serif, display                           | clean      |
 
 Auto-selection rules: [references/auto-selection.md](references/auto-selection.md)
 
@@ -85,6 +85,7 @@ Auto-selection rules: [references/auto-selection.md](references/auto-selection.m
 ## File Structure
 
 Output directory per `default_output_dir` preference:
+
 - `same-dir`: `{article-dir}/`
 - `imgs-subdir`: `{article-dir}/imgs/`
 - `independent` (default): `cover-image/{topic-slug}/`
@@ -129,14 +130,15 @@ Analyze + Save Refs → [Output Dir] → [Confirm: 6 Dimensions] → Prompt → 
 ### Step 0: Load Preferences ⛔ BLOCKING
 
 Check EXTEND.md existence (priority: project → user):
+
 ```bash
 test -f .beaver-skill/beaver-cover-image/EXTEND.md && echo "project"
 test -f "$HOME/.beaver-skill/beaver-cover-image/EXTEND.md" && echo "user"
 ```
 
-| Result | Action |
-|--------|--------|
-| Found | Load, display summary → Continue |
+| Result    | Action                                                                                                                     |
+| --------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Found     | Load, display summary → Continue                                                                                           |
 | Not found | ⛔ Run first-time setup ([references/config/first-time-setup.md](references/config/first-time-setup.md)) → Save → Continue |
 
 **CRITICAL**: If not found, complete setup BEFORE any other steps or questions.
@@ -154,16 +156,17 @@ test -f "$HOME/.beaver-skill/beaver-cover-image/EXTEND.md" && echo "user"
 
 Full confirmation flow: [references/workflow/confirm-options.md](references/workflow/confirm-options.md)
 
-| Condition | Skipped | Still Asked |
-|-----------|---------|-------------|
+| Condition                       | Skipped      | Still Asked                      |
+| ------------------------------- | ------------ | -------------------------------- |
 | `--quick` or `quick_mode: true` | 6 dimensions | Aspect ratio (unless `--aspect`) |
-| All 6 + `--aspect` specified | All | None |
+| All 6 + `--aspect` specified    | All          | None                             |
 
 ### Step 3: Create Prompt
 
 Save to `prompts/cover.md`. Template: [references/workflow/prompt-template.md](references/workflow/prompt-template.md)
 
 **CRITICAL - References in Frontmatter**:
+
 - Files saved to `refs/` → Add to frontmatter `references` list
 - Style extracted verbally (no file) → Omit `references`, describe in body
 - Before writing → Verify: `test -f refs/ref-NN-{slug}.{ext}`
@@ -203,9 +206,9 @@ Files:
 
 ## Image Modification
 
-| Action | Steps |
-|--------|-------|
-| **Regenerate** | Backup → Update prompt file FIRST → Regenerate |
+| Action               | Steps                                                   |
+| -------------------- | ------------------------------------------------------- |
+| **Regenerate**       | Backup → Update prompt file FIRST → Regenerate          |
 | **Change dimension** | Backup → Confirm new value → Update prompt → Regenerate |
 
 ## Composition Principles
