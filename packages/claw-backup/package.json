@@ -1,5 +1,5 @@
 {
-  "name": "@beaverlabs/claw-backup",
+  "name": "@beaverslab/claw-backup",
   "version": "0.1.0",
   "description": "CLI workflow for creating, backing up, and restoring claw data with YAML rules.",
   "type": "module",
