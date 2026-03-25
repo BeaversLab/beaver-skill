@@ -101,12 +101,9 @@ test('resolveRulePath handles names by looking in RULES_DIR', async () => {
 
     // We can't easily mock RULES_DIR, so we test the error case
     // for a non-existent name
-    await assert.rejects(
-      async () => resolveRulePath('nonexistent-rule-name-xyz'),
-      {
-        message: /Rule file not found/,
-      }
-    );
+    await assert.rejects(async () => resolveRulePath('nonexistent-rule-name-xyz'), {
+      message: /Rule file not found/,
+    });
   } finally {
     await rm(baseDir, { recursive: true, force: true });
   }

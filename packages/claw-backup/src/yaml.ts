@@ -75,10 +75,16 @@ export function parseRuleYaml(raw: string): BackupRule {
     }
   }
 
-  if (!Array.isArray(parsed.include) || !parsed.include.every((value) => typeof value === 'string')) {
+  if (
+    !Array.isArray(parsed.include) ||
+    !parsed.include.every((value) => typeof value === 'string')
+  ) {
     throw new Error('Rule field "include" must be a list of strings.');
   }
-  if (!Array.isArray(parsed.exclude) || !parsed.exclude.every((value) => typeof value === 'string')) {
+  if (
+    !Array.isArray(parsed.exclude) ||
+    !parsed.exclude.every((value) => typeof value === 'string')
+  ) {
     throw new Error('Rule field "exclude" must be a list of strings.');
   }
 

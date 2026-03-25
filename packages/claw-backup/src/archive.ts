@@ -7,7 +7,10 @@ import type { BackupResult, BackupRule, RestoreResult } from './types.js';
 import { currentTimestamp } from './paths.js';
 
 function normalizeRelativePath(input: string): string {
-  const value = input.replace(/\\/g, '/').replace(/^\.\/+/, '').replace(/\/+$/, '');
+  const value = input
+    .replace(/\\/g, '/')
+    .replace(/^\.\/+/, '')
+    .replace(/\/+$/, '');
   return value || '.';
 }
 
@@ -29,7 +32,11 @@ function runTar(args: string[]): Promise<void> {
   });
 }
 
-async function gatherFiles(baseDir: string, relativePath: string, matcher: ReturnType<typeof ignore>): Promise<string[]> {
+async function gatherFiles(
+  baseDir: string,
+  relativePath: string,
+  matcher: ReturnType<typeof ignore>
+): Promise<string[]> {
   const normalized = normalizeRelativePath(relativePath);
   const absolutePath = normalized === '.' ? baseDir : path.join(baseDir, normalized);
   const entry = await stat(absolutePath).catch(() => null);
@@ -74,7 +81,9 @@ async function gatherFiles(baseDir: string, relativePath: string, matcher: Retur
   return results;
 }
 
-async function createManifest(entries: string[]): Promise<{ filePath: string; cleanup: () => Promise<void> }> {
+async function createManifest(
+  entries: string[]
+): Promise<{ filePath: string; cleanup: () => Promise<void> }> {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), 'beaver-claw-backup-'));
   const filePath = path.join(tempDir, 'manifest.txt');
   await writeFile(filePath, `${entries.join('\n')}\n`, 'utf8');
@@ -126,7 +135,10 @@ export async function listArchives(backupDir: string): Promise<string[]> {
   return files;
 }
 
-export async function restoreArchive(archivePath: string, targetDir: string): Promise<RestoreResult> {
+export async function restoreArchive(
+  archivePath: string,
+  targetDir: string
+): Promise<RestoreResult> {
   await mkdir(targetDir, { recursive: true });
   await runTar(['-xzf', archivePath, '-C', targetDir]);
   return {

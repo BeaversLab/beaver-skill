@@ -1,6 +1,13 @@
 import path from 'node:path';
 import { readdir, readFile, stat, writeFile } from 'node:fs/promises';
-import { expandHome, currentTimestamp, ensureRulesDir, sanitizeName, ruleFileExists, RULES_DIR } from './paths.js';
+import {
+  expandHome,
+  currentTimestamp,
+  ensureRulesDir,
+  sanitizeName,
+  ruleFileExists,
+  RULES_DIR,
+} from './paths.js';
 import { getPreset, listPresets } from './presets.js';
 import { parseRuleYaml, serializeRule } from './yaml.js';
 import type { BackupRule, ClawPreset, CreateRuleResult } from './types.js';
@@ -19,7 +26,11 @@ export function createRuleFromPreset(preset: ClawPreset): BackupRule {
   };
 }
 
-export function createCustomRule(clawType: string, sourceDir: string, backupDir: string): BackupRule {
+export function createCustomRule(
+  clawType: string,
+  sourceDir: string,
+  backupDir: string
+): BackupRule {
   const normalizedType = sanitizeName(clawType);
   return {
     version: 1,
@@ -34,7 +45,10 @@ export function createCustomRule(clawType: string, sourceDir: string, backupDir:
   };
 }
 
-export async function saveRule(rule: BackupRule, options?: { includeComment?: string; customName?: string }): Promise<string> {
+export async function saveRule(
+  rule: BackupRule,
+  options?: { includeComment?: string; customName?: string }
+): Promise<string> {
   const dir = await ensureRulesDir();
   let filename: string;
 
@@ -44,7 +58,9 @@ export async function saveRule(rule: BackupRule, options?: { includeComment?: st
     const rulePath = path.join(dir, filename);
     // Check if file already exists
     if (await ruleFileExists(sanitizedName)) {
-      throw new Error(`Rule file "${sanitizedName}.yaml" already exists. Choose a different name or delete the existing file first.`);
+      throw new Error(
+        `Rule file "${sanitizedName}.yaml" already exists. Choose a different name or delete the existing file first.`
+      );
     }
     await writeFile(rulePath, serializeRule(rule, options), 'utf8');
     return rulePath;
@@ -57,7 +73,13 @@ export async function saveRule(rule: BackupRule, options?: { includeComment?: st
   return rulePath;
 }
 
-export async function createRuleFile(params: { presetId?: string; clawType?: string; sourceDir?: string; backupDir?: string; customName?: string }): Promise<CreateRuleResult> {
+export async function createRuleFile(params: {
+  presetId?: string;
+  clawType?: string;
+  sourceDir?: string;
+  backupDir?: string;
+  customName?: string;
+}): Promise<CreateRuleResult> {
   if (params.presetId && params.presetId !== 'other') {
     const preset = getPreset(params.presetId);
     if (!preset) {
@@ -75,7 +97,8 @@ export async function createRuleFile(params: { presetId?: string; clawType?: str
   const rule = createCustomRule(params.clawType, params.sourceDir, params.backupDir);
   const rulePath = await saveRule(rule, {
     customName: params.customName,
-    includeComment: 'Custom claw types start with an empty include list. Edit this file before running backup.',
+    includeComment:
+      'Custom claw types start with an empty include list. Edit this file before running backup.',
   });
   return { rule, rulePath, needsManualEditing: true };
 }
@@ -89,7 +112,9 @@ export async function listRuleFiles(): Promise<string[]> {
   await ensureRulesDir();
   const entries = await readdir(RULES_DIR, { withFileTypes: true });
   const files = entries
-    .filter((entry) => entry.isFile() && (entry.name.endsWith('.yaml') || entry.name.endsWith('.yml')))
+    .filter(
+      (entry) => entry.isFile() && (entry.name.endsWith('.yaml') || entry.name.endsWith('.yml'))
+    )
     .map((entry) => path.join(RULES_DIR, entry.name));
   files.sort((left, right) => right.localeCompare(left));
   return files;
@@ -101,7 +126,9 @@ export async function validateRuleSource(rule: BackupRule): Promise<void> {
     throw new Error(`Source directory not found: ${rule.sourceDir}`);
   }
   if (rule.include.length === 0) {
-    throw new Error('Rule file has no include entries. Edit the YAML file and add files or directories to back up.');
+    throw new Error(
+      'Rule file has no include entries. Edit the YAML file and add files or directories to back up.'
+    );
   }
 }
 

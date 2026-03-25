@@ -42,12 +42,9 @@ test('saveRule rejects duplicate custom names', async () => {
     rulePath = await saveRule(testRule, { customName });
 
     // Second save with same name should fail
-    await assert.rejects(
-      async () => saveRule(testRule, { customName }),
-      {
-        message: /already exists/,
-      }
-    );
+    await assert.rejects(async () => saveRule(testRule, { customName }), {
+      message: /already exists/,
+    });
   } finally {
     if (rulePath) await rm(rulePath).catch(() => {});
   }

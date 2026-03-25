@@ -10,7 +10,13 @@ import {
   spinner,
   text,
 } from '@clack/prompts';
-import { availablePresetChoices, createRuleFile, listRuleFiles, loadRule, validateRuleSource } from './rules.js';
+import {
+  availablePresetChoices,
+  createRuleFile,
+  listRuleFiles,
+  loadRule,
+  validateRuleSource,
+} from './rules.js';
 import { expandHome, resolveRulePath, isArchivePath, ruleFileExists } from './paths.js';
 import { createBackup, listArchives, restoreArchive } from './archive.js';
 
@@ -55,7 +61,11 @@ async function promptForRuleFile(initialPath?: string): Promise<string> {
   return asString(selected);
 }
 
-async function promptForArchive(ruleFile: string, backupDir: string, initialPath?: string): Promise<string> {
+async function promptForArchive(
+  ruleFile: string,
+  backupDir: string,
+  initialPath?: string
+): Promise<string> {
   if (initialPath) {
     return path.resolve(expandHome(initialPath));
   }
@@ -181,7 +191,10 @@ async function handleInitRule(nameArg?: string): Promise<void> {
     customName,
   });
   note(created.rulePath, 'Rule file');
-  note('This custom rule starts with an empty include list. Edit the YAML file before running backup.', 'Manual action required');
+  note(
+    'This custom rule starts with an empty include list. Edit the YAML file before running backup.',
+    'Manual action required'
+  );
   outro('Custom rule initialized.');
 }
 
@@ -218,7 +231,9 @@ async function handleRestore(arg1?: string, arg2?: string): Promise<void> {
     const targetDir = path.resolve(expandHome(arg2));
 
     // Verify archive exists
-    const archiveStat = await import('node:fs/promises').then((fs) => fs.stat(archivePath)).catch(() => null);
+    const archiveStat = await import('node:fs/promises')
+      .then((fs) => fs.stat(archivePath))
+      .catch(() => null);
     if (!archiveStat) {
       throw new Error(`Archive not found: ${archivePath}`);
     }

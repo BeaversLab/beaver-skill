@@ -52,7 +52,9 @@ export async function resolveRulePath(nameOrPath: string): Promise<string> {
   const rulePath = path.join(RULES_DIR, `${expanded}.yaml`);
   const info = await stat(rulePath).catch(() => null);
   if (!info) {
-    throw new Error(`Rule file not found: ${rulePath}\nDid you mean a path? Use "./${nameOrPath}" for relative paths.`);
+    throw new Error(
+      `Rule file not found: ${rulePath}\nDid you mean a path? Use "./${nameOrPath}" for relative paths.`
+    );
   }
   return rulePath;
 }
@@ -84,11 +86,13 @@ export function currentTimestamp(): string {
 }
 
 export function sanitizeName(input: string): string {
-  return input
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'custom-claw';
+  return (
+    input
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'custom-claw'
+  );
 }
 
 export async function ensureRulesDir(): Promise<string> {
