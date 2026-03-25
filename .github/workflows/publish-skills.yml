@@ -1,4 +1,4 @@
-name: Publish Skills
+name: Publish Packages
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
       - ".changeset/**"
       - ".github/workflows/publish-skills.yml"
       - "package.json"
+      - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
       - "packages/**"
   workflow_dispatch:
@@ -15,6 +16,10 @@ on:
 permissions:
   contents: write
   pull-requests: write
+
+concurrency:
+  group: publish-packages-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   release:
@@ -36,15 +41,22 @@ jobs:
           node-version: 20
           registry-url: https://registry.npmjs.org
           cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm -r --if-present build
+
+      - name: Test packages
+        run: pnpm -r --if-present test
 
       - name: Create release PR or publish changed packages
         uses: changesets/action@v1
         with:
-          commit: "chore: release skills"
-          title: "chore: release skills"
+          commit: "chore: release packages"
+          title: "chore: release packages"
           version: npx changeset version
           publish: npx changeset publish
         env:
