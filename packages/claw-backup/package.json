@@ -1,0 +1,48 @@
+{
+  "name": "@beaverlabs/claw-backup",
+  "version": "0.1.0",
+  "description": "CLI workflow for creating, backing up, and restoring claw data with YAML rules.",
+  "type": "module",
+  "license": "MIT",
+  "homepage": "https://github.com/BeaversLab/beaver-skill/tree/main/skills/beaver-claw-backup",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BeaversLab/beaver-skill.git",
+    "directory": "packages/claw-backup"
+  },
+  "bugs": {
+    "url": "https://github.com/BeaversLab/beaver-skill/issues"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "bin": {
+    "claw-backup": "./dist/scripts/cli.js"
+  },
+  "exports": {
+    ".": "./dist/src/cli.js"
+  },
+  "files": [
+    "dist/",
+    "references/",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "cli": "node dist/scripts/cli.js",
+    "prepack": "npm run build",
+    "test": "npm run build && node --test dist/tests/**/*.test.js"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.10.1",
+    "ignore": "^7.0.4",
+    "yaml": "^2.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "typescript": "^5.9.2"
+  }
+}

@@ -1,7 +1,12 @@
 {
   "name": "@beaverslab/beaver-skill",
   "version": "0.4.1",
+  "private": true,
   "description": "AI-powered agent skills collection for image generation and Xiaohongshu infographics",
+  "packageManager": "pnpm@9.15.9",
+  "workspaces": [
+    "packages/*"
+  ],
   "keywords": [
     "agent-skills",
     "skills",
@@ -20,12 +25,12 @@
     "url": "git+https://github.com/BeaversLab/beaver-skill.git"
   },
   "license": "MIT",
-  "files": [
-    "skills/",
-    "README.md",
-    "README.en.md"
-  ],
-  "publishConfig": {
-    "access": "public"
+  "scripts": {
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.7"
   }
 }

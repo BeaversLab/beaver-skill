@@ -1,0 +1,12 @@
+id: openclaw
+label: OpenClaw
+defaultSourceDir: ~/.openclaw
+defaultBackupDir: ~/.openclaw-backups
+defaultRestoreDir: ~/.openclaw
+archivePrefix: openclaw
+include:
+  - '.'
+exclude:
+  - completions/
+  - '*.log'
+  - 'logs/*'
