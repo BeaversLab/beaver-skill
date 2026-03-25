@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { readdir, readFile, stat, writeFile } from 'node:fs/promises';
-import { expandHome, currentTimestamp, ensureRulesDir, sanitizeName, RULES_DIR } from './paths.js';
+import { expandHome, currentTimestamp, ensureRulesDir, sanitizeName, ruleFileExists, RULES_DIR } from './paths.js';
 import { getPreset, listPresets } from './presets.js';
 import { parseRuleYaml, serializeRule } from './yaml.js';
 import type { BackupRule, ClawPreset, CreateRuleResult } from './types.js';
@@ -34,22 +34,37 @@ export function createCustomRule(clawType: string, sourceDir: string, backupDir:
   };
 }
 
-export async function saveRule(rule: BackupRule, options?: { includeComment?: string }): Promise<string> {
+export async function saveRule(rule: BackupRule, options?: { includeComment?: string; customName?: string }): Promise<string> {
   const dir = await ensureRulesDir();
-  const filename = `${sanitizeName(rule.clawType)}_${currentTimestamp()}.yaml`;
+  let filename: string;
+
+  if (options?.customName) {
+    const sanitizedName = sanitizeName(options.customName);
+    filename = `${sanitizedName}.yaml`;
+    const rulePath = path.join(dir, filename);
+    // Check if file already exists
+    if (await ruleFileExists(sanitizedName)) {
+      throw new Error(`Rule file "${sanitizedName}.yaml" already exists. Choose a different name or delete the existing file first.`);
+    }
+    await writeFile(rulePath, serializeRule(rule, options), 'utf8');
+    return rulePath;
+  }
+
+  // Default: use timestamp-based naming
+  filename = `${sanitizeName(rule.clawType)}_${currentTimestamp()}.yaml`;
   const rulePath = path.join(dir, filename);
   await writeFile(rulePath, serializeRule(rule, options), 'utf8');
   return rulePath;
 }
 
-export async function createRuleFile(params: { presetId?: string; clawType?: string; sourceDir?: string; backupDir?: string }): Promise<CreateRuleResult> {
+export async function createRuleFile(params: { presetId?: string; clawType?: string; sourceDir?: string; backupDir?: string; customName?: string }): Promise<CreateRuleResult> {
   if (params.presetId && params.presetId !== 'other') {
     const preset = getPreset(params.presetId);
     if (!preset) {
       throw new Error(`Unknown preset "${params.presetId}".`);
     }
     const rule = createRuleFromPreset(preset);
-    const rulePath = await saveRule(rule);
+    const rulePath = await saveRule(rule, { customName: params.customName });
     return { rule, rulePath, needsManualEditing: false };
   }
 
@@ -59,6 +74,7 @@ export async function createRuleFile(params: { presetId?: string; clawType?: str
 
   const rule = createCustomRule(params.clawType, params.sourceDir, params.backupDir);
   const rulePath = await saveRule(rule, {
+    customName: params.customName,
     includeComment: 'Custom claw types start with an empty include list. Edit this file before running backup.',
   });
   return { rule, rulePath, needsManualEditing: true };
