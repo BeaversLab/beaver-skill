@@ -1,39 +1,36 @@
 ---
 name: beaver-claw-backup
-description: Initialize backup rules and run backup or restore workflows for claw-style local apps. Use when the user asks to create or edit backup rules, run a backup, restore from an archive, or manage archive workflows for OpenClaw and similar claw variants.
+description: Backup, restore, and migrate workspace data or tool configurations. Use when the user mentions "backup", "restore", "snapshot", "migrate", "备份", "恢复", "还原", "迁移", or "存档".
 ---
 
-# Beaver Claw Backup
+# Backup & Restore Instructions
 
-Manage rule-based backup and restore workflows for claw-style local app data.
+Manage data persistence for tools and directories. Use `bunx` for execution. Prefer `--yes` and `--json` flags for non-interactive tasks.
 
-## Use This Skill When
+## Common Workflows
 
-- The user wants to initialize a backup rule
-- The user wants to run a backup now
-- The user wants to restore from an existing archive
-- The user wants to add another claw preset under `references/default_rules/`
+### 1. Create a Backup Rule
 
-## Commands
+- **Built-in Preset**: `bunx @beaverslab/claw-backup init-rule --name <name> --preset <preset> --yes`
+- **Custom Path**: `bunx @beaverslab/claw-backup init-rule --name <name> --preset other --type <type> --src <path> --dest <path> --yes`
 
-```bash
-npx @beaverslab/claw-backup init-rule
-npx @beaverslab/claw-backup backup
-npx @beaverslab/claw-backup restore
-```
+### 2. Run a Backup
 
-## Workflow
+- **Silent**: `bunx @beaverslab/claw-backup backup <rule-name> --yes`
+- **Machine Read**: `bunx @beaverslab/claw-backup backup <rule-name> --json`
 
-1. Run `init-rule` to create a YAML rule file under `~/.beaver-skill/beaver-claw-backup/`.
-2. For `other`, edit the generated YAML rule before running backup.
-3. Run `backup` to create a `tar.gz` archive from a selected rule.
-4. Run `restore` to extract an archive into the selected target directory.
+### 3. Restore Data
 
-## Boundaries
+- **By Rule**: `bunx @beaverslab/claw-backup restore <rule-name> [target-dir] --yes`
+- **By Archive**: `bunx @beaverslab/claw-backup restore <rule-name> --archive <path> --yes`
+- **Direct**: `bunx @beaverslab/claw-backup restore <archive.tar.gz> <target-dir> --yes`
 
-- MVP preset: `openclaw`
-- Runtime presets are packaged with `packages/claw-backup/references/default_rules/`
-- Restore does not stop or restart external services
-- Restore does not clear the target directory before extraction
+## Fallback & Compatibility
 
-Implementation details and rule semantics live in [README.zh-CN.md](README.zh-CN.md) and [references/restore.md](references/restore.md).
+If `bun` is not installed, use `npx @beaverslab/claw-backup@latest` instead of `bunx @beaverslab/claw-backup`.
+
+## Troubleshooting & Schema
+
+- **Rules Location**: `~/.beaver-skill/beaver-claw-backup/`
+- **Rule Format**: See [YAML Schema](references/default_rules/openclaw.yaml)
+- **Recovery Details**: See [Restore Guide](references/restore.md)

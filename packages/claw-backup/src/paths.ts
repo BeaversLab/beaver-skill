@@ -30,33 +30,33 @@ export function looksLikePath(input: string): boolean {
 
 /**
  * Resolve a name or path to a full rule file path.
- * - Absolute path → returned as-is
- * - Relative path (contains / or .) → resolved to absolute path
- * - Name → looks for {name}.yaml in RULES_DIR
- * @throws Error if name is provided but file doesn't exist
+ * Priority:
+ * 1. {name}.yaml in RULES_DIR
+ * 2. If it looks like a path (contains / or .), return absolute path
+ * 3. Throw if name not found in RULES_DIR
  */
 export async function resolveRulePath(nameOrPath: string): Promise<string> {
   const expanded = expandHome(nameOrPath);
 
-  // Absolute path: return as-is
-  if (isAbsolutePath(expanded)) {
-    return expanded;
+  // 1. Try as a simple name in RULES_DIR
+  const namedPath = path.join(
+    RULES_DIR,
+    expanded.endsWith('.yaml') ? expanded : `${expanded}.yaml`
+  );
+  const namedInfo = await stat(namedPath).catch(() => null);
+  if (namedInfo && namedInfo.isFile()) {
+    return namedPath;
   }
 
-  // Relative path (contains separator): resolve relative to cwd
-  if (looksLikePath(expanded)) {
+  // 2. If it looks like a path (contains separator or dot), resolve to absolute
+  if (looksLikePath(expanded) || isAbsolutePath(expanded)) {
     return path.resolve(expanded);
   }
 
-  // Otherwise treat as name: look in RULES_DIR
-  const rulePath = path.join(RULES_DIR, `${expanded}.yaml`);
-  const info = await stat(rulePath).catch(() => null);
-  if (!info) {
-    throw new Error(
-      `Rule file not found: ${rulePath}\nDid you mean a path? Use "./${nameOrPath}" for relative paths.`
-    );
-  }
-  return rulePath;
+  // 3. Otherwise treat as name: look in RULES_DIR (already failed above, so throw error)
+  throw new Error(
+    `Rule file not found in standard location: ${namedPath}\nTo use a local file, provide a path (e.g., "./${nameOrPath}")`
+  );
 }
 
 /**
