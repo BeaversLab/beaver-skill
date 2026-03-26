@@ -1,5 +1,14 @@
 # @beaverslab/claw-backup
 
+## 0.4.0
+
+### Major Changes
+
+- **BREAKING CHANGE**: Organize backup archives by rule name.
+  - Backup files are now stored in `{backupDir}/{ruleName}/{timestamp}.tar.gz` instead of the root `backupDir`.
+  - Removed `archivePrefix` field from rule files as it is no longer used for path generation.
+  - Added multi-language documentation support for the CLI tool.
+
 ## 0.3.0
 
 ### Minor Changes

@@ -85,6 +85,14 @@ function getFlag(args: string[], flag: string): string | undefined {
   return undefined;
 }
 
+function asString(value: unknown): string {
+  if (isCancel(value)) {
+    cancel('Operation cancelled.');
+    process.exit(0);
+  }
+  return String(value);
+}
+
 async function promptForRuleFile(initialPath?: string, nonInteractive = false): Promise<string> {
   if (initialPath) {
     try {
