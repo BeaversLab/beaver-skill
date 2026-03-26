@@ -1,3 +1,9 @@
+## 0.5.0
+
+### Minor Changes
+
+- feat(beaver-release-skills): redesign skill for Changesets dual-release architecture
+
 ## 0.4.1 - 2026-03-11
 
 ### Features
