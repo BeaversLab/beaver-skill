@@ -1,6 +1,6 @@
 {
   "name": "@beaverslab/claw-backup",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "CLI workflow for creating, backing up, and restoring claw data with YAML rules.",
   "type": "module",
   "license": "MIT",
