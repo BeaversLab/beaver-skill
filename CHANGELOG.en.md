@@ -1,71 +1,49 @@
-## 0.5.0
+# Changelog
 
-### Minor Changes
-
-- feat(beaver-release-skills): redesign skill for Changesets dual-release architecture
-
-## 0.4.1 - 2026-03-11
-
-### Features
-
-- beaver-markdown-i18n: enhance translation scripts with placeholder checks and task metadata management
+## 0.5.2 - 2026-03-26
 
 ### Documentation
 
-- project: update README files and remove redundant lines for better clarity
-- beaver-release-skills: update README documentation
+- **beaver-release-skills**: Establish standardized multi-language changelog workflow and formatting rules.
 
-## 0.4.0 - 2026-03-10
-
-### Features
-
-- beaver-markdown-i18n: Add comprehensive Markdown translation pipeline with AST-level masking and incremental sync
-- beaver-markdown-i18n: Add unified CLI tools (translate-cli, quality-cli, plan-cli)
-- beaver-skill: Add AGENTS.md to define skill structure standards
-
-### Improvements
-
-- beaver-markdown-i18n: Consolidate scripts and enhance quality validation process
-
-# Changelog
-
-## 0.3.0 - 2026-03-06
-
-### Features
-
-- **beaver-cover-image**: Introduced cover image generation skill with 5 dimensions of visual customization.
-- **beaver-release-skills**: Added comprehensive English documentation.
+## 0.5.1 - 2026-03-26
 
 ### Improvements & Fixes
 
-- **beaver-release-skills**: Removed automated npm publishing workflow (use npx skills for direct installation).
-- **beaver-cover-image**: Added more aspect ratio options (4:3, 3:2) and set 16:9 as default.
-- **Project**: Enhanced README with structured installation and quick start instructions.
+- **beaver-release-skills**: Add explicit "Create Tag" step to the release workflow.
 
-## 0.2.4 - 2026-03-05
+## 0.5.0 - 2026-03-26
 
-### Optimizations
+### New Features
 
-- **CI**: Successfully configured NPM token and restored automated publishing flow
+- **beaver-release-skills**: Redesign skill for Changesets dual-release architecture (Unified library & Independent packages).
 
-## 0.2.2 - 2026-03-05
+## 0.4.2 - 2026-03-26
 
-### Fixes
+### Improvements & Fixes
 
-- **CI**: Fix GitHub Action failure where `npm version` errors when the version in `package.json` is already updated
+- **project**: Implement dual-versioning strategy for skills and packages.
+- **project**: Consolidate all skills into the unified `@beaverslab/skills` package.
 
-## 0.2.1 - 2026-03-05
+## 0.4.1 - 2026-03-11
 
-### Features
+### New Features
 
-- **project**: Add .gitignore and convert core skills section to table format for better readability
-- **beaver-release-skills**: Add detailed Chinese and English README documentation
+- **beaver-markdown-i18n**: Enhance translation scripts with placeholder checks and task metadata management.
 
-## 0.2.0 - 2026-03-05
+### Documentation
 
-### Features
+- **project**: Update README files and remove redundant lines for better clarity.
+- **beaver-release-skills**: Update README documentation.
 
-- **beaver-release-skills**: include beaver-release-skills and sync remote URL
-- **beaver-image-gen**: Introduce beaver-image-gen skill for AI image generation
-- **beaver-xhs-images**: Enhance with layout preferences, error recovery, and comprehensive documentation
-- **project**: Initialize project with package.json, GitHub Actions, and multilingual READMEs
+## 0.4.0 - 2026-03-10
+
+### New Features
+
+- **beaver-markdown-i18n**: Add comprehensive Markdown translation pipeline with AST-level masking and incremental sync.
+- **beaver-markdown-i18n**: Add unified CLI tools (translate-cli, quality-cli, plan-cli).
+- **beaver-skill**: Add AGENTS.md to define skill structure standards.
+
+### Improvements & Fixes
+
+- **beaver-markdown-i18n**: Consolidate scripts and enhance quality validation process.

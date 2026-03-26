@@ -1,5 +1,11 @@
 # @beaverslab/skills
 
+## 0.5.2
+
+### Patch Changes
+
+- docs(beaver-release-skills): establish standardized multi-language changelog workflow and formatting rules
+
 ## 0.5.1
 
 ### Patch Changes

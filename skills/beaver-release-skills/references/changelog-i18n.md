@@ -1,87 +1,69 @@
-# Changelog Internationalization Reference
+# Changelog Internationalization & Formatting Reference
 
-## Section Title Translations
+## Version Header Format
 
-| Type     | en               | zh         | ja               | ko            | de               | fr                  | es                  |
-| -------- | ---------------- | ---------- | ---------------- | ------------- | ---------------- | ------------------- | ------------------- |
-| feat     | Features         | 新功能     | 新機能           | 새로운 기능   | Funktionen       | Fonctionnalités     | Características     |
-| fix      | Fixes            | 修复       | 修正             | 수정          | Fehlerbehebungen | Corrections         | Correcciones        |
-| docs     | Documentation    | 文档       | ドキュメント     | 문서          | Dokumentation    | Documentation       | Documentación       |
-| refactor | Refactor         | 重构       | リファクタリング | 리팩토링      | Refactoring      | Refactorisation     | Refactorización     |
-| perf     | Performance      | 性能优化   | パフォーマンス   | 성능          | Leistung         | Performance         | Rendimiento         |
-| breaking | Breaking Changes | 破坏性变更 | 破壊的変更       | 주요 변경사항 | Breaking Changes | Changements majeurs | Cambios importantes |
+Standard: `## {VERSION} - {YYYY-MM-DD}` (e.g., `## 0.5.2 - 2026-03-26`)
 
-## Changelog Format
+## Section Categories & Translations
 
-```markdown
-## {VERSION} - {YYYY-MM-DD}
+| Type     | en                   | zh         | Description                                      |
+| -------- | -------------------- | ---------- | ------------------------------------------------ |
+| feat     | New Features         | 新功能     | Significant new functionality                    |
+| fix      | Improvements & Fixes | 优化与修复 | Bug fixes, minor improvements, and refactors     |
+| ci       | CI/CD                | CI/CD      | Changes to workflows, scripts, and build systems |
+| docs     | Documentation        | 文档       | Changes to READMEs, SKILLs, and other docs       |
+| breaking | Breaking Changes     | 破坏性变更 | Incompatible API or workflow changes             |
 
-### Features
+## Rules
 
-- Description of new feature
-- Description of third-party contribution (by @username)
-
-### Fixes
-
-- Description of fix
-
-### Documentation
-
-- Description of docs changes
-```
-
-Only include sections that have changes. Omit empty sections.
-
-## Third-Party Attribution Rules
-
-- Only add `(by @username)` for contributors who are NOT the repo owner
-- Use GitHub username with `@` prefix
-- Place at the end of the changelog entry line
-- Apply to all languages consistently (always use `(by @username)` format, not translated)
+1. **File Scanning**: Always check for all `CHANGELOG*.md` files in the root directory.
+2. **Synchronization**: All identified changelog files MUST be updated simultaneously for every release.
+3. **Consistency**: Use the exact category names from the table above.
+4. **Empty Sections**: Omit sections that do not have any changes for the current version.
+5. **Attribution**: Only add `(by @username)` for non-owner contributors at the end of the line.
 
 ## Multi-language Example
 
-English (CHANGELOG.en.md):
+**English (CHANGELOG.en.md):**
 
 ```markdown
-## 1.3.0 - 2026-01-22
+## 0.5.2 - 2026-03-26
 
-### Features
+### New Features
 
-- Add user authentication module (by @contributor1)
-- Support OAuth2 login
+- Add support for parallel image generation
 
-### Fixes
+### Improvements & Fixes
 
-- Fix memory leak in connection pool
+- Refactor internal task management for better reliability
+
+### CI/CD
+
+- Update release workflow to support multi-language changelogs
+
+### Documentation
+
+- Update beaver-release-skills instructions
 ```
 
-Chinese (CHANGELOG.md):
+**Chinese (CHANGELOG.md):**
 
 ```markdown
-## 1.3.0 - 2026-01-22
+## 0.5.2 - 2026-03-26
 
 ### 新功能
 
-- 新增用户认证模块 (by @contributor1)
-- 支持 OAuth2 登录
+- 新增支持并行生成图像的功能
 
-### 修复
+### 优化与修复
 
-- 修复连接池内存泄漏问题
-```
+- 重构内部任务管理，提升可靠性
 
-Japanese (CHANGELOG.ja.md):
+### CI/CD
 
-```markdown
-## 1.3.0 - 2026-01-22
+- 更新发布工作流，支持多语言 Changelog 同步
 
-### 新機能
+### 文档
 
-- ユーザー認証モジュールを追加 (by @contributor1)
-- OAuth2 ログインをサポート
-
-### 修正
-
-- コネクションプールのメモリリークを修正
+- 更新 beaver-release-skills 技能说明
 ```

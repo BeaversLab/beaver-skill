@@ -41,8 +41,10 @@ Always distinguish between the two release targets:
 - **Sync Non-NPM Files**:
   - If a package is **Rust** (`Cargo.toml`), **Python** (`pyproject.toml`), or **Go** (`VERSION`), read the new version from its `package.json` and sync it to its native manifest.
 - **Update Localized Changelogs**:
-  - Extract new entries from `CHANGELOG.md`.
-  - Append/Prepend translated entries to `CHANGELOG.zh.md` and others.
+  - **Scan**: Identify all `CHANGELOG*.md` files in the root directory.
+  - **Standard**: Follow categories and date format defined in `references/changelog-i18n.md`.
+  - **Categories**: Use mandatory sections: `New Features`, `Improvements & Fixes`, `CI/CD`, `Documentation`, `Breaking Changes`.
+  - **Sync**: Simultaneously update ALL identified files with appropriate translations for each version bump.
 - **Commit**: Create a release commit (e.g., `chore: release v0.5.0`).
 
 ## Phase 3: Publish (Verification)

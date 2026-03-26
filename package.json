@@ -1,6 +1,6 @@
 {
   "name": "@beaverslab/beaver-skill",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "private": true,
   "description": "AI-powered agent skills collection for image generation and Xiaohongshu infographics",
   "packageManager": "pnpm@9.15.9",
