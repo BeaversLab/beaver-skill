@@ -1,54 +1,62 @@
 ---
 name: beaver-release-skills
-description: Dual-release workflow powered by Changesets. Manages unified skills library and independent packages (NPM, Go, Python, Rust). Use when user says "release", "发布", "new version", "changeset", "bump version".
+description: Dual-release workflow for the Beaver Skills library. Use "release skill" to update the unified skills version or "release package <name>" to update independent CLI tools (NPM, Rust, Python, Go). Powered by Changesets.
 ---
 
 # Release Skills
 
-Universal dual-release workflow powered by [Changesets](https://github.com/changesets/changesets).
+Universal workflow for releasing the **Beaver Skills Library** and its **Independent Packages**.
 
-It explicitly manages two distinct targets:
+## Requirements
 
-1. **Skills Library (`skills/`)**: Unified versioning for all AI agent skills.
-2. **Packages (`packages/`)**: Independent versioning for isolated tools and CLI utilities (supports NPM, Go, Python, Rust, etc.).
+- **Changesets**: This skill is **strictly dependent** on [Changesets](https://github.com/changesets/changesets).
+- **Pre-flight Check**: Verify `@changesets/cli` is available and `.changeset/config.json` exists before starting.
 
-## Workflow Phases
+## Core Mandate
 
-### Phase 1: Create Changeset (AI-Assisted)
+Always distinguish between the two release targets:
 
-When there are unreleased changes or the user requests a changeset:
+1. **Unified Skill Release**: Targets the entire `skills/` library as one version (e.g., `@beaverslab/skills`).
+2. **Independent Package Release**: Targets a specific tool in `packages/<name>/` with its own version.
 
-1. **Analyze Changes**: Check `git diff` and `git log` to identify affected directories.
-   - Changes in `skills/*` -> Target the unified skills package (e.g., `@beaverslab/skills`).
-   - Changes in `packages/<name>/*` -> Target the specific independent package.
-2. **Determine SemVer**: Infer bump type (`major`, `minor`, `patch`) based on semantic commit types (feat, fix, BREAKING CHANGE).
-3. **Draft Release Notes**: Synthesize a concise summary of the changes.
-4. **User Confirmation**: Present the proposed package targets, bump types, and release notes to the user.
-5. **Write File**: Upon approval, generate the `.changeset/<random-name>.md` file.
+## Phase 1: Create Changeset (Research & Plan)
 
-### Phase 2: Version Bump & Sync
+**Analyze intent and changes to propose a changeset:**
 
-When the user requests to apply versions or finalize the release:
+- **Identify Target**:
+  - If user says "release skill" -> Proposal for `@beaverslab/skills`.
+  - If user says "release package <name>" -> Proposal for `@beaverslab/<name>`.
+- **Scan Changes**: Analyze `git diff` and `git log` since the last release tag.
+- **Determine Bump**: Propose `patch`, `minor`, or `major` based on [Conventional Commits](https://www.conventionalcommits.org/).
+- **Draft Notes**: Summarize key user-facing changes (Features, Fixes, Breaking Changes).
+- **Ask User**: Confirm the target, bump type, and notes.
+- **Act**: Generate `.changeset/<random-name>.md`.
 
-1. **Execute Changesets**: Run `npx changeset version` to consume changesets and bump `package.json` versions.
-2. **Sync Multi-Language Projects**:
-   - Changesets natively updates `package.json`.
-   - If a changed package is Rust, Python, or Go, read the newly bumped version from its `package.json` and sync it to its native version file (`Cargo.toml`, `pyproject.toml`, `VERSION`).
-3. **Generate Multi-Language Changelogs**:
-   - Extract the new entries from the automatically generated `CHANGELOG.md`.
-   - Translate and prepend these entries to any existing localized changelogs (e.g., `CHANGELOG.zh.md`, `CHANGELOG.en.md`).
-4. **Commit**: Stage all modified version files, `.changeset` deletions, and changelogs. Create the release commit (e.g., `chore: release packages`).
+## Phase 2: Apply Version (Execution)
 
-### Phase 3: Push & Publish
+**Consume changesets and synchronize across languages:**
 
-1. **User Confirmation**: Ask the user if they want to push the release commit and tags to the remote repository.
-2. **Publish (If Requested)**:
-   - NPM: `npx changeset publish`
-   - Rust: `cargo publish`
-   - Python: `twine upload`
+- **Act**: Run `npx changeset version`.
+- **Sync Non-NPM Files**:
+  - If a package is **Rust** (`Cargo.toml`), **Python** (`pyproject.toml`), or **Go** (`VERSION`), read the new version from its `package.json` and sync it to its native manifest.
+- **Update Localized Changelogs**:
+  - Extract new entries from `CHANGELOG.md`.
+  - Append/Prepend translated entries to `CHANGELOG.zh.md` and others.
+- **Commit**: Create a release commit (e.g., `chore: release v0.5.0`).
 
-## Key Directives
+## Phase 3: Publish (Verification)
 
-- **Always ask for confirmation** before writing changesets, committing, or pushing.
-- **Respect Boundaries**: Never mix the unified skills version bump with unrelated independent package bumps unless both have changed.
-- **Maintain Sync**: Always ensure non-NPM packages have their native version files updated to match the Changeset truth.
+**Finalize the release and push to remotes:**
+
+- **Ask User**: Confirm the final version bump and whether to push to origin.
+- **Act**: Push commit and tags to `origin HEAD`.
+- **Publish Artifacts**:
+  - Run `npx changeset publish` for NPM.
+  - Run `cargo publish` or `twine upload` for other languages if applicable.
+
+## Directives
+
+- **Strict Dependency**: All versioning operations must go through `changeset` CLI commands.
+- **Zero Hallucination**: Only propose bumps for packages that actually have changes.
+- **User First**: Never write a changeset or commit version bumps without explicit user confirmation.
+- **Progressive Disclosure**: For complex changelog translation rules, refer to [references/changelog-i18n.md](references/changelog-i18n.md).
