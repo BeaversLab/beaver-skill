@@ -1,0 +1,6 @@
+{
+  "name": "@beaverslab/skill-beaver-release-skills",
+  "version": "0.4.2",
+  "private": true,
+  "description": "Universal release workflow for multiple languages and platforms."
+}

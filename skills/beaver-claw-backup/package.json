@@ -1,0 +1,9 @@
+{
+  "name": "@beaverslab/skill-beaver-claw-backup",
+  "version": "0.4.2",
+  "private": true,
+  "description": "Backup, restore, and migrate workspace data or tool configurations.",
+  "dependencies": {
+    "@beaverslab/claw-backup": "workspace:*"
+  }
+}

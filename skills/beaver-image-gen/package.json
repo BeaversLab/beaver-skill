@@ -1,0 +1,6 @@
+{
+  "name": "@beaverslab/skill-beaver-image-gen",
+  "version": "0.4.2",
+  "private": true,
+  "description": "AI image generation with OpenAI, Google, DashScope and Replicate APIs."
+}

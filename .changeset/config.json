@@ -2,7 +2,17 @@
   "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [],
+  "fixed": [
+    [
+      "@beaverslab/beaver-skill",
+      "@beaverslab/skill-beaver-claw-backup",
+      "@beaverslab/skill-beaver-cover-image",
+      "@beaverslab/skill-beaver-image-gen",
+      "@beaverslab/skill-beaver-markdown-i18n",
+      "@beaverslab/skill-beaver-release-skills",
+      "@beaverslab/skill-beaver-xhs-images"
+    ]
+  ],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
