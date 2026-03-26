@@ -1,5 +1,11 @@
 # @beaverslab/claw-backup
 
+## 0.5.0
+
+### Minor Changes
+
+- ff152d2: Add non-interactive mode with --yes and --json flags for AI/CI workflows. Enhance rule resolution logic and command parameters to skip interactive prompts when sufficient arguments are provided.
+
 ## 0.4.0
 
 ### Major Changes
