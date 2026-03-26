@@ -37,6 +37,7 @@ Always distinguish between the two release targets:
 **Consume changesets and synchronize across languages:**
 
 - **Act**: Run `npx changeset version`.
+- **Create Tag**: Manually create a version tag (e.g., `git tag v0.5.0`) matching the root `package.json` version.
 - **Sync Non-NPM Files**:
   - If a package is **Rust** (`Cargo.toml`), **Python** (`pyproject.toml`), or **Go** (`VERSION`), read the new version from its `package.json` and sync it to its native manifest.
 - **Update Localized Changelogs**:

@@ -1,5 +1,11 @@
 # @beaverslab/skills
 
+## 0.5.1
+
+### Patch Changes
+
+- fix(beaver-release-skills): add explicit "Create Tag" step to the release workflow
+
 ## 0.5.0
 
 ### Minor Changes
