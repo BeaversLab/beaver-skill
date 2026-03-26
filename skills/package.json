@@ -1,0 +1,9 @@
+{
+  "name": "@beaverslab/skills",
+  "version": "0.4.2",
+  "private": true,
+  "description": "The unified collection of AI agent skills (Beaver Library).",
+  "dependencies": {
+    "@beaverslab/claw-backup": "workspace:*"
+  }
+}

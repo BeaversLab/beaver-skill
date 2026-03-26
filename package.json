@@ -7,7 +7,7 @@
   "workspaces": [
     ".",
     "packages/*",
-    "skills/*"
+    "skills"
   ],
   "keywords": [
     "agent-skills",

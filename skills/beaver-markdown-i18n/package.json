@@ -1,6 +1,0 @@
-{
-  "name": "@beaverslab/skill-beaver-markdown-i18n",
-  "version": "0.4.2",
-  "private": true,
-  "description": "Translate and sync markdown documentation between languages (EN↔ZH/JA/KO)."
-}

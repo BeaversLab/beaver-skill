@@ -1,6 +1,0 @@
-{
-  "name": "@beaverslab/skill-beaver-cover-image",
-  "version": "0.4.2",
-  "private": true,
-  "description": "Generates article cover images with 5 dimensions."
-}

@@ -5,12 +5,7 @@
   "fixed": [
     [
       "@beaverslab/beaver-skill",
-      "@beaverslab/skill-beaver-claw-backup",
-      "@beaverslab/skill-beaver-cover-image",
-      "@beaverslab/skill-beaver-image-gen",
-      "@beaverslab/skill-beaver-markdown-i18n",
-      "@beaverslab/skill-beaver-release-skills",
-      "@beaverslab/skill-beaver-xhs-images"
+      "@beaverslab/skills"
     ]
   ],
   "linked": [],
