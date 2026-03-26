@@ -106,11 +106,7 @@ exclude:
 
 ## 更新日志
 
-### 0.3.0
-
-- **破坏性变更**：移除规则文件中的 `archivePrefix` 字段
-- 备份归档按规则名称组织：`{backupDir}/{ruleName}/{timestamp}.tar.gz`
-- 归档文件名简化为 `{timestamp}.tar.gz`
+[更新日志](CHANGELOG.md)
 
 ## 相关
 

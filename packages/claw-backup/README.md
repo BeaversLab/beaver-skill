@@ -106,11 +106,7 @@ Each rule's archives are stored in `{backupDir}/{ruleName}/` with timestamp-base
 
 ## Changelog
 
-### 0.3.0
-
-- **Breaking**: Removed `archivePrefix` field from rule files
-- Backup archives now organized by rule name: `{backupDir}/{ruleName}/{timestamp}.tar.gz`
-- Archive filenames simplified to just `{timestamp}.tar.gz`
+[CHANGELOG](CHANGELOG.md)
 
 ## Related
 
