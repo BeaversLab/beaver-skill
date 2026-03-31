@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.1 - 2026-03-31
+
+### New Features
+
+- **beaver-resource-compilation**: Add `content_hash` field for content deduplication and change detection.
+
 ## 0.6.0 - 2026-03-31
 
 ### New Features
