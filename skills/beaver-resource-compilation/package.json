@@ -1,0 +1,21 @@
+{
+  "name": "beaver-resource-compilation",
+  "version": "0.1.0",
+  "description": "Collect and compile markdown resources with auto-generated frontmatter",
+  "type": "module",
+  "packageManager": "pnpm@10.0.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "scan": "node --import tsx scripts/scan.ts",
+    "compile": "node --import tsx scripts/compile.ts"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "gray-matter": "^4.0.3",
+    "js-yaml": "^4.1.0",
+    "picocolors": "^1.1.1",
+    "tsx": "^4.19.3"
+  }
+}
