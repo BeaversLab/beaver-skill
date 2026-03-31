@@ -75,7 +75,7 @@ EOF
 
 ### Step 1: 扫描源目录
 
-**⛔ 确保依赖已安装**：首次运行时在 `skills/beaver-resource-compilation/` 目录下执行 `npm install`
+**⛔ 确保依赖已安装**：首次运行时在 `skills/beaver-resource-compilation/` 目录下执行 `pnpm install` 或 `npm install`
 
 运行扫描脚本：
 
