@@ -1,6 +1,7 @@
 import { readFile, rename, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, basename } from 'node:path';
+import { createHash } from 'node:crypto';
 import * as p from '@clack/prompts';
 import pc from 'picocolors';
 import matter from 'gray-matter';
@@ -78,6 +79,10 @@ function isUrl(str: string): boolean {
   return /^https?:\/\//i.test(str);
 }
 
+function computeContentHash(content: string): string {
+  return createHash('sha256').update(content.trim()).digest('hex').slice(0, 16);
+}
+
 function toFilename(title: string): string {
   return title.replace(/\s+/g, '_').replace(/[\/\\:*?"<>|]/g, '') + '.md';
 }
@@ -125,6 +130,8 @@ export async function compileFile(args: CompileArgs, targetDir: string): Promise
       if (domain) frontmatter.source_domain = domain;
     }
 
+    frontmatter.content_hash = computeContentHash(content);
+
     const fmLines = ['---'];
     fmLines.push(`title: "${frontmatter.title}"`);
     fmLines.push('tags:');
@@ -137,6 +144,7 @@ export async function compileFile(args: CompileArgs, targetDir: string): Promise
     fmLines.push(`compiled_at: "${frontmatter.compiled_at}"`);
     fmLines.push(`source: "${frontmatter.source}"`);
     if (frontmatter.source_domain) fmLines.push(`source_domain: "${frontmatter.source_domain}"`);
+    fmLines.push(`content_hash: "${frontmatter.content_hash}"`);
     fmLines.push('---');
 
     const newContent = fmLines.join('\n') + '\n\n' + content.trim() + '\n';

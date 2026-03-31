@@ -15,6 +15,7 @@ created_at: '2026-03-15T10:30:00'
 compiled_at: '2026-03-15T14:22:00'
 source: 'https://example.com/article'
 source_domain: 'example.com'
+content_hash: 'a1b2c3d4e5f67890'
 ---
 ```
 
@@ -30,6 +31,7 @@ source_domain: 'example.com'
 | `compiled_at`   | Yes         | string   | Compilation datetime (auto-generated)                   |
 | `source`        | Yes         | string   | Original source URL or file path                        |
 | `source_domain` | Conditional | string   | Top-level domain, only when `source` is a URL           |
+| `content_hash`  | Yes         | string   | SHA-256 hash (first 16 hex chars) of body content       |
 
 ## Field Resolution Rules
 
@@ -85,6 +87,10 @@ Examples:
 - `https://mp.weixin.qq.com/s/abc123` → `mp.weixin.qq.com`
 - `https://www.example.com/article` → `example.com`
 - `/Users/marco/inbox/note.md` → field omitted (not a URL)
+
+### `content_hash`
+
+SHA-256 hash of the body content (frontmatter stripped), truncated to the first 16 hex characters. Computed automatically by the compile script. Can be used for deduplication and change detection.
 
 ## Filename Convention
 
