@@ -1,5 +1,15 @@
 # 更新日志
 
+## 0.6.0 - 2026-03-31
+
+### 新功能
+
+- **beaver-resource-compilation**: 新增资源汇编技能，支持从多个源目录收集 Markdown 文件并自动生成 frontmatter（title、tags、summary 等）。
+
+### 文档
+
+- **project**: 更新 Changelog 标题为中文。
+
 ## 0.5.2 - 2026-03-26
 
 ### 文档

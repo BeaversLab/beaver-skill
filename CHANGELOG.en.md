@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.0 - 2026-03-31
+
+### New Features
+
+- **beaver-resource-compilation**: Add new skill for collecting and compiling markdown resources from multiple source directories with auto-generated frontmatter (title, tags, summary, etc.).
+
+### Documentation
+
+- **project**: Update changelog title to Chinese.
+
 ## 0.5.2 - 2026-03-26
 
 ### Documentation
