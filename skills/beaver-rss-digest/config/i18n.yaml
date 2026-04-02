@@ -1,0 +1,12 @@
+zh:
+  summary.sectionTitle: 今日看点
+  report.title: AI博客每日精选
+  chart.categoryTitle: 文章分类分布
+  prompt.summary.instruction: 请用中文撰写摘要和推荐理由。如果原文是英文，请翻译为中文。标题翻译也用中文。
+  prompt.highlights.instruction: 用中文回答。
+en:
+  summary.sectionTitle: Today Highlights
+  report.title: AI Daily Digest
+  chart.categoryTitle: Category Distribution
+  prompt.summary.instruction: Write summaries, reasons, and title translations in English.
+  prompt.highlights.instruction: Write in English.

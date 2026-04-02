@@ -1,0 +1,26 @@
+{
+  "name": "beaver-rss-digest",
+  "version": "0.1.0",
+  "description": "Configurable RSS digest with YAML + CLI",
+  "type": "module",
+  "packageManager": "pnpm@10.0.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "digest:run": "ENV_FILE=\"$HOME/.beaver-skill/.env\"; if command -v bun >/dev/null 2>&1; then [ -f \"$ENV_FILE\" ] && ENVARG=\"--env-file=$ENV_FILE\" || ENVARG=\"\"; bun $ENVARG scripts/cli.ts run; else [ -f \"$ENV_FILE\" ] && ENVARG=\"--env-file=$ENV_FILE\" || ENVARG=\"\"; node $ENVARG --import tsx scripts/cli.ts run; fi",
+    "digest:init": "ENV_FILE=\"$HOME/.beaver-skill/.env\"; if command -v bun >/dev/null 2>&1; then [ -f \"$ENV_FILE\" ] && ENVARG=\"--env-file=$ENV_FILE\" || ENVARG=\"\"; bun $ENVARG scripts/cli.ts init; else [ -f \"$ENV_FILE\" ] && ENVARG=\"--env-file=$ENV_FILE\" || ENVARG=\"\"; node $ENVARG --import tsx scripts/cli.ts init; fi",
+    "digest:config:path": "ENV_FILE=\"$HOME/.beaver-skill/.env\"; if command -v bun >/dev/null 2>&1; then [ -f \"$ENV_FILE\" ] && ENVARG=\"--env-file=$ENV_FILE\" || ENVARG=\"\"; bun $ENVARG scripts/cli.ts config path; else [ -f \"$ENV_FILE\" ] && ENVARG=\"--env-file=$ENV_FILE\" || ENVARG=\"\"; node $ENVARG --import tsx scripts/cli.ts config path; fi",
+    "digest:config:validate": "ENV_FILE=\"$HOME/.beaver-skill/.env\"; if command -v bun >/dev/null 2>&1; then [ -f \"$ENV_FILE\" ] && ENVARG=\"--env-file=$ENV_FILE\" || ENVARG=\"\"; bun $ENVARG scripts/cli.ts config validate; else [ -f \"$ENV_FILE\" ] && ENVARG=\"--env-file=$ENV_FILE\" || ENVARG=\"\"; node $ENVARG --import tsx scripts/cli.ts config validate; fi",
+    "digest:source:list": "ENV_FILE=\"$HOME/.beaver-skill/.env\"; if command -v bun >/dev/null 2>&1; then [ -f \"$ENV_FILE\" ] && ENVARG=\"--env-file=$ENV_FILE\" || ENVARG=\"\"; bun $ENVARG scripts/cli.ts source list; else [ -f \"$ENV_FILE\" ] && ENVARG=\"--env-file=$ENV_FILE\" || ENVARG=\"\"; node $ENVARG --import tsx scripts/cli.ts source list; fi",
+    "digest:source:add": "ENV_FILE=\"$HOME/.beaver-skill/.env\"; if command -v bun >/dev/null 2>&1; then [ -f \"$ENV_FILE\" ] && ENVARG=\"--env-file=$ENV_FILE\" || ENVARG=\"\"; bun $ENVARG scripts/cli.ts source add; else [ -f \"$ENV_FILE\" ] && ENVARG=\"--env-file=$ENV_FILE\" || ENVARG=\"\"; node $ENVARG --import tsx scripts/cli.ts source add; fi",
+    "digest:source:remove": "ENV_FILE=\"$HOME/.beaver-skill/.env\"; if command -v bun >/dev/null 2>&1; then [ -f \"$ENV_FILE\" ] && ENVARG=\"--env-file=$ENV_FILE\" || ENVARG=\"\"; bun $ENVARG scripts/cli.ts source remove; else [ -f \"$ENV_FILE\" ] && ENVARG=\"--env-file=$ENV_FILE\" || ENVARG=\"\"; node $ENVARG --import tsx scripts/cli.ts source remove; fi"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.1",
+    "tsx": "^4.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.0"
+  }
+}
