@@ -9,24 +9,27 @@ description: Generate configurable RSS digest with YAML-driven LLM chain, source
 
 ## 配置与目录
 
-- 环境变量：`~/.beaver-skill/.env`（所有 beaver-skill 共享）
 - 用户配置：`~/.beaver-skill/beaver-rss-digest/config.yaml`
 - 多语言文案：`~/.beaver-skill/beaver-rss-digest/i18n.yaml`
 - 配置模板：`skills/beaver-rss-digest/config/config.example.yaml`
 - 报告模板目录：`skills/beaver-rss-digest/templates/`
+- 通用 CLI / 摘要引擎：`packages/rss-digest`
 
 ## 环境变量
 
-API Key 通过 `~/.beaver-skill/.env` 设置（`digest:init` 自动创建模板）：
+API Key 环境变量名通过 `config.yaml` 的 `llmApiKeyEnv` 配置，默认值为 `LLM_API_KEY`。实际 Key 仍通过当前 shell 环境变量提供，例如：
 
 ```env
-ZHIPU_API_KEY=your-key-here
+LLM_API_KEY=your-key-here
 OPENAI_API_KEY=your-key-here
 ANTHROPIC_API_KEY=your-key-here
 ```
 
-pnpm 脚本会自动通过 `--env-file` 加载此文件（bun 和 node 均支持）。
-也可以通过 `export` 直接设置环境变量，两种方式等效。
+运行前先在当前 shell 中 `export` 对应变量，例如：
+
+```bash
+export LLM_API_KEY=your-key-here
+```
 
 ## 核心流程
 
@@ -38,6 +41,10 @@ pnpm 脚本会自动通过 `--env-file` 加载此文件（bun 和 node 均支持
 
 ## LLM 配置规范
 
+`config.yaml` 中额外支持：
+
+- `llmApiKeyEnv`: 全局 API Key 环境变量名，默认 `LLM_API_KEY`
+
 `llms` 为数组，每项支持：
 
 - `enabled`: `true/false`
@@ -45,12 +52,7 @@ pnpm 脚本会自动通过 `--env-file` 加载此文件（bun 和 node 均支持
 - `apiType`: `openai-compatible` 或 `anthropic-compatible`
 - `baseUrl`: API 基础地址
 - `model`: 模型名
-- `apiKey`: 环境变量占位，支持：
-  - `{{ENV_NAME}}`
-  - `<ENV_NAME>`
-  - `ENV_NAME`
-
-注意：至少一个 `enabled: true` 的 LLM 必须能解析出有效环境变量值。
+  注意：运行时会先读取 `llmApiKeyEnv`，如果当前环境中不存在这个变量，会提示用户修改 `config.yaml` 中的 `llmApiKeyEnv`。
 
 ## 报告模板
 
@@ -93,7 +95,7 @@ pnpm 脚本自动选择运行时：优先使用 bun，未安装则回退到 node
 ## 常用运行示例
 
 ```bash
-# 通过 pnpm 脚本运行（自动选择 bun 或 node，自动加载 .env）
+# 通过 pnpm 脚本运行（自动选择 bun 或 node）
 pnpm run digest:run -- --hours 24 --top-n 10 --lang en --output ./output/my-digest.md
 
 # 手动指定运行时
@@ -117,5 +119,5 @@ node --import tsx scripts/cli.ts run --hours 24 --top-n 10
 
 - 配置错误：先执行 `pnpm run digest:config:validate`
 - 模板不存在：检查 `defaults.reportTemplate` 与 `templates/<name>.md`
-- 全部 LLM 失败：检查 `enabled`、`apiKey` 占位和 `~/.beaver-skill/.env` 中的 Key 是否已设置
+- 全部 LLM 失败：检查 `llmApiKeyEnv` 是否正确，以及当前 shell 是否已 `export` 同名 Key
 - 无文章输出：扩大 `hours` 或确认 RSS 源可访问

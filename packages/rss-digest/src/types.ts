@@ -14,7 +14,7 @@ export interface LlmProfile {
   apiType: 'openai-compatible' | 'anthropic-compatible';
   baseUrl: string;
   model: string;
-  apiKey: string;
+  apiKey?: string;
 }
 
 export interface FeedSource {
@@ -45,3 +45,27 @@ export interface ScoredArticle extends Article {
   summary: string;
   reason: string;
 }
+
+export interface DigestDefaults {
+  hours: number;
+  topN: number;
+  language: OutputLanguage;
+  outputDir: string;
+  reportTemplate: string;
+}
+
+export interface DigestConfigShape {
+  version: number;
+  llmApiKeyEnv: string;
+  defaults: DigestDefaults;
+  llms: LlmProfile[];
+  categories: CategoryConfig[];
+  prompts: PromptTemplates;
+  rssFeeds: FeedSource[];
+}
+
+export type PromptTemplates = {
+  scoring: string;
+  summary: string;
+  highlights: string;
+};

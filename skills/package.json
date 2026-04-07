@@ -4,6 +4,7 @@
   "private": true,
   "description": "The unified collection of AI agent skills (Beaver Library).",
   "dependencies": {
-    "@beaverslab/claw-backup": "workspace:*"
+    "@beaverslab/claw-backup": "workspace:*",
+    "@beaverslab/rss-digest": "workspace:*"
   }
 }

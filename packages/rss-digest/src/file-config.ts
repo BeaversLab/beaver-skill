@@ -1,42 +1,34 @@
-import { existsSync } from 'fs';
-import { mkdir, readFile, writeFile } from 'fs/promises';
-import { homedir } from 'os';
-import { dirname, join, resolve } from 'path';
-import process from 'process';
-import { fileURLToPath } from 'url';
+import { existsSync } from 'node:fs';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
+import process from 'node:process';
 import yaml from 'js-yaml';
-import type { CategoryConfig, FeedSource, LlmProfile, OutputLanguage } from './types';
-import type { PromptTemplates } from './prompts';
+import { runCli } from './cli.js';
+import { runDigest } from './digest-core.js';
+import type { DigestCliDeps, ValidationResult } from './cli.js';
+import type {
+  CategoryConfig,
+  DigestConfigShape,
+  FeedSource,
+  LlmProfile,
+  OutputLanguage,
+} from './types.js';
 
-export interface DigestConfig {
-  version: number;
-  defaults: {
-    hours: number;
-    topN: number;
-    language: OutputLanguage;
-    outputDir: string;
-    reportTemplate: string;
-  };
-  llms: LlmProfile[];
-  categories: CategoryConfig[];
-  prompts: PromptTemplates;
-  rssFeeds: FeedSource[];
-}
-
+export type DigestFileConfig = DigestConfigShape;
 export type I18nDictionary = Record<OutputLanguage, Record<string, string>>;
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const REPO_CONFIG_DIR = resolve(__dirname, '..', 'config');
-export const REPO_TEMPLATES_DIR = resolve(__dirname, '..', 'templates');
-const REPO_CONFIG_EXAMPLE_PATH = join(REPO_CONFIG_DIR, 'config.example.yaml');
-const REPO_I18N_PATH = join(REPO_CONFIG_DIR, 'i18n.yaml');
+export interface DigestFileConfigOptions {
+  configPath: string;
+  i18nPath: string;
+  repoI18nPath: string;
+  configExamplePath: string;
+  defaultLlmApiKeyEnv: string;
+}
 
-const BEAVER_SKILL_DIR = join(homedir(), '.beaver-skill');
-export const ENV_PATH = join(BEAVER_SKILL_DIR, '.env');
-export const CONFIG_DIR = join(BEAVER_SKILL_DIR, 'beaver-rss-digest');
-export const CONFIG_PATH = join(CONFIG_DIR, 'config.yaml');
-export const I18N_PATH = join(CONFIG_DIR, 'i18n.yaml');
+export interface LocalDigestCliOptions extends DigestFileConfigOptions {
+  args: string[];
+  templatesDir: string;
+}
 
 function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
@@ -70,13 +62,12 @@ export function extractEnvName(token: string): string | null {
   return null;
 }
 
-export function resolveEnvToken(raw: string): string {
-  const envName = extractEnvName(raw);
-  if (!envName) return '';
-  return process.env[envName] || '';
+function normalizeApiKeyToken(raw: string, defaultLlmApiKeyEnv: string): string {
+  const trimmed = raw.trim();
+  return trimmed || defaultLlmApiKeyEnv;
 }
 
-function parseConfig(raw: string): DigestConfig {
+export function parseDigestConfig(raw: string, defaultLlmApiKeyEnv: string): DigestFileConfig {
   const parsed = asRecord(yaml.load(raw));
   const defaults = asRecord(parsed.defaults);
   const prompts = asRecord(parsed.prompts);
@@ -85,6 +76,7 @@ function parseConfig(raw: string): DigestConfig {
   const feedsRaw = Array.isArray(parsed.rssFeeds) ? parsed.rssFeeds : [];
 
   const version = asNumber(parsed.version);
+  const llmApiKeyEnv = normalizeApiKeyToken(asString(parsed.llmApiKeyEnv), defaultLlmApiKeyEnv);
   const hours = asNumber(defaults.hours);
   const topN = asNumber(defaults.topN);
   const language = parseLanguage(defaults.language);
@@ -103,7 +95,7 @@ function parseConfig(raw: string): DigestConfig {
         item.apiType === 'anthropic-compatible' ? 'anthropic-compatible' : 'openai-compatible',
       baseUrl: asString(item.baseUrl).trim(),
       model: asString(item.model).trim(),
-      apiKey: asString(item.apiKey).trim(),
+      apiKey: normalizeApiKeyToken(asString(item.apiKey), defaultLlmApiKeyEnv),
     }));
 
   const categories: CategoryConfig[] = categoriesRaw
@@ -122,8 +114,9 @@ function parseConfig(raw: string): DigestConfig {
       htmlUrl: asString(item.htmlUrl).trim(),
     }));
 
-  const cfg: DigestConfig = {
+  return {
     version,
+    llmApiKeyEnv,
     defaults: { hours, topN, language, outputDir, reportTemplate },
     llms,
     categories,
@@ -134,73 +127,32 @@ function parseConfig(raw: string): DigestConfig {
     },
     rssFeeds,
   };
-  return cfg;
-}
-
-export async function loadConfig(): Promise<DigestConfig> {
-  if (!existsSync(CONFIG_PATH)) {
-    throw new Error(`Missing config file: ${CONFIG_PATH}. Run digest init first.`);
-  }
-  const raw = await readFile(CONFIG_PATH, 'utf-8');
-  const config = parseConfig(raw);
-  const { errors } = await validateConfig(config);
-  if (errors.length > 0) {
-    throw new Error(`Invalid config:\n- ${errors.join('\n- ')}`);
-  }
-  return config;
 }
 
 async function copyTemplate(src: string, dst: string): Promise<void> {
   const content = await readFile(src, 'utf-8');
+  await mkdir(dirname(dst), { recursive: true });
   await writeFile(dst, content, 'utf-8');
 }
 
-const ENV_TEMPLATE = `# beaver-skill shared environment variables
-# Uncomment and fill in the API keys you need.
-# This file is loaded automatically by pnpm scripts via --env-file.
-
-# ZHIPU_API_KEY=your-key-here
-# OPENAI_API_KEY=your-key-here
-# ANTHROPIC_API_KEY=your-key-here
-`;
-
-export async function initConfig(force = false): Promise<{ created: boolean; path: string }> {
-  if (existsSync(CONFIG_PATH) && !force) return { created: false, path: CONFIG_PATH };
-  await mkdir(CONFIG_DIR, { recursive: true });
-  await copyTemplate(REPO_CONFIG_EXAMPLE_PATH, CONFIG_PATH);
-  if (!existsSync(I18N_PATH) || force) {
-    await copyTemplate(REPO_I18N_PATH, I18N_PATH);
-  }
-  if (!existsSync(ENV_PATH)) {
-    await mkdir(BEAVER_SKILL_DIR, { recursive: true });
-    await writeFile(ENV_PATH, ENV_TEMPLATE, 'utf-8');
-  }
-  return { created: true, path: CONFIG_PATH };
+export function resolveConfiguredLlmApiKeyEnv(
+  config: DigestFileConfig,
+  defaultLlmApiKeyEnv: string
+): string {
+  return extractEnvName(config.llmApiKeyEnv) || defaultLlmApiKeyEnv;
 }
 
-export async function saveConfig(config: DigestConfig): Promise<void> {
-  await mkdir(CONFIG_DIR, { recursive: true });
-  await writeFile(CONFIG_PATH, yaml.dump(config, { lineWidth: -1 }), 'utf-8');
+export function resolveConfiguredLlmApiKey(
+  config: DigestFileConfig,
+  defaultLlmApiKeyEnv: string
+): string {
+  return process.env[resolveConfiguredLlmApiKeyEnv(config, defaultLlmApiKeyEnv)] || '';
 }
 
-export async function loadI18n(): Promise<I18nDictionary> {
-  const path = existsSync(I18N_PATH) ? I18N_PATH : REPO_I18N_PATH;
-  const raw = await readFile(path, 'utf-8');
-  const parsed = asRecord(yaml.load(raw));
-  const zh = asRecord(parsed.zh);
-  const en = asRecord(parsed.en);
-  return {
-    zh: Object.fromEntries(Object.entries(zh).map(([k, v]) => [k, String(v)])),
-    en: Object.fromEntries(Object.entries(en).map(([k, v]) => [k, String(v)])),
-  };
-}
-
-export interface ValidationResult {
-  errors: string[];
-  warnings: string[];
-}
-
-export async function validateConfig(config: DigestConfig): Promise<ValidationResult> {
+export async function validateDigestConfig(
+  config: DigestFileConfig,
+  defaultLlmApiKeyEnv: string
+): Promise<ValidationResult> {
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -215,29 +167,20 @@ export async function validateConfig(config: DigestConfig): Promise<ValidationRe
   if (!config.llms.length) errors.push('llms must not be empty');
   const enabledLlms = config.llms.filter((llm) => llm.enabled);
   if (!enabledLlms.length) errors.push('At least one llm must be enabled');
-  let hasResolvedKey = false;
+  const configuredEnvName = extractEnvName(config.llmApiKeyEnv);
+  if (!configuredEnvName) errors.push('llmApiKeyEnv must be a valid env var name');
   for (const llm of enabledLlms) {
     if (!llm.provider) errors.push('llms[].provider must not be empty');
     if (!llm.baseUrl) errors.push(`llm ${llm.provider || '<unknown>'} missing baseUrl`);
     if (!llm.model) errors.push(`llm ${llm.provider || '<unknown>'} missing model`);
-    const envName = extractEnvName(llm.apiKey);
-    if (!envName) {
-      errors.push(
-        `llm ${llm.provider || '<unknown>'} apiKey must be env token format: {{ENV}} or <ENV> or ENV`
-      );
-      continue;
-    }
-    if (resolveEnvToken(llm.apiKey)) {
-      hasResolvedKey = true;
-    } else {
-      warnings.push(
-        `llm ${llm.provider}: env var ${envName} is not set (export ${envName}=your-key)`
-      );
-    }
   }
-  if (enabledLlms.length && !hasResolvedKey) {
+  if (
+    enabledLlms.length &&
+    configuredEnvName &&
+    !resolveConfiguredLlmApiKey(config, defaultLlmApiKeyEnv)
+  ) {
     warnings.push(
-      'No LLM apiKey env var is currently set — set at least one before running digest'
+      `Configured llmApiKeyEnv ${configuredEnvName} is not set in the current shell environment`
     );
   }
 
@@ -259,4 +202,75 @@ export async function validateConfig(config: DigestConfig): Promise<ValidationRe
   }
 
   return { errors, warnings };
+}
+
+export function createFileCliDeps(
+  options: DigestFileConfigOptions
+): DigestCliDeps<DigestFileConfig> {
+  const loadConfig = async (): Promise<DigestFileConfig> => {
+    if (!existsSync(options.configPath)) {
+      throw new Error(`Missing config file: ${options.configPath}. Run digest init first.`);
+    }
+    const raw = await readFile(options.configPath, 'utf-8');
+    const config = parseDigestConfig(raw, options.defaultLlmApiKeyEnv);
+    const { errors } = await validateDigestConfig(config, options.defaultLlmApiKeyEnv);
+    if (errors.length > 0) {
+      throw new Error(`Invalid config:\n- ${errors.join('\n- ')}`);
+    }
+    return config;
+  };
+
+  const initConfig = async (force = false): Promise<{ created: boolean; path: string }> => {
+    if (existsSync(options.configPath) && !force)
+      return { created: false, path: options.configPath };
+    await copyTemplate(options.configExamplePath, options.configPath);
+    if (!existsSync(options.i18nPath) || force) {
+      await copyTemplate(options.repoI18nPath, options.i18nPath);
+    }
+    return { created: true, path: options.configPath };
+  };
+
+  const loadI18n = async (): Promise<I18nDictionary> => {
+    const path = existsSync(options.i18nPath) ? options.i18nPath : options.repoI18nPath;
+    const raw = await readFile(path, 'utf-8');
+    const parsed = asRecord(yaml.load(raw));
+    const zh = asRecord(parsed.zh);
+    const en = asRecord(parsed.en);
+    return {
+      zh: Object.fromEntries(Object.entries(zh).map(([k, v]) => [k, String(v)])),
+      en: Object.fromEntries(Object.entries(en).map(([k, v]) => [k, String(v)])),
+    };
+  };
+
+  const saveConfig = async (config: DigestFileConfig): Promise<void> => {
+    await mkdir(dirname(options.configPath), { recursive: true });
+    await writeFile(options.configPath, yaml.dump(config, { lineWidth: -1 }), 'utf-8');
+  };
+
+  return {
+    configPath: options.configPath,
+    defaultLlmApiKeyEnv: options.defaultLlmApiKeyEnv,
+    loadConfig,
+    initConfig,
+    loadI18n,
+    saveConfig,
+    validateConfig: (config) => validateDigestConfig(config, options.defaultLlmApiKeyEnv),
+    resolveConfiguredLlmApiKeyEnv: (config) =>
+      resolveConfiguredLlmApiKeyEnv(config, options.defaultLlmApiKeyEnv),
+    resolveConfiguredLlmApiKey: (config) =>
+      resolveConfiguredLlmApiKey(config, options.defaultLlmApiKeyEnv),
+  };
+}
+
+export async function runLocalDigestCli(options: LocalDigestCliOptions): Promise<void> {
+  const cliDeps = createFileCliDeps(options);
+
+  await runCli(options.args, {
+    ...cliDeps,
+    runDigest: (digestOptions) =>
+      runDigest({
+        ...digestOptions,
+        templatesDir: options.templatesDir,
+      }),
+  });
 }

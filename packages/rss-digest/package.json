@@ -1,0 +1,34 @@
+{
+  "name": "@beaverslab/rss-digest",
+  "version": "0.1.0",
+  "description": "Reusable RSS digest CLI orchestration and digest engine.",
+  "type": "module",
+  "license": "MIT",
+  "homepage": "https://github.com/BeaversLab/beaver-skill/tree/main/skills/beaver-rss-digest",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BeaversLab/beaver-skill.git",
+    "directory": "packages/rss-digest"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "exports": {
+    "./cli": "./src/cli.ts",
+    "./file-config": "./src/file-config.ts",
+    "./config-types": "./src/types.ts",
+    "./digest-core": "./src/digest-core.ts",
+    "./prompts": "./src/prompts.ts",
+    ".": "./src/cli.ts"
+  },
+  "files": [
+    "src/"
+  ],
+  "dependencies": {
+    "@ai-sdk/openai-compatible": "^2.0.0",
+    "ai": "^5.0.0",
+    "cheerio": "^1.1.2",
+    "js-yaml": "^4.1.1",
+    "turndown": "^7.2.0"
+  }
+}

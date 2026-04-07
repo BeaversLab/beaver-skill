@@ -1,4 +1,5 @@
 version: 2
+llmApiKeyEnv: LLM_API_KEY
 defaults:
   hours: 48
   topN: 15
@@ -11,13 +12,11 @@ llms:
     apiType: openai-compatible
     baseUrl: https://open.bigmodel.cn/api/coding/paas/v4
     model: glm-4.7
-    apiKey: "{{ZHIPU_API_KEY}}"
   - provider: ZHIPU
     enabled: false
     apiType: anthropic-compatible
     baseUrl: https://open.bigmodel.cn/api/anthropic
     model: glm-4.7
-    apiKey: "{{ZHIPU_API_KEY}}"
 categories:
   - id: ai-ml
     emoji: "🤖"

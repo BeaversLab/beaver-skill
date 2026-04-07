@@ -1,12 +1,15 @@
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
+import { generateText } from 'ai';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { load as loadHtml } from 'cheerio';
+import TurndownService from 'turndown';
 import {
   buildHighlightsPrompt,
   buildScoringPrompt,
   buildSummaryPrompt,
   type PromptTemplates,
-} from './prompts';
-import { REPO_TEMPLATES_DIR, resolveEnvToken } from './config';
+} from './prompts.js';
 import type {
   Article,
   CategoryConfig,
@@ -15,12 +18,21 @@ import type {
   LlmProfile,
   OutputLanguage,
   ScoredArticle,
-} from './types';
+} from './types.js';
 
 const RSS_FETCH_TIMEOUT_MS = 30_000;
 const RSS_FETCH_CONCURRENCY = 15;
+const ARTICLE_FETCH_TIMEOUT_MS = 20_000;
+const ARTICLE_FETCH_CONCURRENCY = 8;
 const LLM_CALL_TIMEOUT_MS = 120_000;
 const LLM_JSON_RETRY_COUNT = 1;
+const MIN_RSS_DESCRIPTION_LENGTH = 140;
+const MAX_ARTICLE_DESCRIPTION_LENGTH = 2_000;
+const turndownService = new TurndownService({
+  headingStyle: 'atx',
+  codeBlockStyle: 'fenced',
+  bulletListMarker: '-',
+});
 
 export interface RunDigestOptions {
   feeds: FeedSource[];
@@ -30,9 +42,11 @@ export interface RunDigestOptions {
   language: OutputLanguage;
   outputPath: string;
   llms: LlmProfile[];
+  llmApiKey: string;
   categories: CategoryConfig[];
   i18n?: Record<string, string>;
   reportTemplate: string;
+  templatesDir: string;
 }
 
 function sanitizeDescription(raw: string): string {
@@ -52,6 +66,103 @@ function sanitizeDescription(raw: string): string {
     .slice(0, 500);
 }
 
+function sanitizeArticleContent(raw: string): string {
+  return raw
+    .replace(/\r/g, '\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim()
+    .slice(0, MAX_ARTICLE_DESCRIPTION_LENGTH);
+}
+
+function extractArticleText(html: string): string {
+  const $ = loadHtml(html);
+
+  $('script, style, noscript, svg, img, iframe, nav, footer, header, aside, form').remove();
+
+  const candidates = [
+    'article',
+    'main article',
+    'main',
+    '[role="main"]',
+    '.post-content',
+    '.entry-content',
+    '.article-content',
+    '.post-body',
+    '.entry-body',
+    '.content',
+    'body',
+  ];
+
+  let bestText = '';
+  for (const selector of candidates) {
+    const node = $(selector).first();
+    if (!node.length) continue;
+
+    const htmlFragment = node.html() || '';
+    const markdown = sanitizeArticleContent(turndownService.turndown(htmlFragment));
+    const textFallback = sanitizeArticleContent(node.text());
+    const content = markdown.length >= textFallback.length / 2 ? markdown : textFallback;
+
+    if (content.length > bestText.length) bestText = content;
+    if (bestText.length >= MAX_ARTICLE_DESCRIPTION_LENGTH / 2) break;
+  }
+
+  return bestText;
+}
+
+function shouldEnrichDescription(description: string): boolean {
+  return description.trim().length < MIN_RSS_DESCRIPTION_LENGTH;
+}
+
+async function fetchArticleContent(article: Article): Promise<string> {
+  const resp = await fetch(article.link, {
+    signal: AbortSignal.timeout(ARTICLE_FETCH_TIMEOUT_MS),
+    headers: {
+      'User-Agent': 'beaver-rss-digest/0.1 (+https://github.com/BeaversLab/beaver-skill)',
+      Accept: 'text/html,application/xhtml+xml',
+    },
+  });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+  const html = await resp.text();
+  const content = extractArticleText(html);
+  if (!content) throw new Error('empty article body');
+  return content;
+}
+
+async function enrichArticleDescriptions(articles: Article[]): Promise<Article[]> {
+  const enriched: Article[] = [];
+
+  for (let i = 0; i < articles.length; i += ARTICLE_FETCH_CONCURRENCY) {
+    const batch = articles.slice(i, i + ARTICLE_FETCH_CONCURRENCY);
+    const settled = await Promise.allSettled(
+      batch.map(async (article) => {
+        if (!shouldEnrichDescription(article.description)) return article;
+
+        try {
+          const content = await fetchArticleContent(article);
+          return {
+            ...article,
+            description: content,
+          };
+        } catch (error) {
+          const reason = error instanceof Error ? error.message : String(error);
+          console.warn(`[digest] article fetch failed for ${article.link}: ${reason}`);
+          return article;
+        }
+      })
+    );
+
+    for (const result of settled) {
+      if (result.status === 'fulfilled') enriched.push(result.value);
+    }
+  }
+
+  return enriched;
+}
+
 function parseJSON<T>(text: string): T {
   const cleaned = text
     .trim()
@@ -60,55 +171,84 @@ function parseJSON<T>(text: string): T {
   return JSON.parse(cleaned) as T;
 }
 
-async function callWithProfile(prompt: string, profile: LlmProfile): Promise<string> {
-  const apiKey = resolveEnvToken(profile.apiKey);
+async function callOpenAICompatible(
+  prompt: string,
+  profile: LlmProfile,
+  apiKey: string
+): Promise<string> {
+  const provider = createOpenAICompatible({
+    name: profile.provider.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'provider',
+    apiKey,
+    baseURL: profile.baseUrl,
+  });
+
+  const result = await Promise.race([
+    generateText({
+      model: provider(profile.model),
+      prompt,
+      temperature: 0.3,
+    }),
+    new Promise<never>((_, reject) => {
+      setTimeout(
+        () => reject(new Error(`LLM request timed out after ${LLM_CALL_TIMEOUT_MS}ms`)),
+        LLM_CALL_TIMEOUT_MS
+      );
+    }),
+  ]);
+
+  return result.text;
+}
+
+async function callAnthropicCompatible(
+  prompt: string,
+  profile: LlmProfile,
+  apiKey: string
+): Promise<string> {
   if (!apiKey) throw new Error(`Missing API key for ${profile.provider}`);
 
   const signal = AbortSignal.timeout(LLM_CALL_TIMEOUT_MS);
 
-  if (profile.apiType === 'anthropic-compatible') {
-    const resp = await fetch(`${profile.baseUrl.replace(/\/+$/, '')}/v1/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: profile.model,
-        max_tokens: 4096,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-      signal,
-    });
-    if (!resp.ok) throw new Error(await resp.text());
-    const data = (await resp.json()) as { content?: Array<{ type?: string; text?: string }> };
-    return data.content?.find((x) => x.type === 'text')?.text || '';
-  }
-
-  const resp = await fetch(`${profile.baseUrl.replace(/\/+$/, '')}/chat/completions`, {
+  const resp = await fetch(`${profile.baseUrl.replace(/\/+$/, '')}/v1/messages`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
     body: JSON.stringify({
       model: profile.model,
+      max_tokens: 4096,
       messages: [{ role: 'user', content: prompt }],
-      temperature: 0.3,
     }),
     signal,
   });
   if (!resp.ok) throw new Error(await resp.text());
-  const data = (await resp.json()) as { choices?: Array<{ message?: { content?: string } }> };
-  return data.choices?.[0]?.message?.content || '';
+  const data = (await resp.json()) as { content?: Array<{ type?: string; text?: string }> };
+  return data.content?.find((x) => x.type === 'text')?.text || '';
 }
 
-async function aiCall(prompt: string, llms: LlmProfile[]): Promise<string> {
+async function callWithProfile(
+  prompt: string,
+  profile: LlmProfile,
+  apiKey: string
+): Promise<string> {
+  if (!apiKey) throw new Error(`Missing API key for ${profile.provider}`);
+
+  if (profile.apiType === 'anthropic-compatible') {
+    return callAnthropicCompatible(prompt, profile, apiKey);
+  }
+
+  return callOpenAICompatible(prompt, profile, apiKey);
+}
+
+async function aiCall(prompt: string, llms: LlmProfile[], apiKey: string): Promise<string> {
   const enabled = llms.filter((l) => l.enabled);
   if (!enabled.length) throw new Error('No enabled LLM providers configured.');
 
   let lastError = '';
   for (const profile of enabled) {
     try {
-      return await callWithProfile(prompt, profile);
+      return await callWithProfile(prompt, profile, apiKey);
     } catch (error) {
       lastError = error instanceof Error ? error.message : String(error);
       console.error(`[digest] LLM ${profile.provider} failed: ${lastError}`);
@@ -117,11 +257,11 @@ async function aiCall(prompt: string, llms: LlmProfile[]): Promise<string> {
   throw new Error(`All LLM providers failed: ${lastError}`);
 }
 
-function aiCallJSON<T>(prompt: string, llms: LlmProfile[]): Promise<T> {
+function aiCallJSON<T>(prompt: string, llms: LlmProfile[], apiKey: string): Promise<T> {
   return (async () => {
     let lastParseError = '';
     for (let attempt = 0; attempt <= LLM_JSON_RETRY_COUNT; attempt++) {
-      const raw = await aiCall(prompt, llms);
+      const raw = await aiCall(prompt, llms, apiKey);
       try {
         return parseJSON<T>(raw);
       } catch (e) {
@@ -234,12 +374,18 @@ function buildCategoryChart(
   return md;
 }
 
-function buildArticlesSection(articles: ScoredArticle[]): string {
+function buildArticlesSection(articles: ScoredArticle[], categories: CategoryConfig[]): string {
+  const categoryMap = new Map(categories.map((c) => [c.id, c]));
+
   return articles
-    .map(
-      (a, i) =>
-        `## ${i + 1}. ${a.titleZh || a.title}\n\n[${a.title}](${a.link})\n\n> ${a.summary}\n`
-    )
+    .map((a, i) => {
+      const category = categoryMap.get(a.category);
+      const categoryLine = category
+        ? `**分类**: ${category.emoji} ${category.label}`
+        : `**分类**: ${a.category}`;
+
+      return `## ${i + 1}. ${a.titleZh || a.title}\n\n${categoryLine}\n\n[${a.title}](${a.link})\n\n> ${a.summary}\n`;
+    })
     .join('\n');
 }
 
@@ -248,13 +394,14 @@ function renderTemplate(template: string, values: Record<string, string>): strin
 }
 
 async function renderReportFromTemplate(
+  templatesDir: string,
   templateName: string,
   articles: ScoredArticle[],
   highlights: string,
   categories: CategoryConfig[],
   i18n?: Record<string, string>
 ): Promise<string> {
-  const templatePath = join(REPO_TEMPLATES_DIR, `${templateName}.md`);
+  const templatePath = join(templatesDir, `${templateName}.md`);
   let template = '';
   try {
     template = await readFile(templatePath, 'utf-8');
@@ -267,7 +414,7 @@ async function renderReportFromTemplate(
   const chartTitle = i18n?.['chart.categoryTitle'] || '文章分类分布';
   const highlightsSection = highlights ? `## ${highlightsTitle}\n\n${highlights}` : '';
   const categoryChartSection = buildCategoryChart(articles, categories, chartTitle);
-  const articlesSection = buildArticlesSection(articles);
+  const articlesSection = buildArticlesSection(articles, categories);
 
   return (
     renderTemplate(template, {
@@ -287,13 +434,18 @@ export async function runDigest(
     `[digest] Fetching ${options.feeds.length} feeds (concurrency=${RSS_FETCH_CONCURRENCY}, timeout=${RSS_FETCH_TIMEOUT_MS}ms)...`
   );
   const allArticles = await fetchArticles(options.feeds);
-  const recent = allArticles.filter(
+  const recentCandidates = allArticles.filter(
     (a) => a.pubDate.getTime() > Date.now() - options.hours * 3600_000
   );
   console.log(
-    `[digest] ${allArticles.length} total articles, ${recent.length} within ${options.hours}h window`
+    `[digest] ${allArticles.length} total articles, ${recentCandidates.length} within ${options.hours}h window`
   );
-  if (!recent.length) throw new Error('No recent articles found.');
+  if (!recentCandidates.length) throw new Error('No recent articles found.');
+
+  console.log(
+    `[digest] Enriching short RSS descriptions (concurrency=${ARTICLE_FETCH_CONCURRENCY}, timeout=${ARTICLE_FETCH_TIMEOUT_MS}ms)...`
+  );
+  const recent = await enrichArticleDescriptions(recentCandidates);
 
   const categoryIds = new Set(options.categories.map((c) => c.id));
 
@@ -317,7 +469,7 @@ export async function runDigest(
       category: string;
       keywords: string[];
     }>;
-  }>(scorePrompt, options.llms);
+  }>(scorePrompt, options.llms, options.llmApiKey);
 
   const picked = recent
     .map((a, i) => {
@@ -354,7 +506,7 @@ export async function runDigest(
   );
   const summary = await aiCallJSON<{
     results: Array<{ index: number; titleZh: string; summary: string; reason: string }>;
-  }>(summaryPrompt, options.llms);
+  }>(summaryPrompt, options.llms, options.llmApiKey);
 
   const finalArticles: ScoredArticle[] = picked.map((a, i) => {
     const sm = summary.results.find((x) => x.index === i);
@@ -375,10 +527,12 @@ export async function runDigest(
       options.language,
       options.i18n?.['prompt.highlights.instruction']
     ),
-    options.llms
+    options.llms,
+    options.llmApiKey
   ).catch(() => '');
 
   const report = await renderReportFromTemplate(
+    options.templatesDir,
     options.reportTemplate,
     finalArticles,
     highlights.trim(),
