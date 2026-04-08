@@ -1,6 +1,11 @@
 # 更新日志
 
-## 0.6.2
+## 0.6.2 - 2026-04-08
+
+### 内部变更
+
+- **project**: 发布 `@beaverslab/rss-digest` v0.2.0。
+- **project**: 同步更新 `@beaverslab/skills` 至 v0.6.2。
 
 ## 0.6.1 - 2026-03-31
 
