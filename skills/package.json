@@ -1,6 +1,6 @@
 {
   "name": "@beaverslab/skills",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "private": true,
   "description": "The unified collection of AI agent skills (Beaver Library).",
   "dependencies": {

@@ -1,5 +1,12 @@
 # @beaverslab/skills
 
+## 0.6.4
+
+### Patch Changes
+
+- Updated dependencies
+  - @beaverslab/rss-digest@0.4.0
+
 ## 0.6.3
 
 ### Patch Changes

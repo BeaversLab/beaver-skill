@@ -1,5 +1,15 @@
 # @beaverslab/rss-digest
 
+## 0.4.0
+
+### Minor Changes
+
+- Switch `@beaverslab/rss-digest` to precompiled `dist` publishing for direct `bunx` and `npx` usage.
+
+  Fix RSS and Atom CDATA parsing so feed items are not dropped when fields are wrapped in CDATA.
+
+  Improve JSON extraction from mixed model responses and add unit tests for feed parsing and JSON parsing.
+
 ## 0.3.0
 
 ### Minor Changes
