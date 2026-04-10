@@ -14,26 +14,39 @@
     "node": ">=20.0.0"
   },
   "bin": {
-    "rss-digest": "./bin/rss-digest.js"
+    "rss-digest": "./dist/src/bin.js"
   },
   "exports": {
-    "./cli": "./src/cli.ts",
-    "./file-config": "./src/file-config.ts",
-    "./config-types": "./src/types.ts",
-    "./digest-core": "./src/digest-core.ts",
-    "./prompts": "./src/prompts.ts",
-    ".": "./src/cli.ts"
+    "./cli": "./dist/src/cli.js",
+    "./file-config": "./dist/src/file-config.js",
+    "./config-types": "./dist/src/types.js",
+    "./digest-core": "./dist/src/digest-core.js",
+    "./prompts": "./dist/src/prompts.js",
+    ".": "./dist/src/cli.js"
   },
   "files": [
-    "bin/",
-    "src/"
+    "dist/",
+    "README.md",
+    "README.en.md"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && mkdir -p dist/src/assets && cp src/assets/*.yaml dist/src/assets/",
+    "cli": "node dist/src/bin.js",
+    "prepack": "npm run build",
+    "test": "npm run build && node --test dist/tests/*.js"
+  },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^2.0.0",
     "ai": "^5.0.0",
     "cheerio": "^1.1.2",
     "js-yaml": "^4.1.1",
-    "tsx": "^4.21.0",
     "turndown": "^7.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.0",
+    "typescript": "^5.9.2"
   }
 }

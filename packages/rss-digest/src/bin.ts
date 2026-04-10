@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 
 import process from 'node:process';
 import { dirname, join } from 'node:path';
@@ -7,7 +7,6 @@ import { runLocalDigestCli } from './file-config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const packageRoot = join(__dirname, '..');
 const packagedAssetsDir = join(__dirname, 'assets');
 const defaultLlmApiKeyEnv = 'LLM_API_KEY';
 
@@ -44,8 +43,8 @@ Global options:
   --help, -h               Show this help
 
 Examples:
-  bunx @beaverslab/rss-digest init --config ~/.beaver-skill/beaver-rss-digest/config.yaml
-  bunx @beaverslab/rss-digest run --templates-dir ./templates --output ./output/today.md
+  npx @beaverslab/rss-digest init --config ~/.beaver-skill/beaver-rss-digest/config.yaml
+  npx @beaverslab/rss-digest run --templates-dir ./templates --output ./output/today.md
 `);
 }
 

@@ -68,7 +68,7 @@ bunx @beaverslab/rss-digest run \
   --templates-dir ./templates
 ```
 
-推荐优先使用 `bunx`。如果环境中没有 `bunx`，可直接使用 `npx @beaverslab/rss-digest ...`，包内的 JS 启动器会优先尝试 `bun`，否则回退到 `node --import tsx`。
+推荐优先使用 `bunx`。发布包会预编译到 `dist/`，因此 `npx` 也可以直接使用 Node 运行，不需要 `tsx`。
 
 CLI 内置默认资源：
 
@@ -292,8 +292,8 @@ Provider 行为：
 Package 文件：
 
 - [package.json](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/package.json)
-- [bin/rss-digest.js](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/bin/rss-digest.js)
 - [src/bin.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/src/bin.ts)
+- [tsconfig.build.json](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/tsconfig.build.json)
 - [src/cli.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/src/cli.ts)
 - [src/file-config.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/src/file-config.ts)
 - [src/digest-core.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/src/digest-core.ts)
@@ -304,4 +304,4 @@ Package 文件：
 
 - 当前包直接导出源码文件。
 - 假定运行时为 Node.js 20+。
-- 这个包现在既适合嵌入，也适合通过 `bunx` 直接调用。
+- 这个包现在既适合嵌入，也适合通过 `bunx` 或 `npx` 直接调用。

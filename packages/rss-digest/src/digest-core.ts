@@ -112,6 +112,30 @@ function extractArticleText(html: string): string {
   return bestText;
 }
 
+function unwrapCdata(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^<!\[CDATA\[([\s\S]*?)\]\]>$/i, '$1')
+    .trim();
+}
+
+function decodeXmlEntities(raw: string): string {
+  return raw
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
+function normalizeFeedValue(raw: string, options?: { stripTags?: boolean }): string {
+  let value = decodeXmlEntities(unwrapCdata(raw));
+  if (options?.stripTags) {
+    value = value.replace(/<[^>]*>/g, '');
+  }
+  return value.trim();
+}
+
 function shouldEnrichDescription(description: string): boolean {
   return description.trim().length < MIN_RSS_DESCRIPTION_LENGTH;
 }
@@ -163,12 +187,74 @@ async function enrichArticleDescriptions(articles: Article[]): Promise<Article[]
   return enriched;
 }
 
-function parseJSON<T>(text: string): T {
-  const cleaned = text
+function stripCodeFence(text: string): string {
+  return text
     .trim()
     .replace(/^```(?:json)?\n?/, '')
     .replace(/\n?```$/, '');
-  return JSON.parse(cleaned) as T;
+}
+
+function extractFirstJsonBlock(text: string): string | null {
+  const start = text.search(/[\[{]/);
+  if (start < 0) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  let opener = '';
+
+  for (let i = start; i < text.length; i += 1) {
+    const char = text[i]!;
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (char === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (char === '"') {
+        inString = false;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (char === '{' || char === '[') {
+      if (depth === 0) opener = char;
+      depth += 1;
+      continue;
+    }
+
+    if (char === '}' || char === ']') {
+      const matches =
+        (char === '}' && opener === '{') || (char === ']' && opener === '[') || depth > 1;
+      if (!matches) return null;
+      depth -= 1;
+      if (depth === 0) {
+        return text.slice(start, i + 1);
+      }
+    }
+  }
+
+  return null;
+}
+
+export function parseJSON<T>(text: string): T {
+  const cleaned = stripCodeFence(text);
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch {
+    const extracted = extractFirstJsonBlock(cleaned);
+    if (!extracted) throw new Error('No JSON object or array found in model response');
+    return JSON.parse(extracted) as T;
+  }
 }
 
 async function callOpenAICompatible(
@@ -184,7 +270,9 @@ async function callOpenAICompatible(
 
   const result = await Promise.race([
     generateText({
-      model: provider(profile.model),
+      // `@ai-sdk/openai-compatible` currently exposes a newer model interface
+      // than the generic `generateText` type accepts in this package setup.
+      model: provider(profile.model) as unknown as Parameters<typeof generateText>[0]['model'],
       prompt,
       temperature: 0.3,
     }),
@@ -278,7 +366,7 @@ function aiCallJSON<T>(prompt: string, llms: LlmProfile[], apiKey: string): Prom
   })();
 }
 
-function parseRSSItems(
+export function parseRSSItems(
   xml: string
 ): Array<{ title: string; link: string; pubDate: string; description: string }> {
   const items: Array<{ title: string; link: string; pubDate: string; description: string }> = [];
@@ -286,34 +374,36 @@ function parseRSSItems(
   const rssItems = xml.match(/<item[\s\S]*?<\/item>/gi) || [];
   for (const item of rssItems) {
     const title =
-      item
-        .match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]
-        ?.replace(/<[^>]*>/g, '')
-        .trim() || '';
-    const link = item.match(/<link[^>]*>([\s\S]*?)<\/link>/i)?.[1]?.trim() || '';
-    const pubDate = item.match(/<pubDate[^>]*>([\s\S]*?)<\/pubDate>/i)?.[1] || '';
-    const desc = item.match(/<description[^>]*>([\s\S]*?)<\/description>/i)?.[1] || '';
+      normalizeFeedValue(item.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || '', {
+        stripTags: true,
+      }) || '';
+    const link = normalizeFeedValue(item.match(/<link[^>]*>([\s\S]*?)<\/link>/i)?.[1] || '');
+    const pubDate = normalizeFeedValue(
+      item.match(/<pubDate[^>]*>([\s\S]*?)<\/pubDate>/i)?.[1] || ''
+    );
+    const desc = normalizeFeedValue(
+      item.match(/<description[^>]*>([\s\S]*?)<\/description>/i)?.[1] || ''
+    );
     if (title && link) items.push({ title, link, pubDate, description: desc });
   }
 
   const atomEntries = xml.match(/<entry[\s\S]*?<\/entry>/gi) || [];
   for (const entry of atomEntries) {
     const title =
-      entry
-        .match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]
-        ?.replace(/<[^>]*>/g, '')
-        .trim() || '';
+      normalizeFeedValue(entry.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] || '', {
+        stripTags: true,
+      }) || '';
     const linkHref =
-      entry.match(/<link[^>]*href=["']([^"']*)["'][^>]*\/?>/i)?.[1] ||
-      entry.match(/<link[^>]*>([\s\S]*?)<\/link>/i)?.[1]?.trim() ||
+      normalizeFeedValue(entry.match(/<link[^>]*href=["']([^"']*)["'][^>]*\/?>/i)?.[1] || '') ||
+      normalizeFeedValue(entry.match(/<link[^>]*>([\s\S]*?)<\/link>/i)?.[1] || '') ||
       '';
     const published =
-      entry.match(/<published[^>]*>([\s\S]*?)<\/published>/i)?.[1] ||
-      entry.match(/<updated[^>]*>([\s\S]*?)<\/updated>/i)?.[1] ||
+      normalizeFeedValue(entry.match(/<published[^>]*>([\s\S]*?)<\/published>/i)?.[1] || '') ||
+      normalizeFeedValue(entry.match(/<updated[^>]*>([\s\S]*?)<\/updated>/i)?.[1] || '') ||
       '';
     const desc =
-      entry.match(/<summary[^>]*>([\s\S]*?)<\/summary>/i)?.[1] ||
-      entry.match(/<content[^>]*>([\s\S]*?)<\/content>/i)?.[1] ||
+      normalizeFeedValue(entry.match(/<summary[^>]*>([\s\S]*?)<\/summary>/i)?.[1] || '') ||
+      normalizeFeedValue(entry.match(/<content[^>]*>([\s\S]*?)<\/content>/i)?.[1] || '') ||
       '';
     if (title && linkHref)
       items.push({ title, link: linkHref, pubDate: published, description: desc });

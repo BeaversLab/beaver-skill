@@ -68,7 +68,7 @@ bunx @beaverslab/rss-digest run \
   --templates-dir ./templates
 ```
 
-Prefer `bunx`. If `bunx` is not available, you can use `npx @beaverslab/rss-digest ...` with the same arguments. The package ships a JS launcher that tries `bun` first and falls back to `node --import tsx`.
+Prefer `bunx`. The published package is precompiled into `dist/`, so `npx` also runs directly on Node without `tsx`.
 
 The CLI ships with packaged defaults for:
 
@@ -292,8 +292,8 @@ That is why `skills/beaver-rss-digest` still owns:
 Package files:
 
 - [package.json](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/package.json)
-- [bin/rss-digest.js](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/bin/rss-digest.js)
 - [src/bin.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/src/bin.ts)
+- [tsconfig.build.json](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/tsconfig.build.json)
 - [src/cli.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/src/cli.ts)
 - [src/file-config.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/src/file-config.ts)
 - [src/digest-core.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/src/digest-core.ts)
@@ -304,4 +304,4 @@ Package files:
 
 - The package currently exports source files directly.
 - It assumes a Node.js 20+ runtime.
-- It now works both as an embeddable package and as a `bunx`-invoked CLI.
+- It now works both as an embeddable package and as a `bunx` or `npx` invoked CLI.

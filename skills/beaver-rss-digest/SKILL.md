@@ -73,34 +73,31 @@ export LLM_API_KEY=your-key-here
 在 `skills/beaver-rss-digest` 目录执行：
 
 ```bash
-RUNNER="bunx"
-command -v bunx >/dev/null 2>&1 || RUNNER="npx"
-
-$RUNNER @beaverslab/rss-digest init \
+bunx @beaverslab/rss-digest init \
   --config ~/.beaver-skill/beaver-rss-digest/config.yaml \
   --i18n ~/.beaver-skill/beaver-rss-digest/i18n.yaml \
   --templates-dir ./templates
 
-$RUNNER @beaverslab/rss-digest config validate \
+bunx @beaverslab/rss-digest config validate \
   --config ~/.beaver-skill/beaver-rss-digest/config.yaml \
   --i18n ~/.beaver-skill/beaver-rss-digest/i18n.yaml \
   --templates-dir ./templates
 
-$RUNNER @beaverslab/rss-digest run \
+bunx @beaverslab/rss-digest run \
   --config ~/.beaver-skill/beaver-rss-digest/config.yaml \
   --i18n ~/.beaver-skill/beaver-rss-digest/i18n.yaml \
   --templates-dir ./templates
 ```
 
-优先使用 `bunx`。如果当前环境没有 `bunx`，改用 `npx`，同一套参数保持不变。
+优先使用 `bunx`。如果当前环境没有 `bunx`，可以直接改用 `npx`，参数保持不变。
 
 细粒度命令：
 
 ```bash
-$RUNNER @beaverslab/rss-digest config path --config ~/.beaver-skill/beaver-rss-digest/config.yaml
-$RUNNER @beaverslab/rss-digest source list --config ~/.beaver-skill/beaver-rss-digest/config.yaml
-$RUNNER @beaverslab/rss-digest source add --config ~/.beaver-skill/beaver-rss-digest/config.yaml
-$RUNNER @beaverslab/rss-digest source remove --config ~/.beaver-skill/beaver-rss-digest/config.yaml
+bunx @beaverslab/rss-digest config path --config ~/.beaver-skill/beaver-rss-digest/config.yaml
+bunx @beaverslab/rss-digest source list --config ~/.beaver-skill/beaver-rss-digest/config.yaml
+bunx @beaverslab/rss-digest source add --config ~/.beaver-skill/beaver-rss-digest/config.yaml
+bunx @beaverslab/rss-digest source remove --config ~/.beaver-skill/beaver-rss-digest/config.yaml
 ```
 
 `source add/remove` 未传参数时会进入交互输入。
@@ -108,16 +105,13 @@ $RUNNER @beaverslab/rss-digest source remove --config ~/.beaver-skill/beaver-rss
 ## 常用运行示例
 
 ```bash
-RUNNER="bunx"
-command -v bunx >/dev/null 2>&1 || RUNNER="npx"
-
 # 初始化用户配置
-$RUNNER @beaverslab/rss-digest init \
+bunx @beaverslab/rss-digest init \
   --config ~/.beaver-skill/beaver-rss-digest/config.yaml \
   --i18n ~/.beaver-skill/beaver-rss-digest/i18n.yaml
 
 # 生成 digest
-$RUNNER @beaverslab/rss-digest run \
+bunx @beaverslab/rss-digest run \
   --config ~/.beaver-skill/beaver-rss-digest/config.yaml \
   --i18n ~/.beaver-skill/beaver-rss-digest/i18n.yaml \
   --templates-dir ./templates \
@@ -140,7 +134,7 @@ $RUNNER @beaverslab/rss-digest run \
 
 ## 故障排查
 
-- 配置错误：先执行 `$RUNNER @beaverslab/rss-digest config validate ...`
+- 配置错误：先执行 `bunx @beaverslab/rss-digest config validate ...`
 - 模板不存在：检查 `defaults.reportTemplate` 与 `templates/<name>.md`
 - 全部 LLM 失败：检查 `llmApiKeyEnv` 是否正确，以及当前 shell 是否已 `export` 同名 Key
 - 无文章输出：扩大 `hours` 或确认 RSS 源可访问

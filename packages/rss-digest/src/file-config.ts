@@ -16,6 +16,7 @@ import type {
 
 export type DigestFileConfig = DigestConfigShape;
 export type I18nDictionary = Record<OutputLanguage, Record<string, string>>;
+type FileCliDeps = Omit<DigestCliDeps<DigestFileConfig>, 'runDigest'>;
 
 export interface DigestFileConfigOptions {
   configPath: string;
@@ -204,9 +205,7 @@ export async function validateDigestConfig(
   return { errors, warnings };
 }
 
-export function createFileCliDeps(
-  options: DigestFileConfigOptions
-): DigestCliDeps<DigestFileConfig> {
+export function createFileCliDeps(options: DigestFileConfigOptions): FileCliDeps {
   const loadConfig = async (): Promise<DigestFileConfig> => {
     if (!existsSync(options.configPath)) {
       throw new Error(`Missing config file: ${options.configPath}. Run digest init first.`);

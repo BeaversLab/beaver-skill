@@ -57,6 +57,13 @@ importers:
       turndown:
         specifier: ^7.2.0
         version: 7.2.4
+    devDependencies:
+      '@types/node':
+        specifier: ^24.12.0
+        version: 24.12.0
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
 
   skills/beaver-resource-compilation:
     dependencies:
@@ -75,19 +82,6 @@ importers:
       tsx:
         specifier: ^4.19.3
         version: 4.21.0
-
-  skills/beaver-rss-digest:
-    dependencies:
-      '@beaverslab/rss-digest':
-        specifier: workspace:*
-        version: link:../../packages/rss-digest
-      tsx:
-        specifier: ^4.21.0
-        version: 4.21.0
-    devDependencies:
-      '@types/node':
-        specifier: ^24.12.0
-        version: 24.12.0
 
 packages:
 
