@@ -1,0 +1,46 @@
+version: 2
+llmApiKeyEnv: LLM_API_KEY
+
+defaults:
+  hours: 48
+  topN: 15
+  language: zh
+  outputDir: ./output
+  reportTemplate: default
+
+llms:
+  - enabled: true
+    provider: openai-compatible
+    apiType: openai-compatible
+    baseUrl: https://api.openai.com/v1
+    model: gpt-4.1-mini
+    apiKey: LLM_API_KEY
+
+categories:
+  - id: ai
+    emoji: "🤖"
+    label: AI
+  - id: engineering
+    emoji: "🛠️"
+    label: Engineering
+  - id: product
+    emoji: "📦"
+    label: Product
+
+prompts:
+  scoring: |
+    你是技术资讯编辑。请根据文章内容输出 JSON：
+    {
+      "score": 0-100,
+      "categoryId": "分类 id",
+      "reason": "一句话说明"
+    }
+  summary: |
+    请用简洁中文总结文章，输出 3-5 条要点，适合 RSS digest。
+  highlights: |
+    请基于入选文章生成今天的 digest highlights，输出 3-5 条简洁要点。
+
+rssFeeds:
+  - name: OpenAI News
+    xmlUrl: https://openai.com/news/rss.xml
+    htmlUrl: https://openai.com/news/

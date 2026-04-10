@@ -13,6 +13,9 @@
   "engines": {
     "node": ">=20.0.0"
   },
+  "bin": {
+    "rss-digest": "./bin/rss-digest.js"
+  },
   "exports": {
     "./cli": "./src/cli.ts",
     "./file-config": "./src/file-config.ts",
@@ -22,6 +25,7 @@
     ".": "./src/cli.ts"
   },
   "files": [
+    "bin/",
     "src/"
   ],
   "dependencies": {
@@ -29,6 +33,7 @@
     "ai": "^5.0.0",
     "cheerio": "^1.1.2",
     "js-yaml": "^4.1.1",
+    "tsx": "^4.21.0",
     "turndown": "^7.2.0"
   }
 }

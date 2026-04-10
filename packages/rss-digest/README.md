@@ -7,17 +7,20 @@
 - Prompt 组装
 - 多 LLM 回退
 
-这个包是刻意从 skill 层拆出来的。包本身提供通用执行原语，而像 `skills/beaver-rss-digest` 这样的 skill 负责：
+这个包是刻意从 skill 层拆出来的。现在它同时提供：
+
+- 可直接通过 `bunx @beaverslab/rss-digest` 调用的 CLI
+- 可复用的模块接口
+
+而像 `skills/beaver-rss-digest` 这样的 skill 主要负责：
 
 - 用户配置路径
-- 配置解析与校验策略
 - 模板目录选择
-- 环境变量决策逻辑
 - skill 特定文档与 prompt
 
 ## 作用范围
 
-`@beaverslab/rss-digest` 本身不是一个完整应用。它是一个可复用包，要求调用方注入配置 I/O 和运行时决策。
+`@beaverslab/rss-digest` 既可以作为可复用包嵌入，也可以作为一个需要显式传入路径参数的 CLI 使用。它不是零配置应用，但已经不再依赖 skill 侧的 `package.json` 包装。
 
 当前 LLM 行为：
 
@@ -38,11 +41,47 @@
 
 对应文件：
 
+- `./src/bin.ts`
 - `./src/cli.ts`
 - `./src/file-config.ts`
 - `./src/digest-core.ts`
 - `./src/prompts.ts`
 - `./src/types.ts`
+
+## Standalone CLI
+
+包现在暴露可执行命令：
+
+- `rss-digest`
+
+适合在只复制 skill 目录时直接运行：
+
+```bash
+bunx @beaverslab/rss-digest init \
+  --config ~/.beaver-skill/beaver-rss-digest/config.yaml \
+  --i18n ~/.beaver-skill/beaver-rss-digest/i18n.yaml \
+  --templates-dir ./templates
+
+bunx @beaverslab/rss-digest run \
+  --config ~/.beaver-skill/beaver-rss-digest/config.yaml \
+  --i18n ~/.beaver-skill/beaver-rss-digest/i18n.yaml \
+  --templates-dir ./templates
+```
+
+推荐优先使用 `bunx`。如果环境中没有 `bunx`，可直接使用 `npx @beaverslab/rss-digest ...`，包内的 JS 启动器会优先尝试 `bun`，否则回退到 `node --import tsx`。
+
+CLI 内置默认资源：
+
+- `config.example.yaml`
+- `i18n.yaml`
+
+可选全局参数：
+
+- `--config`
+- `--i18n`
+- `--config-example`
+- `--repo-i18n`
+- `--templates-dir`
 
 ## 主要接口
 
@@ -189,8 +228,7 @@ await runCli(process.argv.slice(2), {
 });
 ```
 
-仓库内现成的 skill 适配器示例：
-[skills/beaver-rss-digest/scripts/cli.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/skills/beaver-rss-digest/scripts/cli.ts)
+如果你仍然想嵌入自己的适配层，也可以继续直接调用 `runLocalDigestCli` 或 `runCli`。
 
 ## 包期望的配置结构
 
@@ -239,18 +277,14 @@ Provider 行为：
 
 ## 哪些内容应该留在 Skill 层
 
-这些内容应当放在 package 外：
+这些内容仍然更适合放在 package 外：
 
-- 仓库特定的配置模板
 - 类似 `~/.beaver-skill/...` 的用户目录路径
 - skill frontmatter 和用户触发文档
 - 模板目录归属
-- 环境变量命名策略
 
 这也是为什么 `skills/beaver-rss-digest` 仍然保留：
 
-- `config/config.example.yaml`
-- `config/i18n.yaml`
 - `templates/`
 
 ## 当前文件布局
@@ -258,18 +292,16 @@ Provider 行为：
 Package 文件：
 
 - [package.json](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/package.json)
+- [bin/rss-digest.js](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/bin/rss-digest.js)
+- [src/bin.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/src/bin.ts)
 - [src/cli.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/src/cli.ts)
 - [src/file-config.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/src/file-config.ts)
 - [src/digest-core.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/src/digest-core.ts)
 - [src/prompts.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/src/prompts.ts)
 - [src/types.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/src/types.ts)
 
-Skill 适配层：
-
-- [scripts/cli.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/skills/beaver-rss-digest/scripts/cli.ts)
-
 ## 备注
 
 - 当前包直接导出源码文件。
 - 假定运行时为 Node.js 20+。
-- 这个包更适合嵌入到上层 skill 或 app 中，而不是作为一个零配置独立应用。
+- 这个包现在既适合嵌入，也适合通过 `bunx` 直接调用。

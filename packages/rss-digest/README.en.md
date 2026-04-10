@@ -7,17 +7,20 @@ Reusable RSS digest package for:
 - prompt assembly
 - multi-LLM fallback
 
-This package is intentionally split from the skill layer. The package provides generic execution primitives, while a skill such as `skills/beaver-rss-digest` is responsible for:
+This package is intentionally split from the skill layer. It now provides:
+
+- a standalone CLI runnable via `bunx @beaverslab/rss-digest`
+- reusable module interfaces
+
+Meanwhile, a skill such as `skills/beaver-rss-digest` mainly owns:
 
 - user config paths
-- config parsing and validation policy
 - template directory selection
-- environment variable decision logic
 - skill-specific docs and prompts
 
 ## Scope
 
-`@beaverslab/rss-digest` is not a complete app by itself. It is a reusable package that expects the caller to inject config I/O and runtime decisions.
+`@beaverslab/rss-digest` can now be used either as an embeddable package or as a path-driven CLI. It is still not a zero-config app, but it no longer requires a skill-local `package.json` wrapper.
 
 Current LLM behavior:
 
@@ -38,11 +41,47 @@ The package currently exposes:
 
 Mapped files:
 
+- `./src/bin.ts`
 - `./src/cli.ts`
 - `./src/file-config.ts`
 - `./src/digest-core.ts`
 - `./src/prompts.ts`
 - `./src/types.ts`
+
+## Standalone CLI
+
+The package now exposes this executable:
+
+- `rss-digest`
+
+This is intended for the case where only the skill folder is copied:
+
+```bash
+bunx @beaverslab/rss-digest init \
+  --config ~/.beaver-skill/beaver-rss-digest/config.yaml \
+  --i18n ~/.beaver-skill/beaver-rss-digest/i18n.yaml \
+  --templates-dir ./templates
+
+bunx @beaverslab/rss-digest run \
+  --config ~/.beaver-skill/beaver-rss-digest/config.yaml \
+  --i18n ~/.beaver-skill/beaver-rss-digest/i18n.yaml \
+  --templates-dir ./templates
+```
+
+Prefer `bunx`. If `bunx` is not available, you can use `npx @beaverslab/rss-digest ...` with the same arguments. The package ships a JS launcher that tries `bun` first and falls back to `node --import tsx`.
+
+The CLI ships with packaged defaults for:
+
+- `config.example.yaml`
+- `i18n.yaml`
+
+Optional global flags:
+
+- `--config`
+- `--i18n`
+- `--config-example`
+- `--repo-i18n`
+- `--templates-dir`
 
 ## Main Interfaces
 
@@ -189,8 +228,7 @@ await runCli(process.argv.slice(2), {
 });
 ```
 
-The in-repo skill adapter is the concrete example:
-[skills/beaver-rss-digest/scripts/cli.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/skills/beaver-rss-digest/scripts/cli.ts)
+If you still want a custom adapter layer, you can call `runLocalDigestCli` or `runCli` directly.
 
 ## Config Shape Expected By The Package
 
@@ -239,18 +277,14 @@ This allows the skill layer to keep decision policy simple while still reusing a
 
 ## What Belongs In The Skill Layer
 
-Keep these outside the package:
+These still belong outside the package:
 
-- repo-specific config templates
 - home-directory paths like `~/.beaver-skill/...`
 - skill frontmatter and user-facing triggering docs
 - template directory ownership
-- environment variable naming policy
 
 That is why `skills/beaver-rss-digest` still owns:
 
-- `config/config.example.yaml`
-- `config/i18n.yaml`
 - `templates/`
 
 ## Current File Layout
@@ -258,18 +292,16 @@ That is why `skills/beaver-rss-digest` still owns:
 Package files:
 
 - [package.json](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/package.json)
+- [bin/rss-digest.js](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/bin/rss-digest.js)
+- [src/bin.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/src/bin.ts)
 - [src/cli.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/src/cli.ts)
 - [src/file-config.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/src/file-config.ts)
 - [src/digest-core.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/src/digest-core.ts)
 - [src/prompts.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/src/prompts.ts)
 - [src/types.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/packages/rss-digest/src/types.ts)
 
-Skill adapter:
-
-- [scripts/cli.ts](/Users/marco/Documents/git/github.com/BeaversLab/beaver-skill/skills/beaver-rss-digest/scripts/cli.ts)
-
 ## Notes
 
 - The package currently exports source files directly.
 - It assumes a Node.js 20+ runtime.
-- It is optimized for embedding into a higher-level skill or app, not for standalone zero-config use.
+- It now works both as an embeddable package and as a `bunx`-invoked CLI.

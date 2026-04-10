@@ -11,7 +11,7 @@ description: Generate configurable RSS digest with YAML-driven LLM chain, source
 
 - 用户配置：`~/.beaver-skill/beaver-rss-digest/config.yaml`
 - 多语言文案：`~/.beaver-skill/beaver-rss-digest/i18n.yaml`
-- 配置模板：`skills/beaver-rss-digest/config/config.example.yaml`
+- 初始化配置模板：由 `@beaverslab/rss-digest` 包内置提供
 - 报告模板目录：`skills/beaver-rss-digest/templates/`
 - 通用 CLI / 摘要引擎：`packages/rss-digest`
 
@@ -73,35 +73,58 @@ export LLM_API_KEY=your-key-here
 在 `skills/beaver-rss-digest` 目录执行：
 
 ```bash
-pnpm install
-pnpm run digest:init
-pnpm run digest:config:validate
-pnpm run digest:run
+RUNNER="bunx"
+command -v bunx >/dev/null 2>&1 || RUNNER="npx"
+
+$RUNNER @beaverslab/rss-digest init \
+  --config ~/.beaver-skill/beaver-rss-digest/config.yaml \
+  --i18n ~/.beaver-skill/beaver-rss-digest/i18n.yaml \
+  --templates-dir ./templates
+
+$RUNNER @beaverslab/rss-digest config validate \
+  --config ~/.beaver-skill/beaver-rss-digest/config.yaml \
+  --i18n ~/.beaver-skill/beaver-rss-digest/i18n.yaml \
+  --templates-dir ./templates
+
+$RUNNER @beaverslab/rss-digest run \
+  --config ~/.beaver-skill/beaver-rss-digest/config.yaml \
+  --i18n ~/.beaver-skill/beaver-rss-digest/i18n.yaml \
+  --templates-dir ./templates
 ```
+
+优先使用 `bunx`。如果当前环境没有 `bunx`，改用 `npx`，同一套参数保持不变。
 
 细粒度命令：
 
 ```bash
-pnpm run digest:config:path
-pnpm run digest:source:list
-pnpm run digest:source:add
-pnpm run digest:source:remove
+$RUNNER @beaverslab/rss-digest config path --config ~/.beaver-skill/beaver-rss-digest/config.yaml
+$RUNNER @beaverslab/rss-digest source list --config ~/.beaver-skill/beaver-rss-digest/config.yaml
+$RUNNER @beaverslab/rss-digest source add --config ~/.beaver-skill/beaver-rss-digest/config.yaml
+$RUNNER @beaverslab/rss-digest source remove --config ~/.beaver-skill/beaver-rss-digest/config.yaml
 ```
 
-`digest:source:add/remove` 未传参数时会进入交互输入。
-
-pnpm 脚本自动选择运行时：优先使用 bun，未安装则回退到 node + tsx。
+`source add/remove` 未传参数时会进入交互输入。
 
 ## 常用运行示例
 
 ```bash
-# 通过 pnpm 脚本运行（自动选择 bun 或 node）
-pnpm run digest:run -- --hours 24 --top-n 10 --lang en --output ./output/my-digest.md
+RUNNER="bunx"
+command -v bunx >/dev/null 2>&1 || RUNNER="npx"
 
-# 手动指定运行时
-bun scripts/cli.ts run --hours 24 --top-n 10
-# 或
-node --import tsx scripts/cli.ts run --hours 24 --top-n 10
+# 初始化用户配置
+$RUNNER @beaverslab/rss-digest init \
+  --config ~/.beaver-skill/beaver-rss-digest/config.yaml \
+  --i18n ~/.beaver-skill/beaver-rss-digest/i18n.yaml
+
+# 生成 digest
+$RUNNER @beaverslab/rss-digest run \
+  --config ~/.beaver-skill/beaver-rss-digest/config.yaml \
+  --i18n ~/.beaver-skill/beaver-rss-digest/i18n.yaml \
+  --templates-dir ./templates \
+  --hours 24 \
+  --top-n 10 \
+  --lang en \
+  --output ./output/my-digest.md
 ```
 
 ## 关键配置项说明
@@ -117,7 +140,7 @@ node --import tsx scripts/cli.ts run --hours 24 --top-n 10
 
 ## 故障排查
 
-- 配置错误：先执行 `pnpm run digest:config:validate`
+- 配置错误：先执行 `$RUNNER @beaverslab/rss-digest config validate ...`
 - 模板不存在：检查 `defaults.reportTemplate` 与 `templates/<name>.md`
 - 全部 LLM 失败：检查 `llmApiKeyEnv` 是否正确，以及当前 shell 是否已 `export` 同名 Key
 - 无文章输出：扩大 `hours` 或确认 RSS 源可访问

@@ -1,0 +1,24 @@
+zh:
+  reportTitle: 今日 RSS Digest
+  highlightsTitle: 今日看点
+  categoryChartTitle: 分类分布
+  articlesTitle: 入选文章
+  noHighlights: 暂无看点
+  noArticles: 暂无文章
+  scoreLabel: 评分
+  categoryLabel: 分类
+  sourceLabel: 来源
+  publishedAtLabel: 发布时间
+  summaryLabel: 摘要
+en:
+  reportTitle: Today's RSS Digest
+  highlightsTitle: Highlights
+  categoryChartTitle: Category Breakdown
+  articlesTitle: Selected Articles
+  noHighlights: No highlights available.
+  noArticles: No articles available.
+  scoreLabel: Score
+  categoryLabel: Category
+  sourceLabel: Source
+  publishedAtLabel: Published At
+  summaryLabel: Summary
