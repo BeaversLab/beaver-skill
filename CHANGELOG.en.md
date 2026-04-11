@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.6.5
+
+### Internal Changes
+
+- **project**: Release `@beaverslab/rss-digest` v0.5.0.
+- **beaver-rss-digest**: Add `--stdout` output mode for AI and pipeline consumption.
+- **beaver-rss-digest**: Default to standard output when `defaults.outputDir` is not configured.
+- **project**: Synchronize `@beaverslab/skills` to v0.6.5.
+
+## 0.6.4
+
+### Internal Changes
+
+- **project**: Release `@beaverslab/rss-digest` v0.4.0.
+- **beaver-rss-digest**: Switch to precompiled `dist` publishing for direct `bunx` / `npx` usage.
+- **beaver-rss-digest**: Fix RSS / Atom CDATA parsing and mixed-text JSON extraction, and add unit tests.
+- **project**: Synchronize `@beaverslab/skills` to v0.6.4.
+
+## 0.6.3
+
+### Internal Changes
+
+- **project**: Release `@beaverslab/rss-digest` v0.3.0.
+- **beaver-rss-digest**: Add a standalone CLI entry and bundled default configuration assets.
+- **beaver-rss-digest**: Remove the skill-local wrapper layer and standardize package-level CLI usage.
+- **project**: Synchronize `@beaverslab/skills` to v0.6.3.
+
 ## 0.6.2 - 2026-04-08
 
 ### Internal Changes

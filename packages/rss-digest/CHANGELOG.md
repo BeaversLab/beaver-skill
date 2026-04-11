@@ -1,5 +1,15 @@
 # @beaverslab/rss-digest
 
+## 0.5.0
+
+### Minor Changes
+
+- Add `--stdout` to `@beaverslab/rss-digest` so the final report can be written directly to standard output for AI and pipeline workflows.
+
+  When `defaults.outputDir` is not configured, the `run` command now defaults to stdout output instead of requiring a file path.
+
+  Add CLI tests for stdout and file output behavior, and update the bundled skill documentation to describe the new output strategy.
+
 ## 0.4.0
 
 ### Minor Changes

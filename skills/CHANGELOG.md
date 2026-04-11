@@ -1,5 +1,18 @@
 # @beaverslab/skills
 
+## 0.6.5
+
+### Patch Changes
+
+- Add `--stdout` to `@beaverslab/rss-digest` so the final report can be written directly to standard output for AI and pipeline workflows.
+
+  When `defaults.outputDir` is not configured, the `run` command now defaults to stdout output instead of requiring a file path.
+
+  Add CLI tests for stdout and file output behavior, and update the bundled skill documentation to describe the new output strategy.
+
+- Updated dependencies
+  - @beaverslab/rss-digest@0.5.0
+
 ## 0.6.4
 
 ### Patch Changes

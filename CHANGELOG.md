@@ -1,8 +1,31 @@
 # 更新日志
 
+## 0.6.5
+
+### 内部变更
+
+- **project**: 发布 `@beaverslab/rss-digest` v0.5.0。
+- **beaver-rss-digest**: 新增 `--stdout` 输出模式，适合 AI / 管道消费。
+- **beaver-rss-digest**: 当 `defaults.outputDir` 未配置时，默认输出到标准输出。
+- **project**: 同步更新 `@beaverslab/skills` 至 v0.6.5。
+
 ## 0.6.4
 
+### 内部变更
+
+- **project**: 发布 `@beaverslab/rss-digest` v0.4.0。
+- **beaver-rss-digest**: 切换为 `dist` 预编译发布模式，兼容 `bunx` / `npx` 直接调用。
+- **beaver-rss-digest**: 修复 RSS / Atom CDATA 解析与混合文本 JSON 提取问题，并补充单元测试。
+- **project**: 同步更新 `@beaverslab/skills` 至 v0.6.4。
+
 ## 0.6.3
+
+### 内部变更
+
+- **project**: 发布 `@beaverslab/rss-digest` v0.3.0。
+- **beaver-rss-digest**: 增加独立 CLI 入口与内置默认配置资源。
+- **beaver-rss-digest**: 移除 skill 本地包装层，统一为包级 CLI 调用方式。
+- **project**: 同步更新 `@beaverslab/skills` 至 v0.6.3。
 
 ## 0.6.2 - 2026-04-08
 
