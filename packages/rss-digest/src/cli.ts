@@ -30,6 +30,7 @@ export interface DigestCliDeps<TConfig extends DigestConfigShape = DigestConfigS
     topN: number;
     language: OutputLanguage;
     outputPath: string;
+    stdout: boolean;
     llms: TConfig['llms'];
     llmApiKey: string;
     categories: TConfig['categories'];
@@ -43,13 +44,17 @@ function printUsage(): void {
 
 Usage:
   digest init [--force] [--interactive]
-  digest run [--hours <n>] [--top-n <n>] [--lang <zh|en>] [--output <path>]
+  digest run [--hours <n>] [--top-n <n>] [--lang <zh|en>] [--output <path>] [--stdout]
   digest config path
   digest config validate
   digest source list
   digest source add [--name <name> --xml <xmlUrl> --html <htmlUrl>]
   digest source remove [--name <name>]
 `);
+}
+
+function parseFlagArg(args: string[], key: string): boolean {
+  return args.includes(key);
 }
 
 function parseNumberArg(args: string[], key: string): number | undefined {
@@ -73,7 +78,9 @@ async function runInteractiveSetup<TConfig extends DigestConfigShape>(
     const hours = (await rl.question('默认抓取小时数（默认 48）: ')).trim();
     const topN = (await rl.question('默认精选条数（默认 15）: ')).trim();
     const langRaw = (await rl.question('默认输出语言 zh/en（默认 zh）: ')).trim();
-    const outputDir = (await rl.question('默认输出目录（默认 ./output）: ')).trim();
+    const outputDir = (
+      await rl.question('默认输出目录（留空则默认输出到 stdout，默认 ./output）: ')
+    ).trim();
     const llmApiKeyEnv = (
       await rl.question(`LLM API Key 环境变量名（默认 ${deps.defaultLlmApiKeyEnv}）: `)
     ).trim();
@@ -170,8 +177,16 @@ async function handleRun<TConfig extends DigestConfigShape>(
   const topN = parseNumberArg(args, '--top-n') ?? config.defaults.topN;
   const langRaw = parseStringArg(args, '--lang');
   const language: OutputLanguage = langRaw === 'en' ? 'en' : config.defaults.language;
+  const configuredOutputDir = config.defaults.outputDir?.trim() || '';
+  const explicitOutput = parseStringArg(args, '--output');
+  const stdout = parseFlagArg(args, '--stdout') || (!explicitOutput && !configuredOutputDir);
+  if (stdout && explicitOutput) {
+    console.error('[digest] --stdout and --output cannot be used together.');
+    process.exit(1);
+  }
   const outputPath =
-    parseStringArg(args, '--output') ?? join(config.defaults.outputDir, `digest-${now}.md`);
+    explicitOutput ??
+    (configuredOutputDir ? join(configuredOutputDir, `digest-${now}.md`) : '[stdout]');
 
   const i18n = await deps.loadI18n();
   const enabledLlms = config.llms.filter((l) => l.enabled);
@@ -191,11 +206,10 @@ async function handleRun<TConfig extends DigestConfigShape>(
     console.error(`[digest] Otherwise export ${configuredEnvName}=your-key before running.`);
     process.exit(1);
   }
-  console.log(
-    `[digest] LLM chain: ${enabledLlms.map((l) => `${l.provider}/${l.model}`).join(' → ')}`
-  );
-  console.log(`[digest] llmApiKeyEnv=${configuredEnvName}`);
-  console.log(`[digest] hours=${hours} topN=${topN} lang=${language}`);
+  const log = stdout ? console.error : console.log;
+  log(`[digest] LLM chain: ${enabledLlms.map((l) => `${l.provider}/${l.model}`).join(' → ')}`);
+  log(`[digest] llmApiKeyEnv=${configuredEnvName}`);
+  log(`[digest] hours=${hours} topN=${topN} lang=${language}`);
 
   await deps.runDigest({
     feeds: config.rssFeeds,
@@ -204,6 +218,7 @@ async function handleRun<TConfig extends DigestConfigShape>(
     topN,
     language,
     outputPath,
+    stdout,
     llms: config.llms,
     llmApiKey,
     categories: config.categories,

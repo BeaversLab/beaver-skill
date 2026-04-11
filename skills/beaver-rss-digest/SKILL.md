@@ -87,6 +87,12 @@ bunx @beaverslab/rss-digest run \
   --config ~/.beaver-skill/beaver-rss-digest/config.yaml \
   --i18n ~/.beaver-skill/beaver-rss-digest/i18n.yaml \
   --templates-dir ./templates
+
+bunx @beaverslab/rss-digest run \
+  --config ~/.beaver-skill/beaver-rss-digest/config.yaml \
+  --i18n ~/.beaver-skill/beaver-rss-digest/i18n.yaml \
+  --templates-dir ./templates \
+  --stdout
 ```
 
 优先使用 `bunx`。如果当前环境没有 `bunx`，可以直接改用 `npx`，参数保持不变。
@@ -119,6 +125,13 @@ bunx @beaverslab/rss-digest run \
   --top-n 10 \
   --lang en \
   --output ./output/my-digest.md
+
+# 输出到标准输出，适合管道或 AI 读取
+bunx @beaverslab/rss-digest run \
+  --config ~/.beaver-skill/beaver-rss-digest/config.yaml \
+  --i18n ~/.beaver-skill/beaver-rss-digest/i18n.yaml \
+  --templates-dir ./templates \
+  --stdout
 ```
 
 ## 关键配置项说明
@@ -126,7 +139,7 @@ bunx @beaverslab/rss-digest run \
 - `defaults.hours`: 默认抓取时间窗口
 - `defaults.topN`: 默认输出文章数
 - `defaults.language`: `zh` / `en`
-- `defaults.outputDir`: 默认输出目录
+- `defaults.outputDir`: 可选输出目录；未配置时默认输出到 stdout
 - `defaults.reportTemplate`: 报告模板名
 - `categories`: 分类定义（`id/emoji/label`）
 - `prompts`: 评分、摘要、看点提示词模板

@@ -83,7 +83,7 @@ export function parseDigestConfig(raw: string, defaultLlmApiKeyEnv: string): Dig
   const language = parseLanguage(defaults.language);
   const outputDir = asString(defaults.outputDir);
   const reportTemplate = asString(defaults.reportTemplate).trim() || 'default';
-  if (version === null || hours === null || topN === null || !language || !outputDir.trim()) {
+  if (version === null || hours === null || topN === null || !language) {
     throw new Error('Invalid defaults section');
   }
 
@@ -159,7 +159,6 @@ export async function validateDigestConfig(
 
   if (config.defaults.hours <= 0) errors.push('defaults.hours must be > 0');
   if (config.defaults.topN <= 0) errors.push('defaults.topN must be > 0');
-  if (!config.defaults.outputDir.trim()) errors.push('defaults.outputDir must not be empty');
   if (!config.defaults.reportTemplate.trim())
     errors.push('defaults.reportTemplate must not be empty');
   if (!['zh', 'en'].includes(config.defaults.language))

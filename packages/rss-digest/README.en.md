@@ -66,6 +66,12 @@ bunx @beaverslab/rss-digest run \
   --config ~/.beaver-skill/beaver-rss-digest/config.yaml \
   --i18n ~/.beaver-skill/beaver-rss-digest/i18n.yaml \
   --templates-dir ./templates
+
+bunx @beaverslab/rss-digest run \
+  --config ~/.beaver-skill/beaver-rss-digest/config.yaml \
+  --i18n ~/.beaver-skill/beaver-rss-digest/i18n.yaml \
+  --templates-dir ./templates \
+  --stdout
 ```
 
 Prefer `bunx`. The published package is precompiled into `dist/`, so `npx` also runs directly on Node without `tsx`.
@@ -82,6 +88,10 @@ Optional global flags:
 - `--config-example`
 - `--repo-i18n`
 - `--templates-dir`
+
+Additional run flag:
+
+- `--stdout`: print the final rendered report to stdout instead of writing a file
 
 ## Main Interfaces
 
@@ -242,7 +252,7 @@ export interface DigestConfigShape {
     hours: number;
     topN: number;
     language: 'zh' | 'en';
-    outputDir: string;
+    outputDir?: string;
     reportTemplate: string;
   };
   llms: LlmProfile[];
@@ -257,6 +267,8 @@ The package does not dictate:
 - where this config is stored
 - whether it is YAML, JSON, DB-backed, or generated
 - how environment variables are loaded into `process.env`
+
+`defaults.outputDir` is optional. When it is not configured, the CLI `run` command writes the final report to stdout by default; when configured, it writes to that directory unless `--stdout` is explicitly passed.
 
 ## LLM Provider Model
 

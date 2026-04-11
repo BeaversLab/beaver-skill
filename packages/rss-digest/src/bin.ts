@@ -27,7 +27,7 @@ Usage:
 
 Commands:
   init [--force] [--interactive]
-  run [--hours <n>] [--top-n <n>] [--lang <zh|en>] [--output <path>]
+  run [--hours <n>] [--top-n <n>] [--lang <zh|en>] [--output <path>] [--stdout]
   config path
   config validate
   source list
@@ -45,6 +45,7 @@ Global options:
 Examples:
   npx @beaverslab/rss-digest init --config ~/.beaver-skill/beaver-rss-digest/config.yaml
   npx @beaverslab/rss-digest run --templates-dir ./templates --output ./output/today.md
+  npx @beaverslab/rss-digest run --templates-dir ./templates --stdout
 `);
 }
 

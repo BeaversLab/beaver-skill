@@ -50,7 +50,7 @@ export interface DigestDefaults {
   hours: number;
   topN: number;
   language: OutputLanguage;
-  outputDir: string;
+  outputDir?: string;
   reportTemplate: string;
 }
 

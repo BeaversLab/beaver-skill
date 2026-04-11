@@ -66,6 +66,12 @@ bunx @beaverslab/rss-digest run \
   --config ~/.beaver-skill/beaver-rss-digest/config.yaml \
   --i18n ~/.beaver-skill/beaver-rss-digest/i18n.yaml \
   --templates-dir ./templates
+
+bunx @beaverslab/rss-digest run \
+  --config ~/.beaver-skill/beaver-rss-digest/config.yaml \
+  --i18n ~/.beaver-skill/beaver-rss-digest/i18n.yaml \
+  --templates-dir ./templates \
+  --stdout
 ```
 
 推荐优先使用 `bunx`。发布包会预编译到 `dist/`，因此 `npx` 也可以直接使用 Node 运行，不需要 `tsx`。
@@ -82,6 +88,10 @@ CLI 内置默认资源：
 - `--config-example`
 - `--repo-i18n`
 - `--templates-dir`
+
+运行命令额外支持：
+
+- `--stdout`: 将最终生成的报告输出到标准输出，而不是写入文件
 
 ## 主要接口
 
@@ -242,7 +252,7 @@ export interface DigestConfigShape {
     hours: number;
     topN: number;
     language: 'zh' | 'en';
-    outputDir: string;
+    outputDir?: string;
     reportTemplate: string;
   };
   llms: LlmProfile[];
@@ -257,6 +267,8 @@ export interface DigestConfigShape {
 - 配置存储在哪里
 - 配置是 YAML、JSON、数据库还是运行时生成
 - 环境变量如何被加载进 `process.env`
+
+`defaults.outputDir` 是可选的。未配置时，CLI `run` 默认将最终报告输出到 stdout；配置后则默认写入该目录，除非显式传入 `--stdout`。
 
 ## LLM Provider 模型
 

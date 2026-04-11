@@ -41,12 +41,21 @@ export interface RunDigestOptions {
   topN: number;
   language: OutputLanguage;
   outputPath: string;
+  stdout?: boolean;
   llms: LlmProfile[];
   llmApiKey: string;
   categories: CategoryConfig[];
   i18n?: Record<string, string>;
   reportTemplate: string;
   templatesDir: string;
+}
+
+function logDigestMessage(stdout: boolean | undefined, message: string): void {
+  if (stdout) {
+    console.error(message);
+    return;
+  }
+  console.log(message);
 }
 
 function sanitizeDescription(raw: string): string {
@@ -520,26 +529,29 @@ async function renderReportFromTemplate(
 export async function runDigest(
   options: RunDigestOptions
 ): Promise<{ outputPath: string; finalArticles: ScoredArticle[] }> {
-  console.log(
+  logDigestMessage(
+    options.stdout,
     `[digest] Fetching ${options.feeds.length} feeds (concurrency=${RSS_FETCH_CONCURRENCY}, timeout=${RSS_FETCH_TIMEOUT_MS}ms)...`
   );
   const allArticles = await fetchArticles(options.feeds);
   const recentCandidates = allArticles.filter(
     (a) => a.pubDate.getTime() > Date.now() - options.hours * 3600_000
   );
-  console.log(
+  logDigestMessage(
+    options.stdout,
     `[digest] ${allArticles.length} total articles, ${recentCandidates.length} within ${options.hours}h window`
   );
   if (!recentCandidates.length) throw new Error('No recent articles found.');
 
-  console.log(
+  logDigestMessage(
+    options.stdout,
     `[digest] Enriching short RSS descriptions (concurrency=${ARTICLE_FETCH_CONCURRENCY}, timeout=${ARTICLE_FETCH_TIMEOUT_MS}ms)...`
   );
   const recent = await enrichArticleDescriptions(recentCandidates);
 
   const categoryIds = new Set(options.categories.map((c) => c.id));
 
-  console.log(`[digest] Scoring ${recent.length} articles...`);
+  logDigestMessage(options.stdout, `[digest] Scoring ${recent.length} articles...`);
   const scorePrompt = buildScoringPrompt(
     options.prompts,
     recent.map((a, index) => ({
@@ -581,7 +593,7 @@ export async function runDigest(
     .sort((a, b) => b.total - a.total)
     .slice(0, options.topN);
 
-  console.log(`[digest] Summarizing top ${picked.length} articles...`);
+  logDigestMessage(options.stdout, `[digest] Summarizing top ${picked.length} articles...`);
   const summaryPrompt = buildSummaryPrompt(
     options.prompts,
     picked.map((a, index) => ({
@@ -609,7 +621,7 @@ export async function runDigest(
     };
   });
 
-  console.log('[digest] Generating highlights...');
+  logDigestMessage(options.stdout, '[digest] Generating highlights...');
   const highlights = await aiCall(
     buildHighlightsPrompt(
       options.prompts,
@@ -629,6 +641,11 @@ export async function runDigest(
     options.categories,
     options.i18n
   );
+  if (options.stdout) {
+    process.stdout.write(report);
+    return { outputPath: '[stdout]', finalArticles };
+  }
+
   await mkdir(dirname(options.outputPath), { recursive: true });
   await writeFile(options.outputPath, report);
   console.log(`[digest] Report written to ${options.outputPath}`);
